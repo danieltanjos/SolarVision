@@ -1,0 +1,109 @@
+.btn-google {
+background-color: #fff;
+border: 1px solid #ddd;
+color: #444;
+font-weight: 500;
+}
+.btn-google:hover {
+background-color: #f8f9fa;
+}
+.btn-apple {
+background-color: #000;
+color: #fff;
+font-weight: 500;
+}
+.btn-apple:hover {
+background-color: #333;
+color: #fff;
+}
+.google-icon {
+width: 18px;
+height: 18px;
+margin-right: 8px;
+}
+
+
+
+  /* -------------------------home------------------------ */
+
+
+body { background-color: #f8f9fa; }
+.card-custom {
+border-radius: 16px;
+padding: 20px;
+box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.stat-value {
+font-size: 2rem;
+font-weight: 700;
+color: #2c3e50;
+}
+.stat-label {
+font-size: 0.9rem;
+color: #6c757d;
+}
+.feature-card {
+background: #2d9cdb;
+color: #fff;
+border-radius: 16px;
+padding: 30px 15px;
+text-align: center;
+transition: 0.3s;
+height: 140px;
+}
+.feature-card:hover {
+background: #1d7fb7;
+cursor: pointer;
+}
+.feature-card i {
+font-size: 28px;
+margin-bottom: 10px;
+display: block;
+}
+
+body { 
+    background: #f8f9fa; 
+  }
+  
+.card-auth {
+width: 420px;
+border-radius: 16px;
+padding: 28px;
+}
+
+.btn-google {
+background-color: #fff;
+border: 1px solid #ddd;
+color: #202124;
+font-weight: 500;
+height: 44px;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 10px;
+}
+
+.btn-google:hover { 
+background-color: #f7f7f7; 
+}
+
+.btn-apple {
+background-color: #000;
+color: #fff;
+height: 44px;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 10px;
+}
+
+.btn-apple:hover { 
+background-color: #111; 
+}
+
+.g-logo { 
+width: 18px; 
+height: 18px; 
+display: inline-block; 
+}
+  
