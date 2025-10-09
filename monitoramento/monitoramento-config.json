@@ -1,18 +1,45 @@
 [
   {
+    "id": "kpiEficiencia",
+    "type": "kpi",
     "x": 0, "y": 0, "w": 4, "h": 2,
-    "content": "<h3>Eficiência Média</h3><p class='display-4'>85%</p>"
+    "options": {
+      "title": "Eficiência Média",
+      "value": "85%",
+      "icon": "bi-speedometer2"
+    }
   },
   {
+    "id": "kpiSujeira",
+    "type": "kpi",
     "x": 4, "y": 0, "w": 4, "h": 2,
-    "content": "<h3>Nível de Sujeira</h3><p class='display-4'>0.8mm</p>"
+    "options": {
+      "title": "Nível de Sujeira",
+      "value": "0.8mm",
+      "icon": "bi-moisture"
+    }
   },
   {
+    "id": "kpiProducao",
+    "type": "kpi",
     "x": 8, "y": 0, "w": 4, "h": 2,
-    "content": "<h3>Produção Hoje</h3><p class='display-4'>12 kWh</p>"
+    "options": {
+      "title": "Produção Hoje",
+      "value": "12 kWh",
+      "icon": "bi-lightning-charge-fill"
+    }
   },
   {
+    "id": "graficoProducaoSemanal",
+    "type": "lineChart",
     "x": 0, "y": 2, "w": 12, "h": 4,
-    "content": "<h3>Gráfico de Produção Semanal</h3><p><em>[Aqui entraria um gráfico de verdade]</em></p>"
+    "options": {
+      "title": "Produção da Última Semana (kWh)",
+      "series": [{
+        "name": "Produção",
+        "data": [10, 15, 12, 20, 18, 25, 22]
+      }],
+      "categories": ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
+    }
   }
 ]
