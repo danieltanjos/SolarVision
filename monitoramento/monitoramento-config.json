@@ -1,0 +1,18 @@
+[
+  {
+    "x": 0, "y": 0, "w": 4, "h": 2,
+    "content": "<h3>Eficiência Média</h3><p class='display-4'>85%</p>"
+  },
+  {
+    "x": 4, "y": 0, "w": 4, "h": 2,
+    "content": "<h3>Nível de Sujeira</h3><p class='display-4'>0.8mm</p>"
+  },
+  {
+    "x": 8, "y": 0, "w": 4, "h": 2,
+    "content": "<h3>Produção Hoje</h3><p class='display-4'>12 kWh</p>"
+  },
+  {
+    "x": 0, "y": 2, "w": 12, "h": 4,
+    "content": "<h3>Gráfico de Produção Semanal</h3><p><em>[Aqui entraria um gráfico de verdade]</em></p>"
+  }
+]
