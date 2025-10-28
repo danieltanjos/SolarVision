@@ -55,7 +55,7 @@ Seu projeto deve estar organizado da seguinte maneira na pasta raiz (`/solarvisi
 Antes de iniciar os containers, você precisa criar as pastas vazias que serão mapeadas para os volumes dos bancos de dados.
 
 Na pasta raiz do projeto (`/solarvision/`), execute:
-```bash
+bash
 mkdir postgres-data
 mkdir influxdb-data
 
@@ -65,11 +65,11 @@ mkdir influxdb-data
 
 Cole este bloco logo abaixo do anterior.
 
-```markdown
+markdown
 ### 3. Ajuste de Permissões (Importante para Linux/macOS)
 Os bancos de dados são sensíveis a permissões de pasta. Se você estiver em um ambiente **Linux ou macOS**, você **deve** ajustar o "dono" (owner) das pastas que acabou de criar para que os containers tenham permissão de escrita.
 
-```bash
+bash
 # Define as permissões para a pasta do PostgreSQL
 sudo chown -R 70:70 ./postgres-data
 
@@ -82,11 +82,11 @@ sudo chown -R 1000:1000 ./influxdb-data
 
 Cole este bloco logo abaixo do anterior.
 
-```markdown
+markdown
 ### 4. Construa e Inicie os Containers
 Com tudo configurado, execute o Docker Compose. Este comando irá construir a imagem do Nginx e baixar as imagens do Postgres e InfluxDB.
 
-```bash
+bash
 docker-compose up -d
 
 5. Acesse os Serviços
@@ -114,7 +114,7 @@ Database: solarvision_db (Você pode usar um cliente como DBeaver ou pgAdmin par
 
 Cole este bloco logo abaixo do anterior.
 
-```markdown
+markdown
 ---
 
 ## ⚡ Fluxo de Desenvolvimento (Edição em Tempo Real)
@@ -126,17 +126,17 @@ Este ambiente foi configurado para um desenvolvimento ágil.
 
 * **Alterações na Configuração do Nginx:**
     Se você precisar alterar o domínio (ex: `server_name`) ou adicionar regras de redirecionamento, edite o arquivo `./nginx/default.conf`. Como o Nginx só lê a configuração ao iniciar, você precisará reiniciá-lo:
-    ```bash
+    bash
     docker-compose restart frontend
-    ```
+    
 
 * **Alterações nas Configurações dos Bancos de Dados:**
     Os arquivos de configuração (`postgresql.conf`, etc.) estão visíveis dentro das pastas `./postgres-data` e `./influxdb-data`. Após uma alteração, você deve reiniciar o serviço correspondente:
-    ```bash
+    bash
     docker-compose restart postgres
     # ou
     docker-compose restart influxdb
-    ```
+    
 
 ## © direitos autorais
 
