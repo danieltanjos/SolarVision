@@ -134,7 +134,7 @@ Este ambiente foi configurado para um desenvolvimento ágil.
     Os arquivos de configuração (`postgresql.conf`, etc.) estão visíveis dentro das pastas `./postgres-data` e `./influxdb-data`. Após uma alteração, você deve reiniciar o serviço correspondente:
     bash
     docker-compose restart postgres
-    # ou
+     ou
     docker-compose restart influxdb
     
 
