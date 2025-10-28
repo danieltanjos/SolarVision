@@ -47,22 +47,14 @@ Seu projeto deve estar organizado da seguinte maneira na pasta raiz (`/solarvisi
     * 📄 `(seus outros arquivos...)`
 * 📁 **nginx/**: Contém os arquivos de configuração do Nginx.
     * 📄 `default.conf`
-* 📁 **postgres-data/**: Pasta que irá armazenar os dados persistentes do PostgreSQL (deve ser criada vazia).
-* 📁 **influxdb-data/**: Pasta que irá armazenar os dados persistentes do InfluxDB (deve ser criada vazia).
+* 📁 **postgres-data/**: Pasta que armazena os dados persistentes do PostgreSQL.
+* 📁 **influxdb-data/**: Pasta que armazena os dados persistentes do InfluxDB.
 * 📄 **docker-compose.yml**: O arquivo principal que orquestra todos os serviços.
-
-### 2. Crie as Pastas de Dados
-Antes de iniciar os containers, você precisa criar as pastas vazias que serão mapeadas para os volumes dos bancos de dados.
-
-Na pasta raiz do projeto (`/solarvision/`), execute:
-bash
-mkdir postgres-data
-mkdir influxdb-data
 
 ---
 
-### 3. Ajuste de Permissões (Importante para Linux/macOS)
-Os bancos de dados são sensíveis a permissões de pasta. Se você estiver em um ambiente **Linux ou macOS**, você **deve** ajustar o "dono" (owner) das pastas que acabou de criar para que os containers tenham permissão de escrita.
+### 2. Ajuste de Permissões (Importante para Linux/macOS)
+Os bancos de dados são sensíveis a permissões de pasta. Se você estiver em um ambiente **Linux ou macOS**, você **deve** ajustar o "dono" (owner) das pastas para que os containers tenham permissão de escrita.
 
 bash
 # Define as permissões para a pasta do PostgreSQL
@@ -73,13 +65,13 @@ sudo chown -R 1000:1000 ./influxdb-data
 
 ---
 
-### 4. Construa e Inicie os Containers
+### 3. Construa e Inicie os Containers
 Com tudo configurado, execute o Docker Compose. Este comando irá construir a imagem do Nginx e baixar as imagens do Postgres e InfluxDB.
 
 bash
 docker-compose up -d
 
-### 5. Acesse os Serviços
+### 4. Acesse os Serviços
 Seu ambiente completo está no ar:
 
 🌐 Aplicação SolarVision: http://localhost:8080/ (Você pode acessar .../monitoramento.html ou qualquer outra página da sua pasta app)
@@ -100,7 +92,7 @@ Database: solarvision_db (Você pode usar um cliente como DBeaver ou pgAdmin par
 
 ---
 
-### Parte 6: Fluxo de Desenvolvimento
+### Parte 5: Fluxo de Desenvolvimento
 
 ---
 
