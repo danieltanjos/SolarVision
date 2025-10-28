@@ -1,0 +1,51 @@
+# Versão do Docker Compose
+version: '3.8'
+
+# Definição dos serviços (containers)
+services:
+
+  # 1. Serviço do Frontend (seu código HTML, CSS, JS)
+  frontend:
+    build: ./app
+    container_name: solarvision-frontend
+    ports:
+      - "8080:80"
+    volumes:
+      - ./app:/usr/share/nginx/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - postgres
+      - influxdb
+
+  # 2. Serviço do Banco de Dados PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: solarvision-postgres
+    environment:
+      POSTGRES_USER: solarvision_user
+      POSTGRES_PASSWORD: your_strong_password # <-- Troque por uma senha segura
+      POSTGRES_DB: solarvision_db
+    ports:
+      - "5432:5432"
+    volumes:
+      # ALTERADO: Mapeia para uma pasta local
+      - ./postgres-data:/var/lib/postgresql/data
+
+  # 3. Serviço do Banco de Dados InfluxDB
+  influxdb:
+    image: influxdb:2.7
+    container_name: solarvision-influxdb
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: solarvision_user
+      DOCKER_INFLUXDB_INIT_PASSWORD: your_strong_password # <-- Troque por uma senha segura
+      DOCKER_INFLUXDB_INIT_ORG: solarvision_org
+      DOCKER_INFLUXDB_INIT_BUCKET: solar_data
+    ports:
+      - "8086:8086"
+    volumes:
+      # ALTERADO: Mapeia para uma pasta local
+      - ./influxdb-data:/var/lib/influxdb2
+
+# A seção 'volumes:' no final foi removida,
+# pois não estamos mais usando volumes nomeados.
