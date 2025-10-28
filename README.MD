@@ -37,9 +37,19 @@ Antes de começar, garanta que você tenha as seguintes ferramentas instaladas e
 Siga estes passos para configurar e executar o ambiente de desenvolvimento local.
 
 ### 1. Estrutura de Pastas
-Certifique-se de que seu projeto está com esta estrutura:
-/solarvision/ ├── app/ # Contém todo o código do frontend (HTML, CSS, JS) │ ├── monitoramento/ │ ├── home/ │ ├── ... │ └── Dockerfile ├── nginx/ # Contém os arquivos de configuração do Nginx │ └── default.conf ├── postgres-data/ # (Vazio no início) Armazena os dados do PostgreSQL ├── influxdb-data/ # (Vazio no início) Armazena os dados do InfluxDB └── docker-compose.yml # Orquestrador principal dos serviços
 
+Seu projeto deve estar organizado da seguinte maneira na pasta raiz (`/solarvision/`):
+
+* 📁 **app/**: Contém todo o código-fonte do frontend (HTML, CSS, JS).
+    * 📁 **monitoramento/**
+    * 📁 **home/**
+    * 📄 `Dockerfile`
+    * 📄 `(seus outros arquivos...)`
+* 📁 **nginx/**: Contém os arquivos de configuração do Nginx.
+    * 📄 `default.conf`
+* 📁 **postgres-data/**: Pasta que irá armazenar os dados persistentes do PostgreSQL (deve ser criada vazia).
+* 📁 **influxdb-data/**: Pasta que irá armazenar os dados persistentes do InfluxDB (deve ser criada vazia).
+* 📄 **docker-compose.yml**: O arquivo principal que orquestra todos os serviços.
 
 ### 2. Crie as Pastas de Dados
 Antes de iniciar os containers, você precisa criar as pastas vazias que serão mapeadas para os volumes dos bancos de dados.
@@ -48,25 +58,36 @@ Na pasta raiz do projeto (`/solarvision/`), execute:
 ```bash
 mkdir postgres-data
 mkdir influxdb-data
-3. Ajuste de Permissões (Importante para Linux/macOS)
-Os bancos de dados são sensíveis a permissões de pasta. Se você estiver em um ambiente Linux ou macOS, você deve ajustar o "dono" (owner) das pastas que acabou de criar para que os containers tenham permissão de escrita.
 
-Bash
+---
 
+### Parte 4: Como Rodar (Permissões)
+
+Cole este bloco logo abaixo do anterior.
+
+```markdown
+### 3. Ajuste de Permissões (Importante para Linux/macOS)
+Os bancos de dados são sensíveis a permissões de pasta. Se você estiver em um ambiente **Linux ou macOS**, você **deve** ajustar o "dono" (owner) das pastas que acabou de criar para que os containers tenham permissão de escrita.
+
+```bash
 # Define as permissões para a pasta do PostgreSQL
 sudo chown -R 70:70 ./postgres-data
 
 # Define as permissões para a pasta do InfluxDB
 sudo chown -R 1000:1000 ./influxdb-data
-(Se você estiver no Windows com Docker Desktop, pode pular este passo, pois o Docker geralmente lida com as permissões automaticamente).
 
-4. Construa e Inicie os Containers
+---
+
+### Parte 5: Como Rodar (Iniciar e Acessar)
+
+Cole este bloco logo abaixo do anterior.
+
+```markdown
+### 4. Construa e Inicie os Containers
 Com tudo configurado, execute o Docker Compose. Este comando irá construir a imagem do Nginx e baixar as imagens do Postgres e InfluxDB.
 
-Bash
-
+```bash
 docker-compose up -d
-O -d (detached) executa os containers em segundo plano.
 
 5. Acesse os Serviços
 Seu ambiente completo está no ar:
@@ -87,28 +108,36 @@ Senha: your_strong_password
 
 Database: solarvision_db (Você pode usar um cliente como DBeaver ou pgAdmin para se conectar)
 
-6. Para Parar o Ambiente
-Para parar todos os containers relacionados a este projeto, execute:
+---
 
-Bash
+### Parte 6: Fluxo de Desenvolvimento
 
-docker-compose down
-⚡ Fluxo de Desenvolvimento (Edição em Tempo Real)
+Cole este bloco logo abaixo do anterior.
+
+```markdown
+---
+
+## ⚡ Fluxo de Desenvolvimento (Edição em Tempo Real)
+
 Este ambiente foi configurado para um desenvolvimento ágil.
 
-Alterações de Frontend (HTML, CSS, JS): Graças ao volume volumes: - ./app:/usr/share/nginx/html, você pode simplesmente editar qualquer arquivo na sua pasta app local, salvar e apenas atualizar a página do navegador (F5) para ver a mudança instantaneamente.
+* **Alterações de Frontend (HTML, CSS, JS):**
+    Graças ao volume `volumes: - ./app:/usr/share/nginx/html`, você pode simplesmente editar qualquer arquivo na sua pasta `app` local, salvar e **apenas atualizar a página do navegador (F5)** para ver a mudança instantaneamente.
 
-Alterações na Configuração do Nginx: Se você precisar alterar o domínio (ex: server_name) ou adicionar regras de redirecionamento, edite o arquivo ./nginx/default.conf. Como o Nginx só lê a configuração ao iniciar, você precisará reiniciá-lo:
+* **Alterações na Configuração do Nginx:**
+    Se você precisar alterar o domínio (ex: `server_name`) ou adicionar regras de redirecionamento, edite o arquivo `./nginx/default.conf`. Como o Nginx só lê a configuração ao iniciar, você precisará reiniciá-lo:
+    ```bash
+    docker-compose restart frontend
+    ```
 
-Bash
+* **Alterações nas Configurações dos Bancos de Dados:**
+    Os arquivos de configuração (`postgresql.conf`, etc.) estão visíveis dentro das pastas `./postgres-data` e `./influxdb-data`. Após uma alteração, você deve reiniciar o serviço correspondente:
+    ```bash
+    docker-compose restart postgres
+    # ou
+    docker-compose restart influxdb
+    ```
 
-docker-compose restart frontend
-Alterações nas Configurações dos Bancos de Dados: Os arquivos de configuração (postgresql.conf, etc.) estão visíveis dentro das pastas ./postgres-data e ./influxdb-data. Após uma alteração, você deve reiniciar o serviço correspondente:
+## © direitos autorais
 
-Bash
-
-docker-compose restart postgres
-# ou
-docker-compose restart influxdb
-© direitos autorais
 © 2025 Solar Vision. Todos os direitos reservados.
