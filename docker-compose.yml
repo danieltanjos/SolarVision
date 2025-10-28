@@ -6,34 +6,34 @@ services:
 
   # 1. Serviço do Frontend (seu código HTML, CSS, JS)
   frontend:
-    build: ./app  # Constrói a imagem a partir do Dockerfile na pasta ./app
+    build: ./app
     container_name: solarvision-frontend
     ports:
-      - "8080:80"  # Mapeia a porta 8080 do seu PC para a porta 80 do container
+      - "8080:80"
     volumes:
-      - ./app:/usr/share/nginx/html # Monta sua pasta 'app' local dentro do container
-                                     # Isso permite que você edite o código e veja as
-                                     # mudanças sem precisar reconstruir a imagem.
+      - ./app:/usr/share/nginx/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - postgres
       - influxdb
 
   # 2. Serviço do Banco de Dados PostgreSQL
   postgres:
-    image: postgres:16-alpine # Usa a imagem oficial e leve do PostgreSQL
+    image: postgres:16-alpine
     container_name: solarvision-postgres
     environment:
       POSTGRES_USER: solarvision_user
       POSTGRES_PASSWORD: your_strong_password # <-- Troque por uma senha segura
       POSTGRES_DB: solarvision_db
     ports:
-      - "5432:5432" # Expõe a porta do Postgres para que você possa conectar com um cliente (DBeaver, pgAdmin)
+      - "5432:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data # Volume para persistir os dados do Postgres
+      # ALTERADO: Mapeia para uma pasta local
+      - ./postgres-data:/var/lib/postgresql/data
 
   # 3. Serviço do Banco de Dados InfluxDB
   influxdb:
-    image: influxdb:2.7 # Usa a imagem oficial do InfluxDB v2
+    image: influxdb:2.7
     container_name: solarvision-influxdb
     environment:
       DOCKER_INFLUXDB_INIT_MODE: setup
@@ -42,11 +42,10 @@ services:
       DOCKER_INFLUXDB_INIT_ORG: solarvision_org
       DOCKER_INFLUXDB_INIT_BUCKET: solar_data
     ports:
-      - "8086:8086" # Expõe a porta da API e da UI do InfluxDB
+      - "8086:8086"
     volumes:
-      - influxdb-data:/var/lib/influxdb2 # Volume para persistir os dados do InfluxDB
+      # ALTERADO: Mapeia para uma pasta local
+      - ./influxdb-data:/var/lib/influxdb2
 
-# Definição dos volumes nomeados para persistência de dados
-volumes:
-  postgres-data:
-  influxdb-data:
+# A seção 'volumes:' no final foi removida,
+# pois não estamos mais usando volumes nomeados.
