@@ -61,7 +61,6 @@ mkdir influxdb-data
 
 ---
 
-markdown
 ### 3. Ajuste de Permissões (Importante para Linux/macOS)
 Os bancos de dados são sensíveis a permissões de pasta. Se você estiver em um ambiente **Linux ou macOS**, você **deve** ajustar o "dono" (owner) das pastas que acabou de criar para que os containers tenham permissão de escrita.
 
@@ -80,7 +79,7 @@ Com tudo configurado, execute o Docker Compose. Este comando irá construir a im
 bash
 docker-compose up -d
 
-5. Acesse os Serviços
+### 5. Acesse os Serviços
 Seu ambiente completo está no ar:
 
 🌐 Aplicação SolarVision: http://localhost:8080/ (Você pode acessar .../monitoramento.html ou qualquer outra página da sua pasta app)
