@@ -4,20 +4,39 @@ version: '3.8'
 # Definição dos serviços (containers)
 services:
 
-  # 1. Serviço do Frontend (seu código HTML, CSS, JS)
+  # 1. Serviço do Frontend (Nginx)
+  # Serve os arquivos HTML, CSS, JS e atua como proxy para o backend.
   frontend:
     build: ./app
     container_name: solarvision-frontend
     ports:
-      - "8080:80"
+      - "8080:80" # Mapeia a porta 8080 do seu PC para a porta 80 do Nginx
     volumes:
+      # Mapeia o código do frontend para edição em tempo real
       - ./app:/usr/share/nginx/html
+      # Mapeia o arquivo de configuração do Nginx
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    # Só inicia depois que o backend estiver pronto
+    depends_on:
+      - backend
+
+  # 2. Serviço do Backend (Node.js API)
+  # Contém a lógica de login/registro e se comunica com o banco.
+  backend:
+    build: ./backend
+    container_name: solarvision-backend
+    restart: always # Reinicia a API automaticamente se ela falhar
+    environment:
+      DB_USER: solarvision_user
+      DB_HOST: postgres # Usa o nome do serviço 'postgres' para conectar
+      DB_DATABASE: solarvision_db
+      DB_PASSWORD: your_strong_password # <-- Use a MESMA senha do postgres
+    # Só inicia depois que o banco de dados estiver pronto
     depends_on:
       - postgres
-      - influxdb
 
-  # 2. Serviço do Banco de Dados PostgreSQL
+  # 3. Serviço do Banco de Dados PostgreSQL
+  # Armazena os dados dos usuários.
   postgres:
     image: postgres:16-alpine
     container_name: solarvision-postgres
@@ -26,26 +45,28 @@ services:
       POSTGRES_PASSWORD: your_strong_password # <-- Troque por uma senha segura
       POSTGRES_DB: solarvision_db
     ports:
-      - "5432:5432"
+      # Expõe a porta do Postgres para clientes (DBeaver, etc.)
+      - "5432:5432" 
     volumes:
-      # ALTERADO: Mapeia para uma pasta local
+      # Mapeia os dados do banco para a pasta local
       - ./postgres-data:/var/lib/postgresql/data
+      # Mapeia o script de inicialização para criar as tabelas
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
 
-  # 3. Serviço do Banco de Dados InfluxDB
+  # 4. Serviço do Banco de Dados InfluxDB
+  # Armazena os dados de séries temporais (métricas do dashboard).
   influxdb:
     image: influxdb:2.7
     container_name: solarvision-influxdb
     environment:
       DOCKER_INFLUXDB_INIT_MODE: setup
       DOCKER_INFLUXDB_INIT_USERNAME: solarvision_user
-      DOCKER_INFLUXDB_INIT_PASSWORD: your_strong_password # <-- Troque por uma senha segura
+      DOCKER_INFLUXDB_INIT_PASSWORD: your_strong_password # <-- Use a MESMA senha
       DOCKER_INFLUXDB_INIT_ORG: solarvision_org
       DOCKER_INFLUXDB_INIT_BUCKET: solar_data
     ports:
+      # Expõe a porta da API e UI do InfluxDB
       - "8086:8086"
     volumes:
-      # ALTERADO: Mapeia para uma pasta local
+      # Mapeia os dados do banco para a pasta local
       - ./influxdb-data:/var/lib/influxdb2
-
-# A seção 'volumes:' no final foi removida,
-# pois não estamos mais usando volumes nomeados.

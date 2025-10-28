@@ -1,0 +1,21 @@
+# Arquivo .gitignore para o projeto SolarVision
+
+# --- Pastas de Dados dos Bancos de Dados ---
+# Ignora completamente as pastas de dados gerados.
+# Elas serão criadas localmente em cada máquina.
+/postgres-data/
+/influxdb-data/
+
+# --- Dependências (Exemplo se você usar Node.js no futuro) ---
+node_modules/
+npm-debug.log
+
+# --- Arquivos de Ambiente ---
+# Nunca salve senhas ou chaves de API no Git!
+.env
+.env.*
+!.env.example
+
+# --- Arquivos de Sistema Operacional ---
+.DS_Store
+Thumbs.db

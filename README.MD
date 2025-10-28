@@ -128,3 +128,7 @@ Este ambiente foi configurado para um desenvolvimento ágil.
 ## © direitos autorais
 
 © 2025 Solar Vision. Todos os direitos reservados.
+
+
+postgres-data
+influxdb-data

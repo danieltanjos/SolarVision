@@ -3,30 +3,27 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SolarVision - Login</title>
-
-  <!-- Bootstrap CSS -->
+  <title>Solar Vision - Login</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-  <!-- Bootstrap Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-
-  <!-- CSS externo -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="d-flex align-items-center justify-content-center vh-100">
 
   <div class="card shadow card-auth">
-    <h1 class="h4 text-center fw-bold mb-1">SolarVision</h1>
+    <h1 class="h4 text-center fw-bold mb-1">Solar Vision</h1>
     <p class="text-center text-muted mb-4">Bem-vindo de volta!</p>
 
-    <form onsubmit="window.location.href='home.html'; return false;">
+    <form id="login-form">
       <div class="mb-3">
-        <input type="text" class="form-control" placeholder="Nome">
+        <input type="email" id="email" class="form-control" placeholder="E-mail" required>
       </div>
       <div class="mb-3">
-        <input type="password" class="form-control" placeholder="Senha">
+        <input type="password" id="senha" class="form-control" placeholder="Senha" required>
       </div>
+
+      <div id="error-message" class="alert alert-danger d-none" role="alert"></div>
+
       <button type="submit" class="btn btn-primary w-100 mb-3" style="height:44px;">Login</button>
     </form>
     
@@ -34,21 +31,42 @@
       Não possui uma conta? 
       <a href="register.html" class="text-decoration-none">Registre-se</a>
     </p>
-
-    <div class="d-grid gap-2 mt-2">
-      <!-- Botão Google (usando PNG oficial do Google) -->
-      <button type="button" class="btn btn-google">
-        <img class="g-logo" src="https://developers.google.com/identity/images/g-logo.png" alt="Google G">
-        Continue com Google
-      </button>
-
-      <!-- Botão Apple (Bootstrap Icons) -->
-      <button type="button" class="btn btn-apple">
-        <i class="bi bi-apple" style="font-size:18px;"></i>
-        Continue com Apple
-      </button>
-    </div>
   </div>
 
+<script>
+    document.getElementById('login-form').addEventListener('submit', async function(event) {
+      event.preventDefault(); // Impede o envio tradicional
+
+      const email = document.getElementById('email').value;
+      const senha = document.getElementById('senha').value;
+      const errorMessage = document.getElementById('error-message');
+      
+      errorMessage.classList.add('d-none'); // Esconde o erro
+
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, senha })
+        });
+
+        if (response.ok) {
+          // Sucesso! Redireciona para a home
+          // --- ESTA É A LINHA CORRIGIDA ---
+          window.location.href = '/app/home/home.html';
+        } else {
+          // Erro (e-mail ou senha errados)
+          const data = await response.json();
+          errorMessage.textContent = data.message || 'E-mail ou senha incorretos.';
+          errorMessage.classList.remove('d-none');
+        }
+      } catch (error) {
+        errorMessage.textContent = 'Erro de conexão. Tente novamente.';
+        errorMessage.classList.remove('d-none');
+      }
+    });
+</script>
 </body>
 </html>
