@@ -61,10 +61,6 @@ mkdir influxdb-data
 
 ---
 
-### Parte 4: Como Rodar (Permissões)
-
-Cole este bloco logo abaixo do anterior.
-
 markdown
 ### 3. Ajuste de Permissões (Importante para Linux/macOS)
 Os bancos de dados são sensíveis a permissões de pasta. Se você estiver em um ambiente **Linux ou macOS**, você **deve** ajustar o "dono" (owner) das pastas que acabou de criar para que os containers tenham permissão de escrita.
@@ -78,11 +74,6 @@ sudo chown -R 1000:1000 ./influxdb-data
 
 ---
 
-### Parte 5: Como Rodar (Iniciar e Acessar)
-
-Cole este bloco logo abaixo do anterior.
-
-markdown
 ### 4. Construa e Inicie os Containers
 Com tudo configurado, execute o Docker Compose. Este comando irá construir a imagem do Nginx e baixar as imagens do Postgres e InfluxDB.
 
@@ -112,9 +103,6 @@ Database: solarvision_db (Você pode usar um cliente como DBeaver ou pgAdmin par
 
 ### Parte 6: Fluxo de Desenvolvimento
 
-Cole este bloco logo abaixo do anterior.
-
-markdown
 ---
 
 ## ⚡ Fluxo de Desenvolvimento (Edição em Tempo Real)
