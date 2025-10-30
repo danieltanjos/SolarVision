@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro - SolarVision</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .main-content {
+            padding-top: 2rem;
+            padding-bottom: 3rem;
+        }
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            padding: 2rem;
+        }
+        .btn-primary {
+            background-color: #3b7197;
+            border: none;
+            border-radius: 10px;
+            font-weight: 500;
+            padding: 10px 24px;
+        }
+        .btn-primary:hover {
+            background-color: #2a526b;
+        }
+        .form-label {
+            font-weight: 500;
+        }
+        .scroll-box {
+            max-height: 220px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+        }
+        .scroll-box::-webkit-scrollbar {
+            width: 6px;
+        }
+        .scroll-box::-webkit-scrollbar-thumb {
+            background-color: #3b7197;
+            border-radius: 6px;
+        }
+        .placa-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .placa-item:last-child {
+            border-bottom: none;
+        }
+        .footer-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #3b7197;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+        }
+        .footer-nav a {
+            color: #fff;
+            text-align: center;
+            text-decoration: none;
+            font-size: 1.3rem;
+        }
+        .footer-nav a:hover {
+            color: #dfe6eb;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="/home.html">
+                <i class="bi bi-sun"></i> SolarVision
+            </a>
+        </div>
+    </nav>
+
+    <!-- Conteúdo principal -->
+    <main class="container main-content">
+        <h2 class="text-center mb-4">Cadastro de Placas</h2>
+
+        <div class="card mx-auto" style="max-width: 650px;">
+            <form id="cadastroForm">
+                <!-- Alternância de modo -->
+                <div class="d-flex justify-content-center mb-4">
+                    <div class="btn-group" role="group" aria-label="Modo de Cadastro">
+                        <button type="button" class="btn btn-outline-primary active" id="modoPlacas">Placas</button>
+                        <button type="button" class="btn btn-outline-primary" id="modoGrupo">Grupo</button>
+                    </div>
+                </div>
+
+                <!-- Modo PLACAS -->
+                <div id="secaoPlacas">
+                    <div class="mb-3">
+                        <label for="identificacao" class="form-label">Identificação</label>
+                        <input type="text" id="identificacao" class="form-control" placeholder="Ex: Placa A1">
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="latitude" class="form-label">Latitude</label>
+                            <input type="text" id="latitude" class="form-control" placeholder="Lat: -27.59">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="longitude" class="form-label">Longitude</label>
+                            <input type="text" id="longitude" class="form-control" placeholder="Long: -48.54">
+                        </div>
+                    </div>
+                    <div class="mt-3 mb-3">
+                        <label for="grupo" class="form-label">Grupo</label>
+                        <select id="grupo" class="form-select">
+                            <option>Grupo Leste</option>
+                            <option>Grupo Oeste</option>
+                            <option>Grupo Norte</option>
+                            <option>Grupo Sul</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="observacoes" class="form-label">Observações</label>
+                        <textarea id="observacoes" class="form-control" rows="3" placeholder="Adicione observações opcionais..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Modo GRUPO -->
+                <div id="secaoGrupo" class="d-none">
+                    <div class="mb-3">
+                        <label for="identificacaoGrupo" class="form-label">Identificação</label>
+                        <input type="text" id="identificacaoGrupo" class="form-control" placeholder="Ex: Grupo Norte">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Placas:</label>
+                        <div class="scroll-box">
+                            <div class="placa-item"><span>Placa 01</span><input type="checkbox"></div>
+                            <div class="placa-item"><span>Placa 02</span><input type="checkbox" checked></div>
+                            <div class="placa-item"><span>Placa 03</span><input type="checkbox" checked></div>
+                            <div class="placa-item"><span>Placa 04</span><input type="checkbox"></div>
+                            <div class="placa-item"><span>Placa 05</span><input type="checkbox"></div>
+                            <div class="placa-item"><span>Placa 06</span><input type="checkbox"></div>
+                            <div class="placa-item"><span>Placa 07</span><input type="checkbox"></div>
+                            <div class="placa-item"><span>Placa 08</span><input type="checkbox"></div>
+                            <div class="placa-item"><span>Placa 09</span><input type="checkbox"></div>
+                            <div class="placa-item"><span>Placa 10</span><input type="checkbox"></div>
+                            <div class="placa-item"><span>Placa 11</span><input type="checkbox"></div>
+                            <div class="placa-item"><span>Placa 12</span><input type="checkbox"></div>
+                            <div class="placa-item"><span>Placa 13</span><input type="checkbox"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary">Salvar Cadastro</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <!-- Menu inferior -->
+    <div class="footer-nav">
+        <a href="home.html"><i class="bi bi-house-fill"></i></a>
+        <a href="limpeza.html"><i class="bi bi-droplet"></i></a>
+        <a href="/monitoramento/monitoramento.html"><i class="bi bi-lightning-charge-fill"></i></a>
+        <a href="cadastro.html"><i class="bi bi-grid-3x2"></i></a>
+        <a href="configuracoes.html"><i class="bi bi-person-circle"></i></a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Alternância entre os modos "Placas" e "Grupo"
+        const btnPlacas = document.getElementById('modoPlacas');
+        const btnGrupo = document.getElementById('modoGrupo');
+        const secaoPlacas = document.getElementById('secaoPlacas');
+        const secaoGrupo = document.getElementById('secaoGrupo');
+
+        btnPlacas.addEventListener('click', () => {
+            btnPlacas.classList.add('active');
+            btnGrupo.classList.remove('active');
+            secaoPlacas.classList.remove('d-none');
+            secaoGrupo.classList.add('d-none');
+        });
+
+        btnGrupo.addEventListener('click', () => {
+            btnGrupo.classList.add('active');
+            btnPlacas.classList.remove('active');
+            secaoGrupo.classList.remove('d-none');
+            secaoPlacas.classList.add('d-none');
+        });
+
+        // Simulação de envio
+        document.getElementById('cadastroForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            alert('Cadastro salvo com sucesso!');
+        });
+    </script>
+</body>
+</html>
