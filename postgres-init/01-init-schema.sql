@@ -24,6 +24,26 @@ CREATE TABLE IF NOT EXISTS usuarios (
     data_criacao TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ==================================
+-- TABELA DE LEITURAS DE ENERGIA (5min)
+-- ==================================
+CREATE TABLE IF NOT EXISTS leituras_energia (
+    id SERIAL PRIMARY KEY,
+
+    id_usuario INTEGER NOT NULL,
+    dia DATE NOT NULL,
+    hora TIME NOT NULL,
+
+    -- valor em watts medidos em intervalo de 5 minutos
+    wats5min NUMERIC(12,4) NOT NULL,
+
+    -- relacionamento
+    CONSTRAINT fk_usuario
+        FOREIGN KEY (id_usuario)
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE
+);
+
 -- Cria um índice na coluna de e-mail para logins mais rápidos
 CREATE INDEX IF NOT EXISTS idx_usuarios_email ON usuarios(email);
 
@@ -39,3 +59,5 @@ VALUES (
     'senha123'
 ) 
 ON CONFLICT (email) DO NOTHING;
+
+
