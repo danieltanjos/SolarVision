@@ -59,6 +59,35 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+app.get('/api/leituras', async (req, res) => {
+    try {
+        // Busca as últimas 100 leituras ordenadas por data e hora
+        // (Limitamos a 100 para não travar o navegador se tiver muitos dados)
+        const query = 'SELECT data, hora, wats5min FROM leituras_energia ORDER BY data ASC, hora ASC LIMIT 200';
+        const result = await pool.query(query);
+        
+        // Formata os dados para o ApexCharts entender
+        // Ele precisa de um array: [{ x: 'data hora', y: valor }]
+        const dadosFormatados = result.rows.map(row => {
+            // Combina data e hora para criar um timestamp ISO
+            // O Postgres retorna a data como objeto Date e hora como string
+            const dataStr = row.data.toISOString().split('T')[0]; // Pega YYYY-MM-DD
+            const dataHora = `${dataStr}T${row.hora}`; // Formato ISO
+            
+            return {
+                x: new Date(dataHora).getTime(), // Converte para timestamp numérico
+                y: parseFloat(row.wats5min)
+            };
+        });
+
+        res.json(dadosFormatados);
+
+    } catch (error) {
+        console.error('Erro ao buscar leituras:', error);
+        res.status(500).json({ message: 'Erro interno ao buscar dados.' });
+    }
+});
+
 app.listen(port, () => {
     console.log(`Backend SolarVision rodando na porta ${port}`);
 });

@@ -1,73 +1,54 @@
 import pandas as pd
 import psycopg2
-from psycopg2 import sql
 
-# ============================================
-# CONFIGURAÇÃO DO BANCO DE DADOS
-# ============================================
+# --- CONFIGURAÇÃO ---
+# Certifique-se que o banco está rodando (docker-compose up)
 conn = psycopg2.connect(
-    host="localhost",
+    host="127.0.0.1",
     port=5432,
     database="solarvision_db",
     user="solarvision_user",
     password="your_strong_password"
 )
-
 cursor = conn.cursor()
 
-# ============================================
-# LER O CSV
-# ============================================
-csv_path = "seuarquivo.csv"   # coloque aqui o nome do arquivo CSV
-df = pd.read_csv(csv_path)
+# Nome do arquivo (garanta que ele está na mesma pasta do script)
+csv_path = "Dados_Tratados_CDTE-PSI.csv"
 
-# --------------------------------------------
-# VERIFICAR SE AS COLUNAS NECESSÁRIAS EXISTEM
-# --------------------------------------------
-colunas_necessarias = ['dia', 'hora', 'wats5min']
+try:
+    print("Lendo CSV...")
+    # Tenta ler com vírgula (padrão do seu exemplo)
+    df = pd.read_csv(csv_path)
+    
+    # Garante que os nomes das colunas estão limpos
+    df.columns = df.columns.str.strip().str.lower()
+    print(f"Colunas encontradas: {df.columns.tolist()}")
 
-for col in colunas_necessarias:
-    if col not in df.columns:
-        raise Exception(f"ERRO: a coluna '{col}' não foi encontrada no CSV.")
+    # Query de inserção
+    insert_query = """
+        INSERT INTO leituras_energia (id_usuario, data, hora, wats5min)
+        VALUES (%s, %s, %s, %s)
+    """
 
-# ============================================
-# ID DO USUÁRIO PARA INSERÇÃO NO BANCO
-# ============================================
-ID_USUARIO = 1   # Troque conforme necessário
+    print("Inserindo dados no Banco...")
+    count = 0
+    for index, row in df.iterrows():
+        cursor.execute(insert_query, (
+            1,              # ID fixo do usuário
+            row['dia'],     # Coluna 'dia' do CSV
+            row['hora'],    # Coluna 'hora' do CSV
+            row['wats5min'] # Coluna 'wats5min' do CSV
+        ))
+        count += 1
+        if count % 100 == 0: print(f"{count}...", end="\r")
 
-# ============================================
-# QUERY DE INSERÇÃO
-# ============================================
-query = """
-    INSERT INTO leituras_energia (id_usuario, data, hora, wats5min)
-    VALUES (%s, %s, %s, %s)
-"""
+    conn.commit()
+    print(f"\n✅ Sucesso! {count} registros inseridos.")
 
-# ============================================
-# INSERÇÃO DOS DADOS
-# ============================================
-total = 0
+except Exception as e:
+    conn.rollback()
+    print(f"\n❌ Erro: {e}")
 
-for index, row in df.iterrows():
-
-    data = row['dia']
-    hora = row['hora']
-    wats = float(row['wats5min'])   # garante número com ponto
-
-    cursor.execute(query, (
-        ID_USUARIO,
-        data,
-        hora,
-        wats
-    ))
-
-    total += 1
-
-# ============================================
-# FINALIZAÇÃO
-# ============================================
-conn.commit()
-cursor.close()
-conn.close()
-
-print(f"✔ Inserção concluída com sucesso! {total} linhas inseridas.")
+finally:
+    cursor.close()
+    conn.close()
