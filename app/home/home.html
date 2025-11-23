@@ -4,134 +4,101 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Olá, Arthur!</title>
+
+    <!-- Bootstrap / Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <style>
-        /* Estilos personalizados para combinar com o protótipo */
-        body {
-            background-color: #f8f9fa; /* Um cinza claro de fundo */
-        }
-        .main-content {
-            padding-top: 2rem;
-            padding-bottom: 2rem;
-        }
-        .card {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            transition: transform 0.2s ease-in-out;
-        }
-        .card:hover {
-            transform: translateY(-5px);
-        }
-        .kpi-card .display-4 {
-            font-weight: 700;
-            color: #212529;
-        }
-        .action-card {
-            background-color: #3b7197; /* Cor azul do protótipo */
-            color: white;
-            text-decoration: none;
-        }
-        .action-card:hover {
-            background-color: #2a526b;
-            color: white;
-        }
-        .action-card i {
-            font-size: 3rem;
-        }
-        .action-card-title {
-            margin-top: 1rem;
-            font-weight: 500;
-        }
-        /* Placeholder para os gráficos */
-        .chart-placeholder {
-            height: 60px;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 40"><path d="M 0 30 L 10 20 L 20 25 L 30 15 L 40 18 L 50 10 L 60 15 L 70 25 L 80 22 L 90 30 L 100 25" fill="none" stroke="%233b7197" stroke-width="2"/></svg>');
-            background-repeat: no-repeat;
-            background-size: contain;
-            background-position: center;
-            opacity: 0.5;
-        }
-        .bar-chart-placeholder {
-             height: 60px;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 40"><rect x="5" y="25" width="10" height="15" fill="%23d3d3d3"/><rect x="20" y="20" width="10" height="20" fill="%23d3d3d3"/><rect x="35" y="15" width="10" height="25" fill="%233b7197"/><rect x="50" y="28" width="10" height="12" fill="%23d3d3d3"/><rect x="65" y="30" width="10" height="10" fill="%23d3d3d3"/></svg>');
-            background-repeat: no-repeat;
-            background-size: contain;
-            background-position: center;
-        }
 
-    </style>
+    <!-- Seu CSS -->
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
+<div class="page-wrapper">
+
+    <!-- NAVBAR -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
         <div class="container">
-            <a class="navbar-brand" href="#">
-                <i class="bi bi-sun"></i> SolarVision
+            <a class="navbar-brand d-flex align-items-center" href="home.html">
+                <img src="img/logo.png" alt="Logo" class="navbar-logo me-2">
+                SolarVision
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarNav" aria-controls="navbarNav"
+                aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
+
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="#">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/app/monitoramento/monitoramento.html">Monitoramento</a>
-                    </li>
+
+                    <li class="nav-item"><a class="nav-link active" href="home.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="limpeza.html">Limpeza</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/app/monitoramento/monitoramento.html">Monitoramento</a></li>
+                    <li class="nav-item"><a class="nav-link" href="cadastro.html">Cadastro</a></li>
+
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown"
+                           role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-person-circle me-1"></i> Arthur
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="#">Meu Perfil</a></li>
-                            <li><a class="dropdown-item" href="#">Configurações</a></li>
+                            <li><a class="dropdown-item" href="configuracoes.html">Meu Perfil</a></li>
+                            <li><a class="dropdown-item" href="configuracoes.html">Configurações</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#">Sair</a></li>
+                            <li><a class="dropdown-item" href="/app/login.html">Sair</a></li>
                         </ul>
                     </li>
+
                 </ul>
             </div>
         </div>
     </nav>
 
+    <!-- CONTEÚDO -->
     <main class="container main-content">
+
         <h1 class="mb-4">Olá, Arthur!</h1>
 
+        <!-- KPIs -->
         <h2 class="h4 text-muted mb-3">Minhas Placas</h2>
-        <div class="row">
-            <div class="col-lg-6 mb-4">
+
+        <div class="row g-3">
+            <!-- CARD 1 -->
+            <div class="col-lg-6 col-md-6 col-sm-12">
                 <div class="card p-3 h-100">
                     <div class="card-body d-flex justify-content-between align-items-center">
                         <div>
                             <span class="text-muted">Eficiência ao longo do tempo</span>
                             <p class="display-4">80%</p>
                         </div>
-                        <div class="w-50 bar-chart-placeholder">
-                            </div>
+                        <div class="w-50 bar-chart-placeholder"></div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-lg-6 mb-4">
+            <!-- CARD 2 -->
+            <div class="col-lg-6 col-md-6 col-sm-12">
                 <div class="card p-3 h-100">
                     <div class="card-body d-flex justify-content-between align-items-center">
                         <div>
                             <span class="text-muted">Nível de Sujeira médio</span>
                             <p class="display-4">1mm</p>
                         </div>
-                        <div class="w-50 chart-placeholder">
-                             </div>
+                        <div class="w-50 chart-placeholder"></div>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- AÇÕES -->
         <h2 class="h4 text-muted mb-3 mt-4">Para você</h2>
-        <div class="row">
-            <div class="col-md-3 mb-3">
+
+        <div class="row g-3">
+
+            <div class="col-lg-3 col-md-6 col-sm-12">
                 <a href="limpeza.html" class="card action-card p-4 text-center h-100">
                     <div class="card-body">
                         <i class="bi bi-droplet"></i>
@@ -140,8 +107,9 @@
                 </a>
             </div>
 
-            <div class="col-md-3 mb-3">
-                <a href="#" class="card action-card p-4 text-center h-100">
+            <div class="col-lg-3 col-md-6 col-sm-12">
+                <a href="/app/monitoramento/monitoramento.html"
+                   class="card action-card p-4 text-center h-100">
                     <div class="card-body">
                         <i class="bi bi-lightning-charge-fill"></i>
                         <div class="action-card-title">Monitoramento</div>
@@ -149,7 +117,7 @@
                 </a>
             </div>
 
-            <div class="col-md-3 mb-3">
+            <div class="col-lg-3 col-md-6 col-sm-12">
                 <a href="cadastro.html" class="card action-card p-4 text-center h-100">
                     <div class="card-body">
                         <i class="bi bi-grid-3x2"></i>
@@ -158,17 +126,28 @@
                 </a>
             </div>
 
-            <div class="col-md-3 mb-3">
+            <div class="col-lg-3 col-md-6 col-sm-12">
                 <a href="configuracoes.html" class="card action-card p-4 text-center h-100">
                     <div class="card-body">
                         <i class="bi bi-person-gear"></i>
-                        <div class="action-card-title">Perfil Configurações</div>
+                        <div class="action-card-title">Perfil / Configurações</div>
                     </div>
                 </a>
             </div>
+
         </div>
+
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- FOOTER -->
+    <footer class="footer text-center py-3 mt-4">
+        © 2025 SolarVision — Todos os direitos reservados.
+    </footer>
+
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>

@@ -4,212 +4,217 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Limpeza - SolarVision</title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        .btn-limpeza {
-            background-color: #3b7197;
-            color: #fff;
-            border-radius: 10px;
-            padding: 12px 24px;
-            font-weight: 500;
-        }
-        .btn-limpeza:hover {
-            background-color: #2a526b;
-            color: #fff;
-        }
-        .calendar {
-            background-color: #fff;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            padding: 1.5rem;
-        }
-        .calendar button {
-            border: none;
-            background: none;
-            padding: 8px;
-            border-radius: 8px;
-            width: 36px;
-            height: 36px;
-        }
-        .calendar button:hover {
-            background-color: #e9ecef;
-        }
-        .calendar .selected {
-            background-color: #3b7197;
-            color: #fff;
-        }
-        .calendar .inactive {
-            color: #ccc;
-        }
-        .footer-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background-color: #3b7197;
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 0;
-        }
-        .footer-nav a {
-            color: #fff;
-            text-align: center;
-            text-decoration: none;
-            font-size: 1.3rem;
-        }
-        .footer-nav a:hover {
-            color: #dfe6eb;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-    <!-- Navbar -->
-    <nav class="navbar navbar-light bg-white shadow-sm">
+<div class="page-wrapper">
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
         <div class="container">
-            <a class="navbar-brand" href="home.html">
-                <i class="bi bi-sun"></i> SolarVision
+            <a class="navbar-brand d-flex align-items-center" href="home.html">
+                <img src="img/logo.png" alt="Logo" class="navbar-logo me-2">
+                SolarVision
             </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link active" href="home.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="limpeza.html">Limpeza</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/app/monitoramento/monitoramento.html">Monitoramento</a></li>
+                    <li class="nav-item"><a class="nav-link" href="cadastro.html">Cadastro</a></li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle me-1"></i> Arthur
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="configuracoes.html">Meu Perfil</a></li>
+                            <li><a class="dropdown-item" href="configuracoes.html">Configurações</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/app/login.html">Sair</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
         </div>
     </nav>
 
-    <!-- Conteúdo principal -->
-    <main class="container my-5 text-center">
-        <h2 class="mb-4">Limpeza</h2>
+    <!-- CONTEÚDO -->
+    <main class="container my-5">
 
-        <button class="btn btn-limpeza mb-4">Iniciar limpeza agora</button>
+        <h2 class="text-center mb-4">Limpeza</h2>
 
-        <div class="mb-4">
-            <label for="nivelSujeira" class="form-label fw-semibold">Nível de sujeira para limpeza automática</label>
-            <select id="nivelSujeira" class="form-select w-50 mx-auto">
-                <option>0,5 mm</option>
-                <option>1,0 mm</option>
-                <option>1,5 mm</option>
-                <option>2,0 mm</option>
-            </select>
-        </div>
-
-        <div class="mb-4">
-            <label for="nivelEficiencia" class="form-label fw-semibold">Eficiência mínima diária para limpeza automática</label>
-            <select id="nivelEficiencia" class="form-select w-50 mx-auto">
-                <option>5,0 kW</option>
-                <option>7,5 kW</option>
-                <option>10,0 kW</option>
-                <option>12,5 kW</option>
-            </select>
-        </div>
-
-        <!-- Calendário funcional -->
-        <div class="calendar mx-auto w-75 mt-4">
-            <h5 class="fw-semibold mb-3">Agendamento de limpeza</h5>
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <button id="prevMonth" class="btn btn-link text-dark"><i class="bi bi-chevron-left"></i></button>
-                <span id="monthYear" class="fw-bold"></span>
-                <button id="nextMonth" class="btn btn-link text-dark"><i class="bi bi-chevron-right"></i></button>
+        <!-- BOTÃO PRINCIPAL -->
+        <div class="row justify-content-center">
+            <div class="col-lg-4 col-md-6 col-sm-12">
+                <button class="btn btn-limpeza w-100 mb-4" id="btnLimpeza">
+                    Iniciar limpeza agora
+                </button>
             </div>
-            <table class="table table-borderless text-center mb-0">
-                <thead>
-                    <tr class="text-muted">
-                        <th>DOM</th><th>SEG</th><th>TER</th><th>QUA</th><th>QUI</th><th>SEX</th><th>SAB</th>
-                    </tr>
-                </thead>
-                <tbody id="calendarBody"></tbody>
-            </table>
         </div>
+
+        <!-- SEÇÃO DE SELETORES -->
+        <div class="row justify-content-center g-4">
+
+            <div class="col-lg-4 col-md-6 col-sm-12">
+                <label class="form-label fw-semibold">Nível de sujeira para limpeza automática</label>
+                <select id="nivelSujeira" class="form-select">
+                    <option>0,5 mm</option>
+                    <option>1,0 mm</option>
+                    <option>1,5 mm</option>
+                    <option>2,0 mm</option>
+                </select>
+            </div>
+
+            <div class="col-lg-4 col-md-6 col-sm-12">
+                <label class="form-label fw-semibold">Eficiência mínima diária</label>
+                <select id="nivelEficiencia" class="form-select">
+                    <option>5,0 kW</option>
+                    <option>7,5 kW</option>
+                    <option>10,0 kW</option>
+                    <option>12,5 kW</option>
+                </select>
+            </div>
+
+        </div>
+
+        <!-- CALENDÁRIO -->
+        <div class="row justify-content-center mt-5">
+            <div class="col-lg-8 col-md-10 col-sm-12">
+
+                <div class="calendar w-100 p-3 rounded shadow-sm">
+                    <h5 class="fw-semibold text-center mb-3">Agendamento de limpeza</h5>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <button id="prevMonth" class="btn btn-link text-dark"><i class="bi bi-chevron-left"></i></button>
+                        <span id="monthYear" class="fw-bold"></span>
+                        <button id="nextMonth" class="btn btn-link text-dark"><i class="bi bi-chevron-right"></i></button>
+                    </div>
+
+                    <table class="table table-borderless text-center mb-0">
+                        <thead>
+                            <tr class="text-muted">
+                                <th>DOM</th><th>SEG</th><th>TER</th>
+                                <th>QUA</th><th>QUI</th><th>SEX</th><th>SAB</th>
+                            </tr>
+                        </thead>
+                        <tbody id="calendarBody"></tbody>
+                    </table>
+
+                </div>
+
+            </div>
+        </div>
+
     </main>
 
-    <!-- Menu inferior -->
-    <div class="footer-nav">
-        <a href="home.html"><i class="bi bi-house-fill"></i></a>
-        <a href="limpeza.html"><i class="bi bi-droplet"></i></a>
-        <a href="/monitoramento/monitoramento.html"><i class="bi bi-lightning-charge-fill"></i></a>
-        <a href="cadastro.html"><i class="bi bi-grid-3x2"></i></a>
-        <a href="configuracoes.html"><i class="bi bi-person-circle"></i></a>
-    </div>
+    <footer class="footer bg-light text-center py-3">
+        © 2025 SolarVision — Todos os direitos reservados.
+    </footer>
 
-    <script>
-        // ==== Calendário Funcional ====
-        const calendarBody = document.getElementById("calendarBody");
-        const monthYear = document.getElementById("monthYear");
-        const prevMonth = document.getElementById("prevMonth");
-        const nextMonth = document.getElementById("nextMonth");
+</div>
 
-        let today = new Date();
-        let currentMonth = today.getMonth();
-        let currentYear = today.getFullYear();
-        let selectedDay = null;
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-        const months = [
-            "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-            "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-        ];
 
-        function renderCalendar(month, year) {
-            calendarBody.innerHTML = "";
-            monthYear.textContent = `${months[month]} ${year}`;
+<!-- Calendário Funcional -->
+<script>
+    const calendarBody = document.getElementById("calendarBody");
+    const monthYear = document.getElementById("monthYear");
+    const prevMonth = document.getElementById("prevMonth");
+    const nextMonth = document.getElementById("nextMonth");
 
-            const firstDay = new Date(year, month).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const prevDays = new Date(year, month, 0).getDate();
+    let today = new Date();
+    let currentMonth = today.getMonth();
+    let currentYear = today.getFullYear();
+    let selectedDay = null;
 
-            let date = 1;
-            for (let i = 0; i < 6; i++) {
-                const row = document.createElement("tr");
-                for (let j = 0; j < 7; j++) {
-                    const cell = document.createElement("td");
-                    const btn = document.createElement("button");
+    const months = [
+        "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+        "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+    ];
 
-                    if (i === 0 && j < firstDay) {
-                        btn.textContent = prevDays - firstDay + j + 1;
-                        btn.classList.add("inactive");
-                    } else if (date > daysInMonth) {
-                        btn.textContent = date - daysInMonth;
-                        btn.classList.add("inactive");
-                        date++;
-                    } else {
-                        btn.textContent = date;
-                        btn.addEventListener("click", () => selectDate(btn, date, month, year));
-                        date++;
-                    }
-                    cell.appendChild(btn);
-                    row.appendChild(cell);
+    function renderCalendar(month, year) {
+        calendarBody.innerHTML = "";
+        monthYear.textContent = `${months[month]} ${year}`;
+
+        const firstDay = new Date(year, month).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const prevDays = new Date(year, month, 0).getDate();
+
+        let date = 1;
+        for (let i = 0; i < 6; i++) {
+            const row = document.createElement("tr");
+            for (let j = 0; j < 7; j++) {
+                const cell = document.createElement("td");
+                const btn = document.createElement("button");
+
+                if (i === 0 && j < firstDay) {
+                    btn.textContent = prevDays - firstDay + j + 1;
+                    btn.classList.add("inactive");
+                } else if (date > daysInMonth) {
+                    btn.textContent = date - daysInMonth;
+                    btn.classList.add("inactive");
+                    date++;
+                } else {
+                    btn.textContent = date;
+                    btn.addEventListener("click", () => selectDate(btn, date, month, year));
+                    date++;
                 }
-                calendarBody.appendChild(row);
-                if (date > daysInMonth) break;
+                cell.appendChild(btn);
+                row.appendChild(cell);
             }
+            calendarBody.appendChild(row);
+            if (date > daysInMonth) break;
         }
+    }
 
-        function selectDate(button, day, month, year) {
-            if (selectedDay) selectedDay.classList.remove("selected");
-            button.classList.add("selected");
-            selectedDay = button;
-            const selectedDate = new Date(year, month, day);
-            alert(`Agendamento selecionado para ${selectedDate.toLocaleDateString("pt-BR")}`);
+    function selectDate(button, day, month, year) {
+        if (selectedDay) selectedDay.classList.remove("selected");
+        button.classList.add("selected");
+        selectedDay = button;
+        const selectedDate = new Date(year, month, day);
+        alert(`Agendamento selecionado para ${selectedDate.toLocaleDateString("pt-BR")}`);
+    }
+
+    prevMonth.addEventListener("click", () => {
+        currentMonth--;
+        if (currentMonth < 0) {
+            currentMonth = 11;
+            currentYear--;
         }
-
-        prevMonth.addEventListener("click", () => {
-            currentMonth--;
-            if (currentMonth < 0) {
-                currentMonth = 11;
-                currentYear--;
-            }
-            renderCalendar(currentMonth, currentYear);
-        });
-
-        nextMonth.addEventListener("click", () => {
-            currentMonth++;
-            if (currentMonth > 11) {
-                currentMonth = 0;
-                currentYear++;
-            }
-            renderCalendar(currentMonth, currentYear);
-        });
-
         renderCalendar(currentMonth, currentYear);
-    </script>
+    });
+
+    nextMonth.addEventListener("click", () => {
+        currentMonth++;
+        if (currentMonth > 11) {
+            currentMonth = 0;
+            currentYear++;
+        }
+        renderCalendar(currentMonth, currentYear);
+    });
+
+    renderCalendar(currentMonth, currentYear);
+</script>
+
+<script>
+    document.getElementById("btnLimpeza").addEventListener("click", function () {
+        alert("Limpeza realizada com sucesso!");
+    });
+</script>
+
+
 </body>
 </html>

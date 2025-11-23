@@ -2,105 +2,154 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Monitoramento - SolarVision</title>
-    
+
+    <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- ApexCharts -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
-    <style>
-        body { background-color: #f8f9fa; }
-        .chart-card { min-height: 400px; }
-    </style>
+    <link rel="stylesheet" href="/app/home/style.css">
 </head>
 <body>
 
-    <nav class="navbar navbar-light bg-white shadow-sm mb-4">
+<div class="page-wrapper d-flex flex-column min-vh-100">
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
         <div class="container">
-            <span class="navbar-brand mb-0 h1">SolarVision Monitor</span>
-            <a href="../home/home.html" class="btn btn-outline-primary btn-sm">Voltar</a>
+            
+            <a class="navbar-brand d-flex align-items-center" href="/app/home/home.html">
+                <img src="/app/home/img/logo.png" alt="Logo" class="navbar-logo me-2">
+                SolarVision
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+
+                    <li class="nav-item"><a class="nav-link" href="/app/home/home.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/app/home/limpeza.html">Limpeza</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/app/monitoramento/monitoramento.html">Monitoramento</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/app/home/cadastro.html">Cadastro</a></li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle me-1"></i> Arthur
+                        </a>
+
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="/app/home/configuracoes.html">Meu Perfil</a></li>
+                            <li><a class="dropdown-item" href="/app/home/configuracoes.html">Configurações</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/app/login.html">Sair</a></li>
+                        </ul>
+                    </li>
+
+                </ul>
+            </div>
         </div>
     </nav>
 
-    <main class="container">
-        <h2 class="mb-4 text-secondary">Geração de Energia (5 min)</h2>
+    <!-- CONTEÚDO -->
+    <main class="container my-4 flex-grow-1">
 
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <h5 class="card-title">Produção em Tempo Real</h5>
-                <p class="card-text text-muted">Visualização da potência gerada (Watts).</p>
-                
-                <div id="graficoEnergia" class="chart-card">
-                    <div class="d-flex justify-content-center align-items-center h-100">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Carregando...</span>
+        <h2 class="mb-4 text-secondary text-center text-md-start">Geração de Energia (5 min)</h2>
+
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8">
+
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+
+                        <h5 class="card-title">Produção em Tempo Real</h5>
+                        <p class="card-text text-muted">Visualização da potência gerada (Watts).</p>
+
+                        <div id="graficoEnergia" style="height: 350px;">
+                            <div class="d-flex justify-content-center align-items-center h-100">
+                                <div class="spinner-border text-primary"></div>
+                            </div>
                         </div>
+
                     </div>
                 </div>
+
             </div>
         </div>
+
     </main>
 
-    <script>
-        async function carregarGrafico() {
-            try {
-                // 1. Busca os dados da nossa API
-                const response = await fetch('/api/leituras');
-                const dados = await response.json();
+    <!-- FOOTER -->
+    <footer class="footer bg-light text-center py-2 small mt-auto">
+        © 2025 SolarVision — Todos os direitos reservados.
+    </footer>
+</div>
 
-                // Se não tiver dados, avisa
-                if (dados.length === 0) {
-                    document.getElementById('graficoEnergia').innerHTML = '<p class="text-center mt-5">Nenhum dado encontrado.</p>';
-                    return;
-                }
 
-                // 2. Configuração do Gráfico (ApexCharts)
-                const options = {
-                    series: [{
-                        name: 'Potência (Watts)',
-                        data: dados // A API já devolve no formato {x, y}
-                    }],
-                    chart: {
-                        type: 'area', // Tipo área fica bonito para energia
-                        height: 350,
-                        zoom: { enabled: false }
-                    },
-                    dataLabels: { enabled: false },
-                    stroke: { curve: 'smooth', width: 2 },
-                    xaxis: {
-                        type: 'datetime', // Eixo X inteligente para datas
-                        labels: { datetimeFormatter: { hour: 'HH:mm' } }
-                    },
-                    yaxis: {
-                        title: { text: 'Watts' }
-                    },
-                    colors: ['#ffc107'], // Cor amarela (sol)
-                    fill: {
-                        type: 'gradient',
-                        gradient: {
-                            shadeIntensity: 1,
-                            opacityFrom: 0.7,
-                            opacityTo: 0.9,
-                            stops: [0, 90, 100]
-                        }
-                    }
-                };
+<!-- SCRIPTS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-                // 3. Renderiza o gráfico
-                // Limpa o loading
-                document.getElementById('graficoEnergia').innerHTML = '';
-                const chart = new ApexCharts(document.querySelector("#graficoEnergia"), options);
-                chart.render();
+<script>
+async function carregarGrafico() {
+    try {
+        const response = await fetch('/api/leituras');
+        const dados = await response.json();
 
-            } catch (error) {
-                console.error(error);
-                document.getElementById('graficoEnergia').innerHTML = '<p class="text-danger text-center">Erro ao carregar gráfico.</p>';
-            }
+        if (dados.length === 0) {
+            document.getElementById('graficoEnergia').innerHTML =
+                '<p class="text-center mt-5">Nenhum dado encontrado.</p>';
+            return;
         }
 
-        // Chama a função ao carregar a página
-        document.addEventListener('DOMContentLoaded', carregarGrafico);
-    </script>
+        const options = {
+            series: [{
+                name: 'Potência (Watts)',
+                data: dados
+            }],
+            chart: {
+                type: 'area',
+                height: 350,
+                zoom: { enabled: false }
+            },
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: 2 },
+            xaxis: {
+                type: 'datetime',
+                labels: { datetimeFormatter: { hour: 'HH:mm' } }
+            },
+            yaxis: {
+                title: { text: 'Watts' }
+            },
+            colors: ['#ffc107'],
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.7,
+                    opacityTo: 0.9,
+                    stops: [0, 90, 100]
+                }
+            }
+        };
+
+        document.getElementById('graficoEnergia').innerHTML = '';
+        const chart = new ApexCharts(document.querySelector("#graficoEnergia"), options);
+        chart.render();
+
+    } catch (error) {
+        document.getElementById('graficoEnergia').innerHTML =
+            '<p class="text-danger text-center">Erro ao carregar gráfico.</p>';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', carregarGrafico);
+</script>
 
 </body>
 </html>

@@ -1,0 +1,213 @@
+/* =========================================================
+   BASE DO LAYOUT
+   ========================================================= */
+html, body {
+    height: 100%;
+    margin: 0;
+    background-color: #f8f9fa;
+    font-family: "Roboto", sans-serif;
+}
+
+/* Estrutura principal para fixar o footer no final */
+.page-wrapper {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-content, .page-content {
+    flex: 1;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+/* Footer padronizado */
+.footer {
+    padding: 4px 0;
+    font-size: 0.75rem;
+    border-top: 1px solid #e0e0e0;
+    background-color: #f8f9fa;
+    text-align: center;
+    color: #666;
+}
+
+/* Logo do navbar */
+.navbar-logo {
+    height: 60px;
+    width: auto;
+}
+
+/* =========================================================
+   COMPONENTES GERAIS
+   ========================================================= */
+
+/* Cards */
+.card {
+    border: none;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    transition: transform 0.2s ease-in-out;
+}
+.card:hover {
+    transform: translateY(-5px);
+}
+
+/* Botões */
+.btn-primary,
+.btn-save,
+.btn-limpeza {
+    background-color: #3b7197;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 24px;
+    font-weight: 500;
+    color: #fff;
+}
+.btn-primary:hover,
+.btn-save:hover,
+.btn-limpeza:hover {
+    background-color: #2a526b;
+}
+
+/* Labels */
+.form-label {
+    font-weight: 500;
+}
+
+/* Switches */
+.switch {
+    transform: scale(1.2);
+}
+
+/* Ações rápidas da Home */
+.action-card {
+    background-color: #3b7197;
+    color: white;
+    text-decoration: none;
+}
+.action-card:hover {
+    background-color: #2a526b;
+}
+.action-card i {
+    font-size: 3rem;
+}
+.action-card-title {
+    margin-top: 1rem;
+    font-weight: 500;
+}
+
+/* =========================================================
+   CALENDÁRIO
+   ========================================================= */
+.calendar {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    padding: 1.5rem;
+}
+.calendar button {
+    border: none;
+    background: none;
+    padding: 8px;
+    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+}
+.calendar button:hover {
+    background-color: #e9ecef;
+}
+.calendar .selected {
+    background-color: #3b7197;
+    color: #fff;
+}
+.calendar .inactive {
+    color: #ccc;
+}
+
+/* =========================================================
+   DASHBOARD & KPI
+   ========================================================= */
+.kpi-title {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #6c757d;
+}
+
+.kpi-body {
+    display: flex;
+    align-items: center;
+    margin-top: auto;
+}
+
+.kpi-icon {
+    font-size: 2.5rem;
+    margin-right: 15px;
+    color: #0d6efd;
+}
+
+.kpi-value {
+    font-size: 2.8rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* Placeholder dos gráficos */
+.chart-placeholder,
+.bar-chart-placeholder {
+    height: 60px;
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center;
+    opacity: 0.5;
+}
+
+/* Linha — gráfico simulado */
+.chart-placeholder {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 40"><path d="M 0 30 L 10 20 L 20 25 L 30 15 L 40 18 L 50 10 L 60 15 L 70 25 L 80 22 L 90 30 L 100 25" fill="none" stroke="%233b7197" stroke-width="2"/></svg>');
+}
+
+/* Barras — gráfico simulado */
+.bar-chart-placeholder {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 40"><rect x="5" y="25" width="10" height="15" fill="%23d3d3d3"/><rect x="20" y="20" width="10" height="20" fill="%23d3d3d3"/><rect x="35" y="15" width="10" height="25" fill="%233b7197"/><rect x="50" y="28" width="10" height="12" fill="%23d3d3d3"/><rect x="65" y="30" width="10" height="10" fill="%23d3d3d3"/></svg>');
+}
+
+/* =========================================================
+   CADASTRO DE PLACAS
+   ========================================================= */
+.scroll-box {
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+}
+.scroll-box::-webkit-scrollbar {
+    width: 6px;
+}
+.scroll-box::-webkit-scrollbar-thumb {
+    background-color: #3b7197;
+    border-radius: 6px;
+}
+.placa-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+.placa-item:last-child {
+    border-bottom: none;
+}
+
+/* =========================================================
+   TABS (CONFIGURAÇÕES)
+   ========================================================= */
+.nav-tabs .nav-link {
+    color: #3b7197;
+    font-weight: 500;
+}
+.nav-tabs .nav-link.active {
+    background-color: #3b7197;
+    color: #fff;
+    border: none;
+}
