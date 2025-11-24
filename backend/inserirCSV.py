@@ -26,7 +26,7 @@ try:
 
     # Query de inserção
     insert_query = """
-        INSERT INTO leituras_energia (id_usuario, data, hora, wats5min)
+        INSERT INTO leituras_energia (id_usuario, dia, hora, wats5min)
         VALUES (%s, %s, %s, %s)
     """
 
