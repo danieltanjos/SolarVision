@@ -2,8 +2,7 @@
 
 # --- Pastas de Dados dos Bancos de Dados ---
 # Ignora completamente as pastas de dados gerados.
-# Elas serão criadas localmente em cada máquina.
-postgres-data\
+postgres-data/
 
 # --- Arquivos de Ambiente ---
 # Nunca salve senhas ou chaves de API no Git!
@@ -11,7 +10,7 @@ postgres-data\
 .env.*
 !.env.example
 
-# --- Arquivos de Sistema Operacional ---
+# --- Arquivos de Sistema Operacional e IDEs ---
 .DS_Store
 Thumbs.db
-.vscode\
+.vscode/
