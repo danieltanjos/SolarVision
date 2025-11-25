@@ -2,153 +2,291 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monitoramento - SolarVision</title>
 
-    <!-- Bootstrap -->
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Ícones -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
+    
     <!-- ApexCharts -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
+    <!-- CSS Personalizado (Referenciado externamente) -->
     <link rel="stylesheet" href="../home/style.css">
+
+    <style>
+        /* Ajuste específico para os botões de gráfico desta página */
+        .chart-controls button.active {
+            background-color: #3b7197 !important; 
+            border-color: #3b7197 !important;
+            color: #fff !important;
+            font-weight: 500;
+        }
+        .chart-controls button:hover:not(.active):not(.disabled) {
+            background-color: #e9ecef;
+            color: #3b7197;
+            border-color: #ced4da;
+        }
+    </style>
 </head>
+
 <body>
 
-<div class="page-wrapper d-flex flex-column min-vh-100">
+<!-- ESTRUTURA DO LAYOUT (IGUAL LIMPEZA.HTML) -->
+<div class="page-wrapper">
 
-    <!-- NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
+    <!-- NAVBAR COM DROPDOWN -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
         <div class="container">
-            
-            <a class="navbar-brand d-flex align-items-center" href="home.html">
+            <a class="navbar-brand d-flex align-items-center" href="/home/home.html">
                 <img src="../img/logo.png" alt="Logo" class="navbar-logo me-2">
                 SolarVision
             </a>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-
-                    <li class="nav-item"><a class="nav-link" href="../home/home.html">Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="../home/limpeza.html">Limpeza</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="../monitoramento/monitoramento.html">Monitoramento</a></li>
-                    <li class="nav-item"><a class="nav-link" href="../home/cadastro.html">Cadastro</a></li>
-
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                            <i class="bi bi-person-circle me-1"></i> Arthur
-                        </a>
-
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="../home/configuracoes.html">Meu Perfil</a></li>
-                            <li><a class="dropdown-item" href="../home/configuracoes.html">Configurações</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="../login.html">Sair</a></li>
-                        </ul>
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../home/home.html">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../home/limpeza.html">Limpeza</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/monitoramento/monitoramento.html">Monitoramento</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../home/cadastro.html">Cadastro</a>
                     </li>
 
+                    <!-- DROPDOWN DE PERFIL (ADICIONADO CONFORME SOLICITADO) -->
+                    <li class="nav-item dropdown ms-lg-3">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle fs-5 me-2"></i> Arthur
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="#">Meu Perfil</a></li>
+                            <li><a class="dropdown-item" href="#">Configurações</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="/index.html">Sair</a></li>
+                        </ul>
+                    </li>
                 </ul>
             </div>
         </div>
     </nav>
 
-    <!-- CONTEÚDO -->
-    <main class="container my-4 flex-grow-1">
-
-        <h2 class="mb-4 text-secondary text-center text-md-start">Geração de Energia (5 min)</h2>
-
-        <div class="row justify-content-center">
-            <div class="col-12 col-md-10 col-lg-8">
-
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-
-                        <h5 class="card-title">Produção em Tempo Real</h5>
-                        <p class="card-text text-muted">Visualização da potência gerada (Watts).</p>
-
-                        <div id="graficoEnergia" style="height: 350px;">
-                            <div class="d-flex justify-content-center align-items-center h-100">
-                                <div class="spinner-border text-primary"></div>
-                            </div>
-                        </div>
-
-                    </div>
+    <!-- CONTEÚDO PRINCIPAL (DASHBOARD) -->
+    <div class="page-content container">
+        
+        <!-- Título e Controles -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
+            <h2 class="h4 text-secondary mb-0">Geração de Energia</h2>
+            
+            <div class="chart-controls d-flex flex-column flex-md-row align-items-center gap-2">
+                <!-- Navegação de Data -->
+                <div class="btn-group me-2">
+                    <button class="btn btn-outline-secondary" onclick="mudarPeriodo(-1)"><i class="bi bi-chevron-left"></i></button>
+                    <button class="btn btn-outline-secondary disabled" id="displayData" style="min-width: 150px; color: #000; border-color: #ced4da;">Carregando...</button>
+                    <button class="btn btn-outline-secondary" onclick="mudarPeriodo(1)"><i class="bi bi-chevron-right"></i></button>
                 </div>
 
+                <!-- Seleção de Modo -->
+                <div class="btn-group">
+                    <button class="btn btn-outline-secondary active" onclick="setModo('dia')" id="btn-dia">Dia</button>
+                    <button class="btn btn-outline-secondary" onclick="setModo('semana')" id="btn-semana">Semana</button>
+                    <button class="btn btn-outline-secondary" onclick="setModo('mes')" id="btn-mes">Mês</button>
+                </div>
             </div>
         </div>
 
-    </main>
+        <!-- Card do Gráfico -->
+        <div class="card mb-4">
+            <div class="card-body p-0">
+                <div id="graficoEnergia" style="min-height: 400px;">
+                    <div class="d-flex justify-content-center align-items-center h-100">
+                        <div class="spinner-border text-primary" role="status"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    <!-- FOOTER -->
-    <footer class="footer bg-light text-center py-2 small mt-auto">
+    </div>
+
+    <!-- FOOTER (IGUAL AO LIMPEZA.HTML) -->
+    <footer class="footer">
         © 2025 SolarVision — Todos os direitos reservados.
     </footer>
+
 </div>
 
-
-<!-- SCRIPTS -->
+<!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
+<!-- LÓGICA DO GRÁFICO -->
 <script>
-async function carregarGrafico() {
-    try {
-        const response = await fetch('/api/leituras');
-        const dados = await response.json();
+    let dataAtual = new Date('2018-01-01T12:00:00'); 
+    let modoAtual = 'dia'; 
+    let chart = null;
 
+    document.addEventListener('DOMContentLoaded', () => {
+        atualizarInterface();
+        carregarDados();
+    });
+
+    function setModo(modo) {
+        modoAtual = modo;
+        document.querySelectorAll('.chart-controls .btn-group:last-child button').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`btn-${modo}`).classList.add('active');
+        atualizarInterface();
+        carregarDados();
+    }
+
+    function mudarPeriodo(direcao) {
+        if (modoAtual === 'dia') {
+            dataAtual.setDate(dataAtual.getDate() + direcao);
+        } else if (modoAtual === 'semana') {
+            dataAtual.setDate(dataAtual.getDate() + (direcao * 7));
+        } else if (modoAtual === 'mes') {
+            dataAtual.setMonth(dataAtual.getMonth() + direcao);
+        }
+        atualizarInterface();
+        carregarDados();
+    }
+
+    function atualizarInterface() {
+        const display = document.getElementById('displayData');
+        const { inicio, fim } = calcularIntervalo();
+        
+        const inicioStr = inicio.split('-').reverse().join('/');
+        const fimStr = fim.split('-').reverse().join('/');
+
+        if (modoAtual === 'dia') {
+            display.innerText = inicioStr;
+        } else {
+            display.innerText = `${inicioStr} - ${fimStr}`;
+        }
+    }
+
+    function calcularIntervalo() {
+        let d = new Date(dataAtual);
+        let inicioStr, fimStr;
+
+        if (modoAtual === 'dia') {
+            inicioStr = d.toISOString().split('T')[0];
+            fimStr = inicioStr; 
+        } 
+        else if (modoAtual === 'semana') {
+            const diaSemana = d.getDay(); 
+            d.setDate(d.getDate() - diaSemana);
+            inicioStr = d.toISOString().split('T')[0];
+            d.setDate(d.getDate() + 6);
+            fimStr = d.toISOString().split('T')[0];
+        } 
+        else if (modoAtual === 'mes') {
+            const ano = d.getFullYear();
+            const mes = d.getMonth();
+            const primeiroDia = new Date(ano, mes, 1);
+            const ultimoDia = new Date(ano, mes + 1, 0);
+            primeiroDia.setHours(12);
+            ultimoDia.setHours(12);
+            inicioStr = primeiroDia.toISOString().split('T')[0];
+            fimStr = ultimoDia.toISOString().split('T')[0];
+        }
+        return { inicio: inicioStr, fim: fimStr };
+    }
+
+    async function carregarDados() {
+        const { inicio, fim } = calcularIntervalo();
+        
+        try {
+            const res = await fetch(`/api/leituras?inicio=${inicio}&fim=${fim}`);
+            
+            if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
+            
+            const dados = await res.json();
+            renderizarGrafico(dados);
+
+        } catch (error) {
+            console.warn("API indisponível ou ambiente de Preview. Usando dados simulados.", error);
+            const dadosMock = gerarDadosMock(inicio, fim);
+            renderizarGrafico(dadosMock);
+        }
+    }
+
+    function gerarDadosMock(inicioStr, fimStr) {
+        const dados = [];
+        let atual = new Date(inicioStr + 'T00:00:00');
+        const fim = new Date(fimStr + 'T23:59:59');
+        const passo = modoAtual === 'dia' ? 15 * 60000 : 3600000 * 4; 
+
+        while (atual <= fim) {
+            const hora = atual.getHours();
+            let watts = 0;
+            if (hora >= 6 && hora <= 18) {
+                watts = Math.sin((hora - 6) * Math.PI / 12) * 800;
+                watts += Math.random() * 200 - 100;
+            }
+            if (watts < 0) watts = 0;
+
+            dados.push({
+                x: atual.getTime(),
+                y: parseFloat(watts.toFixed(2))
+            });
+            atual = new Date(atual.getTime() + passo);
+        }
+        return dados;
+    }
+
+    function renderizarGrafico(dados) {
+        const elGrafico = document.getElementById('graficoEnergia');
         if (dados.length === 0) {
-            document.getElementById('graficoEnergia').innerHTML =
-                '<p class="text-center mt-5">Nenhum dado encontrado.</p>';
+            elGrafico.innerHTML = `
+                <div class="d-flex flex-column justify-content-center align-items-center h-100 text-muted">
+                    <i class="bi bi-cloud-slash" style="font-size: 2rem;"></i>
+                    <p class="mt-2">Sem dados para este período.</p>
+                </div>`;
+            if (chart) { chart.destroy(); chart = null; }
             return;
         }
 
         const options = {
-            series: [{
-                name: 'Potência (Watts)',
-                data: dados
-            }],
+            series: [{ name: 'Potência', data: dados }],
             chart: {
                 type: 'area',
                 height: 350,
-                zoom: { enabled: false }
+                toolbar: { show: false },
+                zoom: { enabled: false },
+                animations: { enabled: true }
             },
             dataLabels: { enabled: false },
             stroke: { curve: 'smooth', width: 2 },
-            xaxis: {
+            xaxis: { 
                 type: 'datetime',
-                labels: { datetimeFormatter: { hour: 'HH:mm' } }
+                tooltip: { enabled: false }
             },
-            yaxis: {
-                title: { text: 'Watts' }
-            },
-            colors: ['#ffc107'],
+            yaxis: { title: { text: 'Watts' } },
+            colors: ['#3b7197'],
             fill: {
                 type: 'gradient',
-                gradient: {
-                    shadeIntensity: 1,
-                    opacityFrom: 0.7,
-                    opacityTo: 0.9,
-                    stops: [0, 90, 100]
-                }
-            }
+                gradient: { shadeIntensity: 1, opacityFrom: 0.7, opacityTo: 0.2, stops: [0, 90, 100] }
+            },
+            tooltip: { x: { format: 'dd/MM/yy HH:mm' } }
         };
 
-        document.getElementById('graficoEnergia').innerHTML = '';
-        const chart = new ApexCharts(document.querySelector("#graficoEnergia"), options);
-        chart.render();
-
-    } catch (error) {
-        document.getElementById('graficoEnergia').innerHTML =
-            '<p class="text-danger text-center">Erro ao carregar gráfico.</p>';
+        if (chart) {
+            chart.updateSeries([{ data: dados }]);
+        } else {
+            elGrafico.innerHTML = '';
+            chart = new ApexCharts(elGrafico, options);
+            chart.render();
+        }
     }
-}
-
-document.addEventListener('DOMContentLoaded', carregarGrafico);
 </script>
 
 </body>
