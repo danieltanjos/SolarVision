@@ -39,29 +39,69 @@ app.post('/api/register', async (req, res) => {
 // ============================================
 // ROTA 2: LOGIN
 // ============================================
+// app.post('/api/login', async (req, res) => {
+//     const { email, senha } = req.body;
+    
+//     const query = 'SELECT nome, email, senha_hash FROM usuarios WHERE email = $1';
+    
+//     try {
+//         const result = await pool.query(query, [email]);
+//         const passCheck = await bcrypt.compare(senha, senha_hash);
+//         const user = result.rows[0]
+
+//         if (user && passCheck) {
+//             console.log(`Login efetuado: ${email}`);
+//             const user = result.rows[0];
+//             res.status(200).send({ 
+//                 message: 'Login bem-sucedido!', 
+//                 user: { nome: user.nome, email: user.email } 
+//             });
+//         } else {
+//             console.log(`Falha de login para: ${email}`);
+//             res.status(401).send({ message: 'E-mail ou senha incorretos.' });
+//         }
+//     } catch (err) {
+//         console.error('Erro no login:', err);
+//         res.status(500).send({ message: 'Erro interno do servidor.' });
+//     }
+// });
+
 app.post('/api/login', async (req, res) => {
     const { email, senha } = req.body;
-    
+    console.log('Login attempt received:', { email, senha_length: senha ? senha.length : 0 });
+
     const query = 'SELECT nome, email, senha_hash FROM usuarios WHERE email = $1';
-    
+
     try {
         const result = await pool.query(query, [email]);
-        const passCheck = await bcrypt.compare(senha, senha_hash);
-        const user = result.rows[0]
+        console.log('DB query result:', { rowCount: result.rowCount, rows: result.rows });
 
-        if (user && passCheck) {
+        if (result.rowCount === 0) {
+            console.log(`Usuário não encontrado: ${email}`);
+            return res.status(401).send({ message: 'E-mail ou senha incorretos.' });
+        }
+
+        const user = result.rows[0];
+        if (!user || !user.senha_hash) {
+            console.log('Dados de usuário inválidos ou sem senha_hash:', user);
+            return res.status(500).send({ message: 'Erro interno do servidor.' });
+        }
+
+        const passCheck = await bcrypt.compare(senha, user.senha_hash);
+        console.log('Password comparison result for', email, ':', passCheck);
+
+        if (passCheck) {
             console.log(`Login efetuado: ${email}`);
-            const user = result.rows[0];
-            res.status(200).send({ 
-                message: 'Login bem-sucedido!', 
-                user: { nome: user.nome, email: user.email } 
+            res.status(200).send({
+                message: 'Login bem-sucedido!',
+                user: { nome: user.nome, email: user.email }
             });
         } else {
-            console.log(`Falha de login para: ${email}`);
+            console.log(`Falha de login (senha incorreta) para: ${email}`);
             res.status(401).send({ message: 'E-mail ou senha incorretos.' });
         }
     } catch (err) {
-        console.error('Erro no login:', err);
+        console.error('Erro no login (stack):', err.stack || err);
         res.status(500).send({ message: 'Erro interno do servidor.' });
     }
 });
