@@ -7,7 +7,7 @@ WORKDIR /usr/src/app
 # 3. Copie o package.json e instale as dependências
 COPY package*.json ./
 RUN npm install
-RUN python ./inserirCSV.py
+RUN python /srcapp/inserirCSV.py
 
 # 4. Copie o restante do código da sua API
 COPY . .

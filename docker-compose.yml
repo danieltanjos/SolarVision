@@ -32,6 +32,9 @@ services:
       DB_DATABASE: solarvision_db
       DB_PASSWORD: your_strong_password # <-- Use a MESMA senha do postgres
     # Só inicia depois que o banco de dados estiver pronto
+    volumes:
+      # Insere os dados CSV na tabela de monitoramento
+      - ./backend:/srcapp
     depends_on:
       - postgres
 
@@ -48,7 +51,5 @@ services:
       # Expõe a porta do Postgres para clientes (DBeaver, etc.)
       - "5432:5432" 
     volumes:
-      # Mapeia os dados do banco para a pasta local
-      - ./postgres-data:/var/lib/postgresql/data
       # Mapeia o script de inicialização para criar as tabelas
       - ./postgres-init:/docker-entrypoint-initdb.d:ro
