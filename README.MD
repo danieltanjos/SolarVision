@@ -72,7 +72,7 @@ A aplicação estará acessível no seu navegador através da porta `8080`:
 
 [http://localhost:8080](http://localhost:8080)
 
-Basta o usuário criar seu cliente e fazer o login em seguida.
+Basta o usuário criar seu cadastro e fazer o login em seguida.
 
 ## 🔑 Rotas da API (Backend)
 
