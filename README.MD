@@ -124,16 +124,6 @@ docker-compose down -v
 
 **Atenção:** O comando `down -v` irá deletar o volume de dados (`./postgres-data`), removendo permanentemente todos os dados do banco de dados.
 
-## 🤝 Contribuição
-
-Sinta-se à vontade para contribuir com o projeto!
-
-1.  Faça um fork do projeto.
-2.  Crie uma branch para sua feature (`git checkout -b feature/nova-feature`).
-3.  Commit suas mudanças (`git commit -m 'Adiciona nova feature'`).
-4.  Faça um push para a branch (`git push origin feature/nova-feature`).
-5.  Abra um Pull Request.
-
 ---
 
 ## © direitos autorais
