@@ -91,22 +91,7 @@ O banco de dados é inicializado com duas tabelas principais:
 
 ### População Inicial de Dados
 
-O projeto inclui um script Python (`backend/inserirCSV.py`) para popular a tabela `leituras_energia` com dados de exemplo (`Dados_Tratados_CDTE-PSI.csv`).
-
-Para executar o script (após os containers estarem rodando):
-
-1.  Instale as dependências necessárias (dentro do container ou localmente):
-    ```bash
-    # Dentro do container do backend (se necessário)
-    docker exec -it solarvision-backend /bin/bash
-    npm install -g python3-pip
-    pip install pandas psycopg2-binary
-    exit
-    ```
-2.  Execute o script de inserção de dados:
-    ```bash
-    docker exec -it solarvision-backend python3 inserirCSV.py
-    ```
+O projeto inclui um container com o nome seed-data que é uma solução hefemera para inserir os dados da tabela .csv para a tabela de dados.
 
 ## 🛑 Parar e Remover os Serviços
 
