@@ -1,5 +1,6 @@
 const express = require('express');
 const { Pool } = require('pg');
+const bcrypt = require('bcryptjs');
 const app = express();
 const port = 3000;
 
@@ -25,7 +26,8 @@ app.post('/api/register', async (req, res) => {
     const query = 'INSERT INTO usuarios (nome, email, senha_hash) VALUES ($1, $2, $3)';
     
     try {
-        await pool.query(query, [nome, email, senha]);
+        const senha_hash = await bcrypt.hash(senha, 10);
+        await pool.query(query, [nome, email, senha_hash]);
         console.log(`Novo usuário registrado: ${email}`);
         res.status(201).send({ message: 'Usuário registrado com sucesso!' });
     } catch (err) {
@@ -40,17 +42,19 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/login', async (req, res) => {
     const { email, senha } = req.body;
     
-    const query = 'SELECT * FROM usuarios WHERE email = $1 AND senha_hash = $2';
+    const query = 'SELECT nome, email, senha_hash FROM usuarios WHERE email = $1';
     
     try {
-        const result = await pool.query(query, [email, senha]);
+        const result = await pool.query(query, [email]);
+        const passCheck = await bcrypt.compare(senha, senha_hash);
+        const user = result.rows[0]
 
-        if (result.rows.length > 0) {
+        if (user && passCheck) {
             console.log(`Login efetuado: ${email}`);
             const user = result.rows[0];
             res.status(200).send({ 
                 message: 'Login bem-sucedido!', 
-                user: { id: user.id, nome: user.nome, email: user.email } 
+                user: { nome: user.nome, email: user.email } 
             });
         } else {
             console.log(`Falha de login para: ${email}`);
