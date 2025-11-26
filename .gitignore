@@ -14,3 +14,4 @@ postgres-data/
 .DS_Store
 Thumbs.db
 .vscode/
+backend/node_modules/

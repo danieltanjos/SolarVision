@@ -1,54 +1,59 @@
-# Versão do Docker Compose
 version: '3.8'
 
-# Definição dos serviços (containers)
 services:
-
-  # 1. Serviço do Frontend (Nginx)
-  # Serve os arquivos HTML, CSS, JS e atua como proxy para o backend.
   frontend:
     build: ./app
     container_name: solarvision-frontend
     ports:
-      - "8080:80" # Mapeia a porta 8080 do seu PC para a porta 80 do Nginx
+      - "8080:80"
     volumes:
-      # Mapeia o código do frontend para edição em tempo real
       - ./app:/usr/share/nginx/html
-      # Mapeia o arquivo de configuração do Nginx
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-    # Só inicia depois que o backend estiver pronto
     depends_on:
       - backend
 
-  # 2. Serviço do Backend (Node.js API)
-  # Contém a lógica de login/registro e se comunica com o banco.
   backend:
     build: ./backend
     container_name: solarvision-backend
-    restart: always # Reinicia a API automaticamente se ela falhar
+    restart: always
     environment:
       DB_USER: solarvision_user
-      DB_HOST: postgres # Usa o nome do serviço 'postgres' para conectar
+      DB_HOST: postgres
       DB_DATABASE: solarvision_db
-      DB_PASSWORD: your_strong_password # <-- Use a MESMA senha do postgres
-    # Só inicia depois que o banco de dados estiver pronto
+      DB_PASSWORD: your_strong_password
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
     depends_on:
       - postgres
 
-  # 3. Serviço do Banco de Dados PostgreSQL
-  # Armazena os dados dos usuários.
+  # --- NOVO SERVIÇO DE AUTOMAÇÃO ---
+  # Este container roda uma vez, insere os dados e desliga.
+  seed-data:
+    build: ./backend # Usa a mesma imagem do backend (que já tem python)
+    container_name: solarvision-seed
+    # Sobrescreve o comando padrão para rodar APENAS o script python
+    command: python3 inserirCSV.py
+    environment:
+      DB_USER: solarvision_user
+      DB_HOST: postgres
+      DB_DATABASE: solarvision_db
+      DB_PASSWORD: your_strong_password
+    volumes:
+      - ./backend:/usr/src/app
+    depends_on:
+      - postgres
+      - backend # Espera o backend subir (opcional, mas bom pra garantir ordem)
+
   postgres:
     image: postgres:16-alpine
     container_name: solarvision-postgres
     environment:
       POSTGRES_USER: solarvision_user
-      POSTGRES_PASSWORD: your_strong_password # <-- Troque por uma senha segura
+      POSTGRES_PASSWORD: your_strong_password
       POSTGRES_DB: solarvision_db
     ports:
-      # Expõe a porta do Postgres para clientes (DBeaver, etc.)
-      - "5432:5432" 
+      - "5432:5432"
     volumes:
-      # Mapeia os dados do banco para a pasta local
       - ./postgres-data:/var/lib/postgresql/data
-      # Mapeia o script de inicialização para criar as tabelas
       - ./postgres-init:/docker-entrypoint-initdb.d:ro
