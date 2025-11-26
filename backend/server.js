@@ -65,37 +65,6 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// app.post('/api/login', async (req, res) => {
-//     const { email, senha } = req.body;
-
-//     const query = 'SELECT nome, email, senha_hash FROM usuarios WHERE email = $1';
-
-//     try {
-//         const result = await pool.query(query, [email]);
-//         const user = result.rows[0];
-//         const passCheck = await bcrypt.compare(senha, user.senha_hash);
-
-//         if (result.rowCount === 0) {
-//             return res.status(401).send({ message: 'E-mail ou senha incorretos.' });
-//         }
-
-//         if (!user || !user.senha_hash) {
-//             return res.status(500).send({ message: 'Erro interno do servidor.' });
-//         }
-
-//         if (passCheck) {
-//             return res.status(200).send({
-//                 message: 'Login bem-sucedido!',
-//                 user: { nome: user.nome, email: user.email }
-//             });
-//         } else {
-//             return res.status(401).send({ message: 'E-mail ou senha incorretos.' });
-//         }
-//     } catch (err) {
-//         return res.status(500).send({ message: 'Erro interno do servidor.' });
-//     }
-// });
-
 // ============================================
 // ROTA 3: DADOS DE ENERGIA (CORRIGIDO: 'dia' em vez de 'data')
 // ============================================
