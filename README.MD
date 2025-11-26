@@ -72,6 +72,8 @@ A aplicação estará acessível no seu navegador através da porta `8080`:
 
 [http://localhost:8080](http://localhost:8080)
 
+Basta o usuário criar seu cliente e fazer o login em seguida.
+
 ## 🔑 Rotas da API (Backend)
 
 O backend em Node.js expõe as seguintes rotas principais:
@@ -91,7 +93,7 @@ O banco de dados é inicializado com duas tabelas principais:
 
 ### População Inicial de Dados
 
-O projeto inclui um container com o nome seed-data que é uma solução hefemera para inserir os dados da tabela .csv para a tabela de dados.
+O projeto inclui um container chamado seed-data, uma solução efêmera (transitória) projetada para realizar a carga inicial dos dados do arquivo .csv para o banco de dados e encerrar sua execução logo em seguida.
 
 ## 🛑 Parar e Remover os Serviços
 
