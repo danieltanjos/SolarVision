@@ -1,19 +1,29 @@
 # 1. Comece com uma imagem oficial e leve do Node.js
 FROM node:20-alpine
 
-# 2. Defina o diretório de trabalho dentro do container
+# 2. Defina o diretório de trabalho
 WORKDIR /usr/src/app
 
-# 3. Copie o package.json e instale as dependências
+# 3. Instala Python e dependências do sistema
+RUN apk add --update --no-cache python3 py3-pip make g++ gcc python3-dev musl-dev postgresql-dev
+
+# 4. Cria ambiente virtual Python
+ENV VIRTUAL_ENV=/opt/venv
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+# 5. Instala bibliotecas Python
+RUN pip install pandas psycopg2-binary
+
+# 6. Instala dependências Node
 COPY package*.json ./
 RUN npm install
-RUN python /srcapp/inserirCSV.py
 
-# 4. Copie o restante do código da sua API
+# 7. Copia o código
 COPY . .
 
-# 5. Exponha a porta que a API irá rodar
+# 8. Expõe porta
 EXPOSE 3000
 
-# 6. Comando para iniciar o servidor
+# 9. Comando padrão (será sobrescrito pelo serviço seed-data quando necessário)
 CMD [ "npm", "start" ]
