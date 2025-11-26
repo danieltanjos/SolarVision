@@ -46,12 +46,11 @@ app.post('/api/login', async (req, res) => {
     
     try {
         const result = await pool.query(query, [email]);
-        const passCheck = await bcrypt.compare(senha, user.senha_hash);
         const user = result.rows[0]
+        const passCheck = await bcrypt.compare(senha, user.senha_hash);
 
         if (user && passCheck) {
             console.log(`Login efetuado: ${email}`);
-            const user = result.rows[0];
             res.status(200).send({ 
                 message: 'Login bem-sucedido!', 
                 user: { nome: user.nome, email: user.email } 
