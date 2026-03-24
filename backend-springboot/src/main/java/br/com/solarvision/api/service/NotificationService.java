@@ -43,7 +43,6 @@ public class NotificationService {
     }
 
     private String buildBody(NotificationDtos.InternalEmailRequest request) {
-        return "Template: " + request.template() + "
-Dados: " + request.data();
+        return "Template: " + request.template() + "Dados: " + request.data();
     }
 }
