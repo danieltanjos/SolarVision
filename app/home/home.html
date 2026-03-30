@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- ⚠️ Title não pode ter HTML -->
+    <title>Dashboard</title>
+
+    <!-- Bootstrap / Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- Seu CSS -->
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+<div class="page-wrapper">
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="home.html">
+                <img src="img/logo.png" alt="Logo" class="navbar-logo me-2">
+                SolarVision
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+
+                    <li class="nav-item"><a class="nav-link active" href="home.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="limpeza.html">Limpeza</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../monitoramento/monitoramento.html">Monitoramento</a></li>
+                    <li class="nav-item"><a class="nav-link" href="cadastro.html">Cadastro</a></li>
+
+                    <!-- USUÁRIO -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown"
+                           role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle me-1"></i>
+                            <span id="nomeNavbar">Usuário</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="configuracoes.html">Meu Perfil</a></li>
+                            <li><a class="dropdown-item" href="configuracoes.html">Configurações</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="../index.html">Sair</a></li>
+                        </ul>
+                    </li>
+
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- CONTEÚDO -->
+    <main class="container main-content">
+
+        <!-- 🔥 DINÂMICO -->
+        <h1 class="mb-4">Olá, <span id="nomeUsuario">Usuário</span>!</h1>
+
+        <!-- KPIs -->
+        <h2 class="h4 text-muted mb-3">Minhas Placas</h2>
+
+        <div class="row g-3">
+            <div class="col-lg-6">
+                <div class="card p-3 h-100">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted">Eficiência ao longo do tempo</span>
+                            <p class="display-4">80%</p>
+                        </div>
+                        <div class="w-50 bar-chart-placeholder"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card p-3 h-100">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted">Nível de Sujeira médio</span>
+                            <p class="display-4">1mm</p>
+                        </div>
+                        <div class="w-50 chart-placeholder"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AÇÕES -->
+        <h2 class="h4 text-muted mb-3 mt-4">Para você</h2>
+
+        <div class="row g-3">
+
+            <div class="col-lg-3 col-md-6">
+                <a href="limpeza.html" class="card action-card p-4 text-center h-100">
+                    <div class="card-body">
+                        <i class="bi bi-droplet"></i>
+                        <div class="action-card-title">Limpeza</div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-lg-3 col-md-6">
+                <a href="../monitoramento/monitoramento.html"
+                   class="card action-card p-4 text-center h-100">
+                    <div class="card-body">
+                        <i class="bi bi-lightning-charge-fill"></i>
+                        <div class="action-card-title">Monitoramento</div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-lg-3 col-md-6">
+                <a href="cadastro.html" class="card action-card p-4 text-center h-100">
+                    <div class="card-body">
+                        <i class="bi bi-grid-3x2"></i>
+                        <div class="action-card-title">Cadastro</div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-lg-3 col-md-6">
+                <a href="configuracoes.html" class="card action-card p-4 text-center h-100">
+                    <div class="card-body">
+                        <i class="bi bi-person-gear"></i>
+                        <div class="action-card-title">Perfil / Configurações</div>
+                    </div>
+                </a>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer text-center py-3 mt-4">
+        © 2025 SolarVision — Todos os direitos reservados.
+    </footer>
+
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- 🔥 SCRIPT PRINCIPAL -->
+<script>
+document.addEventListener("DOMContentLoaded", async function () {
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+        window.location.href = "../login.html";
+        return;
+    }
+
+    try {
+        const response = await fetch("http://localhost:8080/users/me", {
+            method: "GET",
+            headers: {
+                "Authorization": "Bearer " + token
+            }
+        });
+
+        const data = await response.json();
+
+        // ⚠️ ajuste conforme seu backend
+        const nome = data.name || data.nome || data.username || "Usuário";
+
+        document.getElementById("nomeUsuario").textContent = nome;
+        document.getElementById("nomeNavbar").textContent = nome;
+
+        document.title = "Dashboard - Olá, " + nome + "!";
+
+    } catch (error) {
+        console.error("Erro ao buscar usuário:", error);
+        window.location.href = "../login.html";
+    }
+});
+</script>
+
+</body>
+</html>
