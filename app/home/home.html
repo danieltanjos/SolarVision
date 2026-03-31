@@ -154,36 +154,16 @@
 <!-- 🔥 SCRIPT PRINCIPAL -->
 <script>
 document.addEventListener("DOMContentLoaded", async function () {
+    const nomeSalvo = localStorage.getItem("usuarioNome");
 
-    const token = localStorage.getItem("token");
-
-    if (!token) {
+    if (!nomeSalvo) {
         window.location.href = "../login.html";
         return;
     }
 
-    try {
-        const response = await fetch("http://localhost:8080/users/me", {
-            method: "GET",
-            headers: {
-                "Authorization": "Bearer " + token
-            }
-        });
-
-        const data = await response.json();
-
-        // ⚠️ ajuste conforme seu backend
-        const nome = data.name || data.nome || data.username || "Usuário";
-
-        document.getElementById("nomeUsuario").textContent = nome;
-        document.getElementById("nomeNavbar").textContent = nome;
-
-        document.title = "Dashboard - Olá, " + nome + "!";
-
-    } catch (error) {
-        console.error("Erro ao buscar usuário:", error);
-        window.location.href = "../login.html";
-    }
+    document.getElementById("nomeUsuario").textContent = nomeSalvo;
+    document.getElementById("nomeNavbar").textContent = nomeSalvo;
+    document.title = "Dashboard - Olá, " + nomeSalvo + "!";
 });
 </script>
 
