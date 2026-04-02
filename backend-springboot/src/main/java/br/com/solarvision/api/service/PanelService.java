@@ -62,7 +62,7 @@ public class PanelService {
 
     private void apply(Panel panel, PanelDtos.PanelRequest request) {
         panel.setSolarGroup(groupService.findEntity(request.group()));
-        panel.setSerialNumber(request.serial_number());
+        panel.setSerialNumber(request.serialNumber());
         panel.setModel(request.model());
         panel.setStatus(PanelStatus.valueOf(request.status().toUpperCase()));
     }

@@ -51,10 +51,10 @@ public class CleaningService {
     }
 
     private void apply(Cleaning cleaning, CleaningDtos.CleaningRequest request) {
-        cleaning.setPanel(panelService.findEntity(request.panel_id()));
-        cleaning.setPerformedAt(request.performed_at());
-        cleaning.setWaterUsedLiters(request.water_used_liters());
-        cleaning.setPerformedBy(request.performed_by());
+        cleaning.setPanel(panelService.findEntity(request.panelId()));
+        cleaning.setPerformedAt(request.performedAt());
+        cleaning.setWaterUsedLiters(request.waterUsedLiters());
+        cleaning.setPerformedBy(request.performedBy());
         cleaning.setNotes(request.notes());
     }
 

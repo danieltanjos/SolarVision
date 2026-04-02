@@ -1,5 +1,7 @@
 package br.com.solarvision.api.dto;
 
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -7,26 +9,29 @@ import java.time.OffsetDateTime;
 
 public class CleaningDtos {
 
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public record CleaningRequest(
-            @NotNull Long panel_id,
-            @NotNull OffsetDateTime performed_at,
-            @NotNull Double water_used_liters,
-            @NotBlank String performed_by,
+            @NotNull Long panelId,
+            @NotNull OffsetDateTime performedAt,
+            @NotNull Double waterUsedLiters,
+            @NotBlank String performedBy,
             String notes
     ) {}
 
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public record CleaningResponse(
-            Long cleaning_id,
-            Long panel_id,
-            OffsetDateTime performed_at,
-            Double water_used_liters,
-            String performed_by,
+            Long cleaningId,
+            Long panelId,
+            OffsetDateTime performedAt,
+            Double waterUsedLiters,
+            String performedBy,
             String notes
     ) {}
 
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public record CleaningDeleteResponse(
             String message,
-            Long cleaning_id,
-            OffsetDateTime deleted_at
+            Long cleaningId,
+            OffsetDateTime deletedAt
     ) {}
 }

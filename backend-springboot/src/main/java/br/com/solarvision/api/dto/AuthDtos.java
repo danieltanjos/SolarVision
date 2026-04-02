@@ -1,14 +1,18 @@
 package br.com.solarvision.api.dto;
 
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import jakarta.validation.constraints.NotBlank;
 
 public class AuthDtos {
 
-    public record GoogleAuthRequest(@NotBlank String google_token) {}
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public record GoogleAuthRequest(@NotBlank String googleToken) {}
 
     public record AuthUserResponse(Long id, String name, String email) {}
 
-    public record AuthResponse(String access_token, AuthUserResponse user) {}
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public record AuthResponse(String accessToken, AuthUserResponse user) {}
 
     public record UserMeResponse(Long id, String name, String email, String role) {}
 }
