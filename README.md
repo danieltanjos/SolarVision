@@ -108,9 +108,16 @@ Materiais de apoio do projeto.
 ### Subir o ambiente
 
 ```bash
-docker-compose up --build -d
-```
+cd /path/to/project
 
+quickstart.sh
+```
+ou 
+```bash
+cd /path/to/project
+
+docker-compose down --rmi local && docker-compose build --no-cache && docker-compose up -d
+```
 ### Servicos esperados
 
 - Frontend: `http://localhost:8080`
