@@ -1,0 +1,16 @@
+# Dados locais
+postgres-data/
+
+# Dependencias e artefatos de build
+backend/node_modules/
+backend-springboot/target/
+
+# Arquivos de ambiente
+.env
+.env.*
+!.env.example
+
+# Sistema operacional e IDE
+.DS_Store
+Thumbs.db
+.vscode/
