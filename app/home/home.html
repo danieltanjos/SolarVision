@@ -154,12 +154,14 @@
 <!-- 🔥 SCRIPT PRINCIPAL -->
 <script>
 document.addEventListener("DOMContentLoaded", async function () {
-    const nomeSalvo = localStorage.getItem("usuarioNome");
+    let nomeSalvo = localStorage.getItem("usuarioNome");
 
     if (!nomeSalvo) {
         window.location.href = "../login.html";
         return;
     }
+
+    nomeSalvo = nomeSalvo.charAt(0).toUpperCase() + nomeSalvo.slice(1).toLowerCase();
 
     document.getElementById("nomeUsuario").textContent = nomeSalvo;
     document.getElementById("nomeNavbar").textContent = nomeSalvo;
