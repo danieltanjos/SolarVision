@@ -3,7 +3,7 @@ postgres-data/
 
 # Dependencias e artefatos de build
 backend/node_modules/
-backend/springboot/target/
+backend-springboot/target/
 
 # Arquivos de ambiente
 .env

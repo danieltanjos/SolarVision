@@ -1,0 +1,53 @@
+services:
+  frontend:
+    build: ./app
+    container_name: solarvision-frontend
+    ports:
+      - "8080:80"
+    volumes:
+      - ./app:/usr/share/nginx/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+
+  backend:
+    build: ./backend
+    container_name: solarvision-backend
+    restart: always
+    environment:
+      DB_USER: solarvision_user
+      DB_HOST: postgres
+      DB_DATABASE: solarvision_db
+      DB_PASSWORD: your_strong_password
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - postgres
+
+  # --- NOVO SERVIÇO DE AUTOMAÇÃO ---
+  # Este container roda uma vez, insere os dados e desliga.
+  seed-data:
+    build: ./data-seeder
+    container_name: solarvision-seed
+    environment:
+      DB_USER: solarvision_user
+      DB_HOST: postgres
+      DB_DATABASE: solarvision_db
+      DB_PASSWORD: your_strong_password
+    depends_on:
+      - postgres
+      - backend # Espera o backend subir (opcional, mas bom pra garantir ordem)
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: solarvision-postgres
+    environment:
+      POSTGRES_USER: solarvision_user
+      POSTGRES_PASSWORD: your_strong_password
+      POSTGRES_DB: solarvision_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
