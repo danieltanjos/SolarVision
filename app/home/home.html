@@ -151,8 +151,17 @@
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- 🔥 SCRIPT PRINCIPAL -->
+
+<!-- SCRIPT PRINCIPAL -->
 <script>
+function formatarNome(nome) {
+    return nome
+        .trim()
+        .split(/\s+/)
+        .map(parte => parte.charAt(0).toUpperCase() + parte.slice(1).toLowerCase())
+        .join(" ");
+}
+
 document.addEventListener("DOMContentLoaded", async function () {
     let nomeSalvo = localStorage.getItem("usuarioNome");
 
@@ -161,7 +170,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         return;
     }
 
-    nomeSalvo = nomeSalvo.charAt(0).toUpperCase() + nomeSalvo.slice(1).toLowerCase();
+    nomeSalvo = formatarNome(nomeSalvo);
 
     document.getElementById("nomeUsuario").textContent = nomeSalvo;
     document.getElementById("nomeNavbar").textContent = nomeSalvo;
