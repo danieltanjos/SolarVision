@@ -86,7 +86,6 @@ app.get('/api/leituras', async (req, res) => {
 
         // CORREÇÃO: Ordenando por 'dia'
         query += ' ORDER BY dia ASC, hora ASC';
-        query += ' LIMIT 5000';
 
         const result = await pool.query(query, params);
         
