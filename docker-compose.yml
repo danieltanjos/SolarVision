@@ -17,13 +17,13 @@ services:
     container_name: solarvision-backend
     restart: always
     environment:
+      DB_URL: jdbc:postgresql://postgres:5432/solarvision_db
       DB_USER: solarvision_user
-      DB_HOST: postgres
-      DB_DATABASE: solarvision_db
       DB_PASSWORD: your_strong_password
-    volumes:
-      - ./backend:/usr/src/app
-      - /usr/src/app/node_modules
+      JWT_SECRET: U29sYXJWaXNpb25TdXBlclNlY3JldEtleVNvbGFyVmlzaW9uU3VwZXJTZWNyZXRLZXk=
+      INTERNAL_API_TOKEN: solarvision-internal-token
+    ports:
+      - "8081:8081"
     depends_on:
       - postgres
 
@@ -39,7 +39,7 @@ services:
       DB_PASSWORD: your_strong_password
     depends_on:
       - postgres
-      - backend # Espera o backend subir (opcional, mas bom pra garantir ordem)
+      - backend
 
   postgres:
     image: postgres:16-alpine

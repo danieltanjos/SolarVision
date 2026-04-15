@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package grpc.internal;
+
+service PanelService {
+  rpc ChecarPlaca(PanelAvailabilityRequest) returns (PanelAvailabilityResponse);
+}
+
+message PanelAvailabilityRequest {
+  int64 panel_id = 1;
+}
+
+message PanelAvailabilityResponse {
+  int64 panel_id = 1;
+  string timestamp = 2;
+  bool success = 3;
+  int64 reading_id = 4;
+  string message = 5;
+  bool status = 6;
+}

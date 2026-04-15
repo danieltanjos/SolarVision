@@ -13,10 +13,10 @@ Este projeto é construído com as seguintes tecnologias:
 | :--- | :--- | :--- |
 | **Frontend** | HTML5, CSS3, Bootstrap | Interface de usuário para visualização e interação. |
 | **Servidor Web** | Nginx | Servidor web leve e eficiente, atua como proxy reverso. |
-| **Backend (API)** | Node.js (Express) | API RESTful para lógica de negócio, autenticação e acesso ao banco de dados. |
+| **Backend (API)** | Java 21, Spring Boot | API REST, GraphQL, autenticação JWT e acesso ao banco de dados. |
 | **Banco de Dados** | PostgreSQL | Armazenamento persistente para dados de usuários e leituras de energia. |
 | **Orquestração** | Docker, Docker Compose | Containerização e gerenciamento de todos os serviços. |
-| **Autenticação** | `bcryptjs` | Criptografia de senhas para segurança do usuário. |
+| **Autenticação** | JWT | Token Bearer para proteger as rotas da API. |
 
 ## 📦 Estrutura do Projeto
 
@@ -30,10 +30,14 @@ SolarVision/
 │   ├── img/              # Imagens e logotipos
 │   ├── index.html        # Página inicial
 │   └── login.html        # Página de login
-├── backend/              # Código do Backend (API Node.js)
-│   ├── Dados_Tratados... # Exemplo de arquivo CSV para importação de dados
-│   ├── inserirCSV.py     # Script Python para popular o banco de dados
-│   └── server.js         # Lógica principal da API (rotas de login, registro e dados)
+├── backend/              # Código do Backend Spring Boot
+│   ├── src/main/java/.../controller
+│   ├── src/main/java/.../service
+│   ├── src/main/java/.../repository
+│   ├── src/main/java/.../model
+│   ├── src/main/java/.../dto
+│   └── src/main/resources
+├── data-seeder/          # Script Python para carga inicial via CSV
 ├── postgres-init/        # Scripts de inicialização do PostgreSQL
 │   └── 01-init-schema.sql# Criação das tabelas `usuarios` e `leituras_energia`
 ├── nginx/                # Configuração do Nginx
@@ -76,20 +80,26 @@ Basta o usuário criar seu cadastro e fazer o login em seguida.
 
 ## 🔑 Rotas da API (Backend)
 
-O backend em Node.js expõe as seguintes rotas principais:
+O backend Spring Boot expõe as rotas principais descritas no diagrama:
 
 | Método | Rota | Descrição |
 | :--- | :--- | :--- |
-| `POST` | `/api/register` | Cria um novo usuário no banco de dados. |
-| `POST` | `/api/login` | Autentica um usuário e retorna dados básicos. |
-| `GET` | `/api/leituras` | Retorna os dados de leitura de energia. Aceita `inicio` e `fim` como parâmetros de query para filtragem por data. |
+| `POST` | `/api/auth/google` | Autentica usuário e retorna `access_token`. |
+| `GET` | `/api/users/me` | Retorna o usuário autenticado. |
+| `GET` | `/api/groups` | Lista grupos de placas. |
+| `POST` | `/api/groups` | Cadastra grupo de placas. |
+| `GET` | `/api/groups/{groupId}/panels` | Lista placas de um grupo. |
+| `GET` | `/api/panels` | Lista placas solares. |
+| `POST` | `/api/panels` | Cadastra placa solar. |
+| `GET` | `/api/panels/{panelId}/cleanings` | Lista histórico de limpezas. |
+| `POST` | `/api/cleanings` | Registra limpeza. |
+| `GET` | `/api/dashboard/summary` | Retorna resumo do dashboard. |
+| `GET` | `/api/dashboard/metrics` | Retorna séries de métricas do dashboard. |
+| `POST` | `/api/graphql` | Executa consultas GraphQL. |
 
 ## 📊 Banco de Dados (PostgreSQL)
 
-O banco de dados é inicializado com duas tabelas principais:
-
-1.  **`usuarios`**: Armazena informações de login (`nome`, `email`, `senha_hash`).
-2.  **`leituras_energia`**: Armazena os dados de monitoramento, com colunas para `dia`, `hora` e `wats5min` (valor em Watts medido a cada 5 minutos).
+O banco de dados é usado pelo backend Spring Boot com entidades para usuários, grupos solares, placas, leituras, limpezas e alertas. O projeto também mantém scripts de inicialização em `postgres-init/`.
 
 ### População Inicial de Dados
 
