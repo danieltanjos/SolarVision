@@ -163,10 +163,10 @@ function formatarNome(nome) {
 document.addEventListener("DOMContentLoaded", function () {
     let nome = localStorage.getItem("usuarioNome");
 
-//    if (!nome) {
-//        window.location.href = "../login.html";
-//        return;
-//    }
+    if (!nome) {
+        window.location.href = "../login.html";
+        return;
+    }
 
     nome = formatarNome(nome);
 
