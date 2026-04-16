@@ -213,7 +213,7 @@ html, body {
 }
 
 /* =========================================================
-   🔥 AÇÕES MENORES (SEM QUEBRAR SUA DIV)
+    AÇÕES MENORES (SEM QUEBRAR SUA DIV)
    ========================================================= */
 .small-actions {
     margin-top: 30px;
@@ -318,4 +318,48 @@ html, body {
     background-color: #3b7197;
     color: #fff;
     border: none;
+}
+
+/* DIMINUI ALTURA DOS CARDS DE AÇÃO */
+.small-actions .action-card {
+    padding: 0 !important; /* remove padding do card */
+    height: auto !important; /* remove altura forçada */
+}
+
+/* controla o conteúdo interno */
+.small-actions .card-body {
+    padding: 10px 8px !important; /* altura real do card */
+}
+
+/* ícone menor */
+.small-actions .action-card i {
+    font-size: 1.4rem;
+    margin-bottom: 4px;
+}
+
+/* texto mais compacto */
+.small-actions .action-card-title {
+    font-size: 0.75rem;
+    margin-top: 2px;
+}
+
+/* ÍCONE AO LADO DO TEXTO */
+.small-actions .card-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px; /* espaço entre ícone e texto */
+    padding: 10px 8px !important;
+}
+
+/* ícone alinhado */
+.small-actions .action-card i {
+    font-size: 1.4rem;
+    margin: 0; /* remove margin vertical antiga */
+}
+
+/* texto alinhado */
+.small-actions .action-card-title {
+    font-size: 0.8rem;
+    margin: 0; /* remove margin-top */
 }
