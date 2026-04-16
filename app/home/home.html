@@ -99,44 +99,47 @@
         </div>
 
         <!-- AÇÕES (MESMA DIV, SÓ MENOR) -->
-        <div class="row g-3 small-actions mt-4">
+        <div class="bottom-nav">
+            <div class="navigation">
+                <ul>
+                    <li class="list active">
+                        <a href="home.html">
+                            <span class="icon"><i class="bi bi-house-fill"></i></span>
+                            <span class="text">Home</span>
+                        </a>
+                    </li>
 
-            <div class="col-lg-3 col-md-6">
-                <a href="limpeza.html" class="card action-card text-center">
-                    <div class="card-body">
-                        <i class="bi bi-droplet"></i>
-                        <div class="action-card-title">Limpeza</div>
-                    </div>
-                </a>
+                    <li class="list">
+                        <a href="limpeza.html">
+                            <span class="icon"><i class="bi bi-droplet-fill"></i></span>
+                            <span class="text">Limpeza</span>
+                        </a>
+                    </li>
+
+                    <li class="list">
+                        <a href="../monitoramento/monitoramento.html">
+                            <span class="icon"><i class="bi bi-lightning-charge-fill"></i></span>
+                            <span class="text">Monitor</span>
+                        </a>
+                    </li>
+
+                    <li class="list">
+                        <a href="cadastro.html">
+                            <span class="icon"><i class="bi bi-grid-fill"></i></span>
+                            <span class="text">Cadastro</span>
+                        </a>
+                    </li>
+
+                    <li class="list">
+                        <a href="configuracoes.html">
+                            <span class="icon"><i class="bi bi-gear-fill"></i></span>
+                            <span class="text">Config</span>
+                        </a>
+                    </li>
+
+                    <div class="indicator"></div>
+                </ul>
             </div>
-
-            <div class="col-lg-3 col-md-6">
-                <a href="../monitoramento/monitoramento.html" class="card action-card text-center">
-                    <div class="card-body">
-                        <i class="bi bi-lightning-charge-fill"></i>
-                        <div class="action-card-title">Monitoramento</div>
-                    </div>
-                </a>
-            </div>
-
-            <div class="col-lg-3 col-md-6">
-                <a href="cadastro.html" class="card action-card text-center">
-                    <div class="card-body">
-                        <i class="bi bi-grid-3x2"></i>
-                        <div class="action-card-title">Cadastro</div>
-                    </div>
-                </a>
-            </div>
-
-            <div class="col-lg-3 col-md-6">
-                <a href="configuracoes.html" class="card action-card text-center">
-                    <div class="card-body">
-                        <i class="bi bi-person-gear"></i>
-                        <div class="action-card-title">Configurações</div>
-                    </div>
-                </a>
-            </div>
-
         </div>
 
     </main>
@@ -160,15 +163,25 @@ function formatarNome(nome) {
 document.addEventListener("DOMContentLoaded", function () {
     let nome = localStorage.getItem("usuarioNome");
 
-    if (!nome) {
-        window.location.href = "../login.html";
-        return;
-    }
+//    if (!nome) {
+//        window.location.href = "../login.html";
+//        return;
+//    }
 
     nome = formatarNome(nome);
 
     document.getElementById("nomeUsuario").textContent = nome;
     document.getElementById("nomeNavbar").textContent = nome;
+});
+</script>
+<script>
+const list = document.querySelectorAll('.bottom-nav .list');
+
+list.forEach((item) => {
+    item.addEventListener('click', function () {
+        list.forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
+    });
 });
 </script>
 
