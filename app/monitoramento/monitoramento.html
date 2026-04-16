@@ -5,19 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monitoramento - SolarVision</title>
 
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Ícones -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <!-- ApexCharts -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+    <!-- CSS Personalizado (Referenciado externamente) -->
     <link rel="stylesheet" href="../css/style.css">
 
     <style>
+        /* Ajuste específico para os botões de gráfico desta página */
         .chart-controls button.active {
-            background-color: #3b7197 !important;
+            background-color: #3b7197 !important; 
             border-color: #3b7197 !important;
             color: #fff !important;
             font-weight: 500;
         }
-
         .chart-controls button:hover:not(.active):not(.disabled) {
             background-color: #e9ecef;
             color: #3b7197;
@@ -28,7 +34,10 @@
 
 <body>
 
+<!-- ESTRUTURA DO LAYOUT (IGUAL LIMPEZA.HTML) -->
 <div class="page-wrapper">
+
+    <!-- NAVBAR COM DROPDOWN -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="../home/home.html">
@@ -54,6 +63,8 @@
                     <li class="nav-item">
                         <a class="nav-link" href="../home/cadastro.html">Cadastro</a>
                     </li>
+
+                    <!-- DROPDOWN DE PERFIL (ADICIONADO CONFORME SOLICITADO) -->
                     <li class="nav-item dropdown ms-lg-3">
                         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-person-circle fs-5 me-2"></i> Gustavo
@@ -70,26 +81,31 @@
         </div>
     </nav>
 
+    <!-- CONTEÚDO PRINCIPAL (DASHBOARD) -->
     <div class="page-content container">
+        
+        <!-- Título e Controles -->
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
             <h2 class="h4 text-secondary mb-0">Geração de Energia</h2>
-
+            
             <div class="chart-controls d-flex flex-column flex-md-row align-items-center gap-2">
+                <!-- Navegação de Data -->
                 <div class="btn-group me-2">
                     <button class="btn btn-outline-secondary" onclick="mudarPeriodo(-1)"><i class="bi bi-chevron-left"></i></button>
-                    <button class="btn btn-outline-secondary disabled" id="displayData" style="min-width: 190px; color: #000; border-color: #ced4da;">Carregando...</button>
+                    <button class="btn btn-outline-secondary disabled" id="displayData" style="min-width: 150px; color: #000; border-color: #ced4da;">Carregando...</button>
                     <button class="btn btn-outline-secondary" onclick="mudarPeriodo(1)"><i class="bi bi-chevron-right"></i></button>
                 </div>
 
+                <!-- Seleção de Modo -->
                 <div class="btn-group">
                     <button class="btn btn-outline-secondary active" onclick="setModo('dia')" id="btn-dia">Dia</button>
                     <button class="btn btn-outline-secondary" onclick="setModo('semana')" id="btn-semana">Semana</button>
                     <button class="btn btn-outline-secondary" onclick="setModo('mes')" id="btn-mes">Mês</button>
-                    <button class="btn btn-outline-secondary" onclick="setModo('ano')" id="btn-ano">Ano</button>
                 </div>
             </div>
         </div>
 
+        <!-- Card do Gráfico -->
         <div class="card mb-4">
             <div class="card-body p-0">
                 <div id="graficoEnergia" style="min-height: 400px;">
@@ -99,63 +115,29 @@
                 </div>
             </div>
         </div>
+
     </div>
 
+    <!-- FOOTER (IGUAL AO LIMPEZA.HTML) -->
     <footer class="footer">
-        © 2025 SolarVision - Todos os direitos reservados.
+        © 2025 SolarVision — Todos os direitos reservados.
     </footer>
+
 </div>
 
+<!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
+<!-- LÓGICA DO GRÁFICO -->
 <script>
-    let dataAtual = criarDataLocal('2018-01-01', '12:00:00');
-    let modoAtual = 'dia';
+    let dataAtual = new Date('2018-01-01T12:00:00'); 
+    let modoAtual = 'dia'; 
     let chart = null;
 
     document.addEventListener('DOMContentLoaded', () => {
         atualizarInterface();
         carregarDados();
     });
-
-    function criarDataLocal(diaStr, horaStr = '00:00:00') {
-        const [ano, mes, dia] = diaStr.split('-').map(Number);
-        const [hora, minuto, segundo] = horaStr.split(':').map(Number);
-        return new Date(ano, mes - 1, dia, hora || 0, minuto || 0, segundo || 0, 0);
-    }
-
-    function formatarDataISO(data) {
-        const ano = data.getFullYear();
-        const mes = String(data.getMonth() + 1).padStart(2, '0');
-        const dia = String(data.getDate()).padStart(2, '0');
-        return `${ano}-${mes}-${dia}`;
-    }
-
-    function somarDias(data, quantidade) {
-        const novaData = new Date(data);
-        novaData.setDate(novaData.getDate() + quantidade);
-        return novaData;
-    }
-
-    function obterInicioSemana(data) {
-        const inicio = new Date(data);
-        const diaSemana = (inicio.getDay() + 6) % 7;
-        inicio.setDate(inicio.getDate() - diaSemana);
-        inicio.setHours(0, 0, 0, 0);
-        return inicio;
-    }
-
-    function obterFimSemana(data) {
-        return somarDias(obterInicioSemana(data), 6);
-    }
-
-    function formatarDiaMes(data) {
-        return data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-    }
-
-    function formatarDiaMesAno(data) {
-        return data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    }
 
     function setModo(modo) {
         modoAtual = modo;
@@ -172,10 +154,7 @@
             dataAtual.setDate(dataAtual.getDate() + (direcao * 7));
         } else if (modoAtual === 'mes') {
             dataAtual.setMonth(dataAtual.getMonth() + direcao);
-        } else {
-            dataAtual.setFullYear(dataAtual.getFullYear() + direcao);
         }
-
         atualizarInterface();
         carregarDados();
     }
@@ -183,326 +162,101 @@
     function atualizarInterface() {
         const display = document.getElementById('displayData');
         const { inicio, fim } = calcularIntervalo();
-        const inicioData = criarDataLocal(inicio);
-        const fimData = criarDataLocal(fim);
+        
+        const inicioStr = inicio.split('-').reverse().join('/');
+        const fimStr = fim.split('-').reverse().join('/');
 
         if (modoAtual === 'dia') {
-            display.innerText = formatarDiaMesAno(inicioData);
-            return;
+            display.innerText = inicioStr;
+        } else {
+            display.innerText = `${inicioStr} - ${fimStr}`;
         }
-
-        if (modoAtual === 'semana') {
-            display.innerText = `${formatarDiaMes(inicioData)} - ${formatarDiaMes(fimData)}`;
-            return;
-        }
-
-        if (modoAtual === 'mes') {
-            display.innerText = new Date(dataAtual.getFullYear(), dataAtual.getMonth(), 1)
-                .toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-            return;
-        }
-
-        display.innerText = String(dataAtual.getFullYear());
     }
 
     function calcularIntervalo() {
-        const referencia = new Date(dataAtual);
-        let inicio;
-        let fim;
+        let d = new Date(dataAtual);
+        let inicioStr, fimStr;
 
         if (modoAtual === 'dia') {
-            inicio = new Date(referencia.getFullYear(), referencia.getMonth(), referencia.getDate(), 0, 0, 0, 0);
-            fim = new Date(referencia.getFullYear(), referencia.getMonth(), referencia.getDate(), 23, 59, 59, 999);
-        } else if (modoAtual === 'semana') {
-            inicio = obterInicioSemana(referencia);
-            fim = obterFimSemana(referencia);
-            fim.setHours(23, 59, 59, 999);
-        } else if (modoAtual === 'mes') {
-            // Busca estritamente dentro dos dias do mês atual
-            inicio = new Date(referencia.getFullYear(), referencia.getMonth(), 1, 0, 0, 0, 0);
-            fim = new Date(referencia.getFullYear(), referencia.getMonth() + 1, 0, 23, 59, 59, 999);
-        } else {
-            inicio = new Date(referencia.getFullYear(), 0, 1, 0, 0, 0, 0);
-            fim = new Date(referencia.getFullYear(), 11, 31, 23, 59, 59, 999);
+            inicioStr = d.toISOString().split('T')[0];
+            fimStr = inicioStr; 
+        } 
+        else if (modoAtual === 'semana') {
+            const diaSemana = d.getDay(); 
+            d.setDate(d.getDate() - diaSemana);
+            inicioStr = d.toISOString().split('T')[0];
+            d.setDate(d.getDate() + 6);
+            fimStr = d.toISOString().split('T')[0];
+        } 
+        else if (modoAtual === 'mes') {
+            const ano = d.getFullYear();
+            const mes = d.getMonth();
+            const primeiroDia = new Date(ano, mes, 1);
+            const ultimoDia = new Date(ano, mes + 1, 0);
+            primeiroDia.setHours(12);
+            ultimoDia.setHours(12);
+            inicioStr = primeiroDia.toISOString().split('T')[0];
+            fimStr = ultimoDia.toISOString().split('T')[0];
         }
-
-        return {
-            inicio: formatarDataISO(inicio),
-            fim: formatarDataISO(fim)
-        };
+        return { inicio: inicioStr, fim: fimStr };
     }
 
     async function carregarDados() {
         const { inicio, fim } = calcularIntervalo();
-
+        
         try {
             const res = await fetch(`/api/leituras?inicio=${inicio}&fim=${fim}`);
-
-            if (!res.ok) {
-                throw new Error(`Erro na API: ${res.status}`);
-            }
-
+            
+            if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
+            
             const dados = await res.json();
-            renderizarGrafico(agruparDadosPorPeriodo(dados));
+            renderizarGrafico(dados);
+
         } catch (error) {
-            console.warn('API indisponível ou ambiente de Preview. Usando dados simulados.', error);
+            console.warn("API indisponível ou ambiente de Preview. Usando dados simulados.", error);
             const dadosMock = gerarDadosMock(inicio, fim);
-            renderizarGrafico(agruparDadosPorPeriodo(dadosMock));
+            renderizarGrafico(dadosMock);
         }
     }
 
     function gerarDadosMock(inicioStr, fimStr) {
         const dados = [];
-        let atual = criarDataLocal(inicioStr, '00:00:00');
-        const fim = criarDataLocal(fimStr, '23:59:59');
-        const passo = 15 * 60000;
+        let atual = new Date(inicioStr + 'T00:00:00');
+        const fim = new Date(fimStr + 'T23:59:59');
+        const passo = modoAtual === 'dia' ? 15 * 60000 : 3600000 * 4; 
 
         while (atual <= fim) {
             const hora = atual.getHours();
             let watts = 0;
-
             if (hora >= 6 && hora <= 18) {
                 watts = Math.sin((hora - 6) * Math.PI / 12) * 800;
                 watts += Math.random() * 200 - 100;
             }
-
-            if (watts < 0) {
-                watts = 0;
-            }
+            if (watts < 0) watts = 0;
 
             dados.push({
-                x: formatarDataISO(atual) + `T${String(atual.getHours()).padStart(2, '0')}:${String(atual.getMinutes()).padStart(2, '0')}:${String(atual.getSeconds()).padStart(2, '0')}`,
+                x: atual.getTime(),
                 y: parseFloat(watts.toFixed(2))
             });
-
             atual = new Date(atual.getTime() + passo);
         }
-
         return dados;
     }
 
-    function obterGranularidade() {
-        if (modoAtual === 'dia') {
-            return 'hora';
-        }
-
-        if (modoAtual === 'semana') {
-            return 'dia';
-        }
-
-        if (modoAtual === 'mes') {
-            return 'semana'; // Mantém o agrupamento em semanas
-        }
-
-        return 'mes';
-    }
-
-    function normalizarTimestamp(ponto) {
-        if (ponto.dia && ponto.hora) {
-            return criarDataLocal(ponto.dia, ponto.hora).getTime();
-        }
-
-        if (typeof ponto.x === 'string') {
-            const [dia, hora = '00:00:00'] = ponto.x.split('T');
-            return criarDataLocal(dia, hora).getTime();
-        }
-
-        if (typeof ponto.x === 'number') {
-            const dataUtc = new Date(ponto.x);
-            return new Date(
-                dataUtc.getUTCFullYear(),
-                dataUtc.getUTCMonth(),
-                dataUtc.getUTCDate(),
-                dataUtc.getUTCHours(),
-                dataUtc.getUTCMinutes(),
-                dataUtc.getUTCSeconds(),
-                dataUtc.getUTCMilliseconds()
-            ).getTime();
-        }
-
-        return NaN;
-    }
-
-    function obterInicioPeriodo(timestamp) {
-        const data = new Date(timestamp);
-        const granularidade = obterGranularidade();
-
-        if (granularidade === 'mes') {
-            return new Date(data.getFullYear(), data.getMonth(), 1, 0, 0, 0, 0).getTime();
-        }
-
-        if (granularidade === 'semana') {
-            return obterInicioSemana(data).getTime();
-        }
-
-        if (granularidade === 'dia') {
-            return new Date(data.getFullYear(), data.getMonth(), data.getDate(), 0, 0, 0, 0).getTime();
-        }
-
-        return new Date(data.getFullYear(), data.getMonth(), data.getDate(), data.getHours(), 0, 0, 0).getTime();
-    }
-
-    function listarPeriodosEsperados(grupos) {
-        const granularidade = obterGranularidade();
-
-        if (granularidade === 'hora') {
-            return Array.from(grupos.keys()).sort((a, b) => a - b);
-        }
-
-        if (modoAtual === 'mes') {
-            const chaves = Array.from(grupos.keys()).sort((a, b) => a - b);
-            if (chaves.length === 0) return []; 
-            
-            const primeiraSemana = new Date(chaves[0]);
-            const ultimaSemana = new Date(chaves[chaves.length - 1]);
-            const periodos = [];
-            let atual = new Date(primeiraSemana);
-
-            // Garante que o intervalo se ajuste às semanas com dados dentro do mês
-            while (atual.getTime() <= ultimaSemana.getTime()) {
-                periodos.push(atual.getTime());
-                atual.setDate(atual.getDate() + 7);
-            }
-            return periodos;
-        }
-
-        const { inicio, fim } = calcularIntervalo();
-        const inicioData = criarDataLocal(inicio, '00:00:00');
-        const fimData = criarDataLocal(fim, '23:59:59');
-        const periodos = [];
-        let atual = new Date(obterInicioPeriodo(inicioData.getTime()));
-
-        while (atual.getTime() <= fimData.getTime()) {
-            periodos.push(atual.getTime());
-
-            if (granularidade === 'dia') {
-                atual.setDate(atual.getDate() + 1);
-            } else if (granularidade === 'semana') {
-                atual.setDate(atual.getDate() + 7);
-            } else {
-                atual.setMonth(atual.getMonth() + 1, 1);
-            }
-        }
-
-        return periodos;
-    }
-
-    function obterNomeSerie() {
-        if (modoAtual === 'ano') {
-            return 'Potência média por mês';
-        }
-
-        if (modoAtual === 'mes') {
-            return 'Potência média por semana';
-        }
-        
-        if (modoAtual === 'semana') {
-            return 'Potência média por dia';
-        }
-
-        return 'Potência média por hora';
-    }
-
-    function formatarCategoria(periodoMs, indice) {
-        const data = new Date(periodoMs);
-
-        if (modoAtual === 'ano') {
-            return data.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
-        }
-
-        if (modoAtual === 'mes') {
-            return `Sem ${indice + 1}`;
-        }
-
-        if (modoAtual === 'semana') {
-            return ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][data.getDay()];
-        }
-
-        return `${String(data.getHours()).padStart(2, '0')}:00`;
-    }
-
-    function formatarTooltip(periodoMs) {
-        const data = new Date(periodoMs);
-
-        if (modoAtual === 'ano') {
-            return data.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-        }
-
-        if (modoAtual === 'mes') {
-            const fimSemana = somarDias(data, 6);
-            return `${formatarDiaMesAno(data)} - ${formatarDiaMesAno(fimSemana)}`;
-        }
-
-        if (modoAtual === 'semana') {
-            return data.toLocaleDateString('pt-BR', {
-                weekday: 'long',
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            });
-        }
-
-        return `${formatarDiaMesAno(data)} ${String(data.getHours()).padStart(2, '0')}:00`;
-    }
-
-    function agruparDadosPorPeriodo(dados) {
-        const grupos = new Map();
-
-        dados.forEach(ponto => {
-            const timestamp = normalizarTimestamp(ponto);
-            const valor = Number(ponto.y);
-
-            if (Number.isNaN(timestamp) || Number.isNaN(valor)) {
-                return;
-            }
-
-            const inicioPeriodo = obterInicioPeriodo(timestamp);
-            const acumulado = grupos.get(inicioPeriodo) || { soma: 0, quantidade: 0 };
-
-            acumulado.soma += valor;
-            acumulado.quantidade += 1;
-            grupos.set(inicioPeriodo, acumulado);
-        });
-
-        return listarPeriodosEsperados(grupos).map((periodoMs, indice) => {
-            const acumulado = grupos.get(periodoMs) || { soma: 0, quantidade: 0 };
-            const media = acumulado.quantidade > 0 ? acumulado.soma / acumulado.quantidade : 0;
-
-            return {
-                categoria: formatarCategoria(periodoMs, indice),
-                tooltip: formatarTooltip(periodoMs),
-                valor: parseFloat(media.toFixed(2))
-            };
-        });
-    }
-
-    function renderizarGrafico(dadosAgrupados) {
+    function renderizarGrafico(dados) {
         const elGrafico = document.getElementById('graficoEnergia');
-
-        if (!dadosAgrupados.length) {
+        if (dados.length === 0) {
             elGrafico.innerHTML = `
                 <div class="d-flex flex-column justify-content-center align-items-center h-100 text-muted">
                     <i class="bi bi-cloud-slash" style="font-size: 2rem;"></i>
                     <p class="mt-2">Sem dados para este período.</p>
                 </div>`;
-
-            if (chart) {
-                chart.destroy();
-                chart = null;
-            }
-
+            if (chart) { chart.destroy(); chart = null; }
             return;
         }
 
-        const categorias = dadosAgrupados.map(item => item.categoria);
-        const valores = dadosAgrupados.map(item => item.valor);
-        const tooltips = dadosAgrupados.map(item => item.tooltip);
-
         const options = {
-            series: [{
-                name: obterNomeSerie(),
-                data: valores
-            }],
+            series: [{ name: 'Potência', data: dados }],
             chart: {
                 type: 'area',
                 height: 350,
@@ -512,52 +266,26 @@
             },
             dataLabels: { enabled: false },
             stroke: { curve: 'smooth', width: 2 },
-            markers: { size: 0 },
-            grid: {
-                padding: {
-                    left: 16,
-                    right: 28,
-                    top: 8
-                }
+            xaxis: { 
+                type: 'datetime',
+                tooltip: { enabled: false }
             },
-            xaxis: {
-                type: 'category',
-                categories: categorias,
-                tickPlacement: 'between',
-                labels: {
-                    rotate: 0,
-                    hideOverlappingLabels: false,
-                    trim: false
-                }
-            },
-            yaxis: {
-                title: { text: 'Watts' }
-            },
+            yaxis: { title: { text: 'Watts' } },
             colors: ['#3b7197'],
             fill: {
                 type: 'gradient',
-                gradient: {
-                    shadeIntensity: 1,
-                    opacityFrom: 0.7,
-                    opacityTo: 0.2,
-                    stops: [0, 90, 100]
-                }
+                gradient: { shadeIntensity: 1, opacityFrom: 0.7, opacityTo: 0.2, stops: [0, 90, 100] }
             },
-            tooltip: {
-                x: {
-                    formatter: (_, { dataPointIndex }) => tooltips[dataPointIndex] || categorias[dataPointIndex] || ''
-                }
-            }
+            tooltip: { x: { format: 'dd/MM/yy HH:mm' } }
         };
 
         if (chart) {
-            chart.destroy();
-            chart = null;
+            chart.updateSeries([{ data: dados }]);
+        } else {
+            elGrafico.innerHTML = '';
+            chart = new ApexCharts(elGrafico, options);
+            chart.render();
         }
-
-        elGrafico.innerHTML = '';
-        chart = new ApexCharts(elGrafico, options);
-        chart.render();
     }
 </script>
 

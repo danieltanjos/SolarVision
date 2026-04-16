@@ -1,0 +1,1 @@
+O backend Spring Boot agora fica em `backend/`, como backend único do projeto, seguindo a separação usada em aula: `controller`, `service`, `repository`, `model`, `dto`, `config`, `security` e `exception`.
