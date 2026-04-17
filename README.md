@@ -1,274 +1,128 @@
 # SolarVision
+> Clareza que transforma energia em resultado
 
-SolarVision e uma aplicacao web para monitoramento de operacao e limpeza de paineis solares. O repositório contem o frontend estatico, um backend Node.js usado pela orquestracao atual, uma implementacao alternativa em Spring Boot, os scripts de banco de dados e o seeder de carga inicial.
+## ☀️ SolarVision: Monitoramento de Energia Solar
 
-## Visao Geral
+O **SolarVision** é uma aplicação web full-stack desenvolvida para monitoramento e análise de dados de geração de energia solar. A arquitetura é baseada em microsserviços e utiliza o Docker Compose para orquestração, garantindo um ambiente de desenvolvimento e produção consistente e de fácil implantação.
 
-Hoje o fluxo principal do projeto continua baseado em:
+## 🚀 Tecnologias Utilizadas
 
-- `app/` para o frontend HTML/CSS servido por Nginx
-- `backend/` para a API Node.js usada pelo `docker-compose.yml`
-- `postgres-init/` para a criacao inicial do schema
-- `data-seeder/` para importacao do CSV no banco
+Este projeto é construído com as seguintes tecnologias:
 
-O projeto tambem contem um backend alternativo em Java dentro de `backend/springboot/`, organizado como modulo independente do backend Node.
+| Componente | Tecnologia | Descrição |
+| :--- | :--- | :--- |
+| **Frontend** | HTML5, CSS3, Bootstrap | Interface de usuário para visualização e interação. |
+| **Servidor Web** | Nginx | Servidor web leve e eficiente, atua como proxy reverso. |
+| **Backend (API)** | Java 21, Spring Boot | API REST, GraphQL, autenticação JWT e acesso ao banco de dados. |
+| **Banco de Dados** | PostgreSQL | Armazenamento persistente para dados de usuários e leituras de energia. |
+| **Orquestração** | Docker, Docker Compose | Containerização e gerenciamento de todos os serviços. |
+| **Autenticação** | JWT | Token Bearer para proteger as rotas da API. |
 
-## Estrutura Do Projeto
+## 📦 Estrutura do Projeto
 
-```text
+O projeto está organizado em diretórios modulares:
+
+```
 SolarVision/
-|-- app/                    Frontend estatico
-|-- backend/                Backend Node.js principal
-|   |-- package.json
-|   |-- server.js
-|   `-- springboot/         Backend alternativo em Spring Boot
-|       |-- pom.xml
-|       |-- mvnw
-|       |-- Dockerfile
-|       `-- src/
-|-- data-seeder/            Seeder do banco a partir do CSV
-|-- docs/                   Materiais de apoio e arquivos visuais
-|-- nginx/                  Configuracao do Nginx
-|-- postgres-init/          Scripts SQL de inicializacao
-`-- docker-compose.yml      Ambiente local com Docker
+├── app/                  # Código do Frontend (HTML, CSS, JS)
+│   ├── css/              # Arquivos CSS do Bootstrap
+│   ├── home/             # Páginas internas (home, cadastro, configurações, limpeza)
+│   ├── img/              # Imagens e logotipos
+│   ├── index.html        # Página inicial
+│   └── login.html        # Página de login
+├── backend/              # Código do Backend Spring Boot
+│   ├── src/main/java/.../controller
+│   ├── src/main/java/.../service
+│   ├── src/main/java/.../repository
+│   ├── src/main/java/.../model
+│   ├── src/main/java/.../dto
+│   └── src/main/resources
+├── data-seeder/          # Script Python para carga inicial via CSV
+├── postgres-init/        # Scripts de inicialização do PostgreSQL
+│   └── 01-init-schema.sql# Criação das tabelas `usuarios` e `leituras_energia`
+├── nginx/                # Configuração do Nginx
+│   └── default.conf      # Configuração do proxy reverso
+└── docker-compose.yml    # Definição e orquestração dos serviços
 ```
 
-## Pastas E Responsabilidades
+## ⚙️ Instalação e Execução
 
-### `app/`
+Para rodar o projeto localmente, você precisa ter o **Docker** e o **Docker Compose** instalados em sua máquina.
 
-Frontend estatico do projeto.
-
-- Contem as paginas de autenticacao, home, cadastro, configuracoes, monitoramento e limpeza
-- E servido pelo container Nginx definido em `app/Dockerfile`
-- Usa os arquivos de `nginx/default.conf` no ambiente Docker
-
-### `backend/`
-
-Backend Node.js/Express atualmente conectado ao `docker-compose.yml`.
-
-- Arquivos principais:
-  - `backend/server.js`
-  - `backend/package.json`
-  - `backend/package-lock.json`
-  - `backend/Dockerfile`
-- E o backend que sobe por padrao quando voce executa `docker-compose up`
-- O volume `backend/node_modules/` fica ignorado no Git
-
-### `backend/springboot/`
-
-Implementacao alternativa e mais estruturada do backend em Java com Spring Boot.
-
-- Stack principal:
-  - Java 21+
-  - Spring Boot 3.5
-  - Spring Web
-  - Spring Validation
-  - Spring Security + JWT
-  - Spring Data JPA
-  - Spring GraphQL
-  - PostgreSQL
-- O modulo contem:
-  - endpoints REST para autenticacao, grupos, placas, limpezas e dashboard
-  - endpoint interno para notificacoes
-  - camada GraphQL
-  - contratos `.proto`
-  - seeder de dados de exemplo
-  - testes JUnit
-- Esse backend ainda nao e o backend padrao da orquestracao Docker atual
-
-### `postgres-init/`
-
-Scripts SQL executados automaticamente pelo PostgreSQL no primeiro boot do banco.
-
-- Arquivo principal: `postgres-init/01-init-schema.sql`
-
-### `data-seeder/`
-
-Responsavel por popular a base com dados iniciais a partir do CSV tratado.
-
-- Arquivos principais:
-  - `data-seeder/inserirCSV.py`
-  - `data-seeder/Dados_Tratados_CDTE-PSI.csv`
-  - `data-seeder/Dockerfile`
-
-### `docs/`
-
-Materiais de apoio do projeto.
-
-- Exemplo: `docs/assets/brand-concept.svg`
-
-## Como Rodar O Projeto Completo Com Docker
-
-### Pre-requisitos
-
-- Docker
-- Docker Compose
-
-### Subir o ambiente
+### 1. Clonar o Repositório
 
 ```bash
-cd /path/to/project
-
-quickstart.sh
+git clone [URL_DO_SEU_REPOSITORIO]
+cd SolarVision
 ```
-ou 
-```bash
-cd /path/to/project
 
-docker-compose down --rmi local && docker-compose build --no-cache && docker-compose up -d
-```
-teste
+### 2. Configurar Variáveis de Ambiente
 
-### Servicos esperados
+O arquivo `docker-compose.yml` já contém as variáveis de ambiente necessárias. **É altamente recomendável que você altere a senha padrão** `your_strong_password` para uma senha segura em ambos os serviços (`backend` e `postgres`).
 
-- Frontend: `http://localhost:8080`
-- PostgreSQL: `localhost:5432`
+### 3. Iniciar os Serviços
 
-### Observacoes sobre a orquestracao atual
-
-- O `docker-compose.yml` usa o backend Node em `./backend`
-- O backend Spring Boot em `backend/springboot/` nao esta ligado ao compose por padrao
-- A senha `your_strong_password` no compose e apenas placeholder e deve ser trocada em uso real
-
-## Como Rodar Apenas O Backend Node
-
-### Pre-requisitos
-
-- Node.js
-- npm
-
-### Comandos
+Execute o comando abaixo para construir as imagens e iniciar todos os containers em modo *detached* (segundo plano):
 
 ```bash
-cd backend
-npm install
-npm start
+docker-compose up --build -d
 ```
 
-## Como Rodar Apenas O Backend Spring Boot
+Aguarde alguns instantes até que todos os serviços estejam prontos (o banco de dados e a API precisam iniciar).
 
-### Pre-requisitos
+### 4. Acessar a Aplicação
 
-- Java 21 ou superior
-- Maven 3.9+ ou Maven Wrapper funcional
-- PostgreSQL disponivel
+A aplicação estará acessível no seu navegador através da porta `8080`:
 
-### Rodando em desenvolvimento
+[http://localhost:8080](http://localhost:8080)
+
+Basta o usuário criar seu cadastro e fazer o login em seguida.
+
+## 🔑 Rotas da API (Backend)
+
+O backend Spring Boot expõe as rotas principais descritas no diagrama:
+
+| Método | Rota | Descrição |
+| :--- | :--- | :--- |
+| `POST` | `/api/auth/google` | Autentica usuário e retorna `access_token`. |
+| `GET` | `/api/users/me` | Retorna o usuário autenticado. |
+| `GET` | `/api/groups` | Lista grupos de placas. |
+| `POST` | `/api/groups` | Cadastra grupo de placas. |
+| `GET` | `/api/groups/{groupId}/panels` | Lista placas de um grupo. |
+| `GET` | `/api/panels` | Lista placas solares. |
+| `POST` | `/api/panels` | Cadastra placa solar. |
+| `GET` | `/api/panels/{panelId}/cleanings` | Lista histórico de limpezas. |
+| `POST` | `/api/cleanings` | Registra limpeza. |
+| `GET` | `/api/dashboard/summary` | Retorna resumo do dashboard. |
+| `GET` | `/api/dashboard/metrics` | Retorna séries de métricas do dashboard. |
+| `POST` | `/api/graphql` | Executa consultas GraphQL. |
+
+## 📊 Banco de Dados (PostgreSQL)
+
+O banco de dados é usado pelo backend Spring Boot com entidades para usuários, grupos solares, placas, leituras, limpezas e alertas. O projeto também mantém scripts de inicialização em `postgres-init/`.
+
+### População Inicial de Dados
+
+O projeto inclui um container chamado seed-data, uma solução efêmera (transitória) projetada para realizar a carga inicial dos dados do arquivo .csv para o banco de dados e encerrar sua execução logo em seguida.
+
+## 🛑 Parar e Remover os Serviços
+
+Para parar os containers:
 
 ```bash
-cd backend/springboot
-mvn spring-boot:run
+docker-compose stop
 ```
 
-Se preferir usar o wrapper:
+Para parar e remover os containers, redes e volumes (incluindo os dados do banco):
 
 ```bash
-cd backend/springboot
-./mvnw spring-boot:run
+docker-compose down -v
 ```
 
-### Build do jar
+**Atenção:** O comando `down -v` irá deletar o volume de dados (`./postgres-data`), removendo permanentemente todos os dados do banco de dados.
 
-```bash
-cd backend/springboot
-mvn clean package
-java -jar target/solarvision-api-0.0.1-SNAPSHOT.jar
-```
+---
 
-### Testes do backend Spring Boot
+## © direitos autorais
 
-```bash
-cd backend/springboot
-mvn test
-```
-
-## Variaveis De Ambiente
-
-### Backend Node
-
-- `DB_USER`
-- `DB_HOST`
-- `DB_DATABASE`
-- `DB_PASSWORD`
-
-### Backend Spring Boot
-
-- `DB_URL`
-- `DB_USER`
-- `DB_PASSWORD`
-- `JWT_SECRET`
-- `JWT_EXPIRATION_SECONDS`
-- `INTERNAL_API_TOKEN`
-
-## Contratos E Endpoints Do Backend Spring Boot
-
-### Autenticacao
-
-- `POST /auth/google`
-- `GET /users/me`
-
-### Grupos
-
-- `GET /groups`
-- `POST /groups`
-- `GET /groups/{groupId}`
-- `PATCH /groups/{groupId}`
-- `DELETE /groups/{groupId}`
-- `GET /groups/{groupId}/panels`
-
-### Placas
-
-- `GET /panels`
-- `POST /panels`
-- `GET /panels/{panelId}`
-- `PATCH /panels/{panelId}`
-- `DELETE /panels/{panelId}`
-
-### Limpezas
-
-- `GET /panels/{panelId}/cleanings`
-- `POST /cleanings`
-- `PATCH /cleanings/{cleaningId}`
-- `DELETE /cleanings/{cleaningId}`
-
-### Dashboard
-
-- `GET /dashboard/summary`
-- `GET /dashboard/metrics`
-
-### Interno E GraphQL
-
-- `POST /internal/notifications/email`
-- `POST /graphql`
-- `GET /graphiql`
-
-## Banco De Dados E Carga Inicial
-
-O banco usado pelo ambiente principal e PostgreSQL.
-
-- `postgres-init/` prepara o schema inicial
-- `data-seeder/` carrega dados iniciais do CSV tratado
-- O volume `postgres-data/` fica fora do versionamento
-
-## Dockerfiles Do Projeto
-
-- `app/Dockerfile`: frontend
-- `backend/Dockerfile`: backend Node.js
-- `backend/springboot/Dockerfile`: backend Spring Boot
-- `data-seeder/Dockerfile`: seeder
-
-## Estado Atual Da Arquitetura
-
-O repositorio agora esta organizado com uma estrutura mais coerente:
-
-- existe um unico README global na raiz
-- o backend Spring Boot foi movido para dentro de `backend/` como `backend/springboot/`
-- o backend Node continua sendo a implementacao usada pelo `docker-compose.yml`
-- o backend Spring Boot permanece como alternativa/evolucao da API
-
-## Notas De Manutencao
-
-- Artefatos de build do Spring Boot em `backend/springboot/target/` ficam ignorados no Git
-- Dependencias do Node em `backend/node_modules/` ficam ignoradas no Git
-- Se futuramente o Spring Boot passar a ser o backend principal do projeto, o `docker-compose.yml` deve ser ajustado numa mudanca separada
+© 2025 Solar Vision. Todos os direitos reservados.
