@@ -1,51 +1,52 @@
 /* =========================================================
-   RESET & BASE
+   Base
    ========================================================= */
-html, body {
+html,
+body {
     height: 100%;
     margin: 0;
     background-color: #f8f9fa;
     font-family: "Roboto", sans-serif;
 }
 
-/* Estrutura para manter footer no fim */
 .page-wrapper {
     min-height: 100%;
     display: flex;
     flex-direction: column;
 }
 
-.main-content, .page-content {
+.main-content,
+.page-content {
     flex: 1;
     padding-top: 2rem;
     padding-bottom: 2rem;
 }
 
 /* =========================================================
-   NAVBAR & FOOTER
+   Navbar e footer
    ========================================================= */
-.footer {
-    padding: 4px 0;
-    font-size: 0.75rem;
-    border-top: 1px solid #e0e0e0;
-    background-color: #f8f9fa;
-    text-align: center;
-    color: #666;
+.navbar-logo {
+    width: auto;
+    height: 60px;
 }
 
-.navbar-logo {
-    height: 60px;
-    width: auto;
+.footer {
+    padding: 4px 0;
+    border-top: 1px solid #e0e0e0;
+    background-color: #f8f9fa;
+    color: #666;
+    font-size: 0.75rem;
+    text-align: center;
 }
 
 /* =========================================================
-   CARDS GERAIS
+   Cards e botoes
    ========================================================= */
 .card {
     border: none;
     border-radius: 12px;
     padding: 1.5rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     transition: transform 0.2s ease-in-out;
 }
 
@@ -53,213 +54,187 @@ html, body {
     transform: translateY(-5px);
 }
 
-/* =========================================================
-   BOTÕES
-   ========================================================= */
 .btn-primary,
 .btn-save,
 .btn-limpeza {
-    background-color: #3b7197;
+    padding: 10px 24px;
     border: none;
     border-radius: 10px;
-    padding: 10px 24px;
-    font-weight: 500;
+    background-color: #3b7197;
     color: #fff;
+    font-weight: 500;
 }
 
 .btn-primary:hover,
 .btn-save:hover,
 .btn-limpeza:hover {
     background-color: #2a526b;
-}
-
-/* LOGIN (Google / Apple) */
-.btn-google {
-    background-color: #fff;
-    border: 1px solid #ddd;
-    color: #202124;
-    font-weight: 500;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-}
-
-.btn-google:hover {
-    background-color: #f7f7f7;
-}
-
-.btn-apple {
-    background-color: #000;
     color: #fff;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-}
-
-.btn-apple:hover {
-    background-color: #111;
-}
-
-.g-logo {
-    width: 18px;
-    height: 18px;
 }
 
 /* =========================================================
-   FORMULÁRIOS
+   Formularios
    ========================================================= */
 .form-label {
     font-weight: 500;
 }
 
-.switch {
-    transform: scale(1.2);
-}
-
 /* =========================================================
-   DASHBOARD / KPIs
+   Dashboard
    ========================================================= */
-.kpi-title {
-    font-size: 0.95rem;
-    font-weight: 500;
-    color: #6c757d;
-}
-
-.kpi-body {
-    display: flex;
-    align-items: center;
-    margin-top: 10px;
-}
-
-.kpi-value {
-    font-size: 2.4rem;
-    font-weight: 700;
-    line-height: 1;
-    color: #2c3e50;
-}
-
-/* NOVO ESTILO MODERNO */
 .kpi-card {
-    background: linear-gradient(135deg, #ffffff, #f1f5f9);
-    border-radius: 16px;
-    padding: 1.2rem;
-    transition: all 0.25s ease;
     position: relative;
     overflow: hidden;
+    padding: 1.2rem;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #ffffff, #f1f5f9);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.kpi-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: #3b7197;
 }
 
 .kpi-card:hover {
     transform: translateY(-6px) scale(1.02);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
 }
 
-/* barra lateral estilo SaaS */
-.kpi-card::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 100%;
-    width: 4px;
-    background: #3b7197;
+.kpi-title {
+    color: #6c757d;
+    font-size: 0.95rem;
+    font-weight: 500;
 }
 
-/* =========================================================
-   GRÁFICOS (PLACEHOLDER)
-   ========================================================= */
+.kpi-value {
+    color: #2c3e50;
+    font-size: 2.4rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
 .chart-placeholder,
 .bar-chart-placeholder {
     height: 60px;
+    background-position: center;
     background-repeat: no-repeat;
     background-size: contain;
-    background-position: center;
     opacity: 0.6;
 }
 
-/* Linha */
 .chart-placeholder {
     background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 40"><path d="M 0 30 L 10 20 L 20 25 L 30 15 L 40 18 L 50 10 L 60 15 L 70 25 L 80 22 L 90 30 L 100 25" fill="none" stroke="%233b7197" stroke-width="2"/></svg>');
 }
 
-/* Barras */
 .bar-chart-placeholder {
     background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 40"><rect x="5" y="25" width="10" height="15" fill="%23d3d3d3"/><rect x="20" y="20" width="10" height="20" fill="%23d3d3d3"/><rect x="35" y="15" width="10" height="25" fill="%233b7197"/><rect x="50" y="28" width="10" height="12" fill="%23d3d3d3"/><rect x="65" y="30" width="10" height="10" fill="%23d3d3d3"/></svg>');
 }
 
 /* =========================================================
-   AÇÕES (ORIGINAIS)
+   Navegacao inferior da home
    ========================================================= */
-.action-card {
-    background-color: #3b7197;
-    color: white;
+.bottom-nav {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.navigation {
+    width: 100%;
+    max-width: 420px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.navigation ul {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    padding: 0;
+    margin: 0;
+}
+
+.navigation ul li {
+    position: relative;
+    z-index: 2;
+    width: 70px;
+    height: 70px;
+    list-style: none;
+}
+
+.navigation ul li a {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     text-decoration: none;
 }
 
-.action-card:hover {
-    background-color: #2a526b;
+.navigation ul li a .icon {
+    color: #3b7197;
+    font-size: 1.4rem;
+    transform: translateY(6px);
+    transition: transform 0.3s ease, color 0.3s ease;
 }
 
-.action-card i {
-    font-size: 3rem;
+.navigation ul li a .text {
+    margin-top: 2px;
+    color: #3b7197;
+    font-size: 0.7rem;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.action-card-title {
-    margin-top: 1rem;
-    font-weight: 500;
+.navigation ul li.active a .icon {
+    transform: translateY(0);
 }
 
-/* =========================================================
-    AÇÕES MENORES (SEM QUEBRAR SUA DIV)
-   ========================================================= */
-.small-actions {
-    margin-top: 30px;
-    justify-content: center;
+.navigation ul li.active a .text,
+.navigation ul li:hover a .text {
+    opacity: 1;
+    transform: translateY(0);
 }
 
-/* controla largura real */
-.small-actions .col-lg-3 {
-    flex: 0 0 auto;
-    width: 170px;
+.navigation ul li:hover {
+    filter: brightness(1.05);
 }
 
-/* reduz tamanho do card */
-.small-actions .action-card {
-    padding: 0.8rem !important;
-    border-radius: 10px;
-}
-
-/* ícone menor */
-.small-actions .action-card i {
-    font-size: 1.5rem;
-}
-
-/* texto menor */
-.small-actions .action-card-title {
-    font-size: 0.8rem;
-    margin-top: 6px;
+.navigation ul li:hover a .icon {
+    transform: translateY(-12px);
 }
 
 /* =========================================================
-   CALENDÁRIO
+   Calendario
    ========================================================= */
 .calendar {
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     padding: 1.5rem;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .calendar button {
-    border: none;
-    background: none;
-    padding: 8px;
-    border-radius: 8px;
     width: 36px;
     height: 36px;
+    padding: 8px;
+    border: none;
+    border-radius: 8px;
+    background: none;
 }
 
 .calendar button:hover {
@@ -276,14 +251,14 @@ html, body {
 }
 
 /* =========================================================
-   CADASTRO DE PLACAS
+   Cadastro
    ========================================================= */
 .scroll-box {
     max-height: 220px;
     overflow-y: auto;
+    padding: 0.5rem 1rem;
     border: 1px solid #ddd;
     border-radius: 8px;
-    padding: 0.5rem 1rem;
 }
 
 .scroll-box::-webkit-scrollbar {
@@ -291,8 +266,8 @@ html, body {
 }
 
 .scroll-box::-webkit-scrollbar-thumb {
-    background-color: #3b7197;
     border-radius: 6px;
+    background-color: #3b7197;
 }
 
 .placa-item {
@@ -307,7 +282,7 @@ html, body {
 }
 
 /* =========================================================
-   TABS (CONFIGURAÇÕES)
+   Configuracoes
    ========================================================= */
 .nav-tabs .nav-link {
     color: #3b7197;
@@ -315,161 +290,7 @@ html, body {
 }
 
 .nav-tabs .nav-link.active {
+    border: none;
     background-color: #3b7197;
     color: #fff;
-    border: none;
-}
-
-/* DIMINUI ALTURA DOS CARDS DE AÇÃO */
-.small-actions .action-card {
-    padding: 0 !important; /* remove padding do card */
-    height: auto !important; /* remove altura forçada */
-}
-
-/* controla o conteúdo interno */
-.small-actions .card-body {
-    padding: 10px 8px !important; /* altura real do card */
-}
-
-/* ícone menor */
-.small-actions .action-card i {
-    font-size: 1.4rem;
-    margin-bottom: 4px;
-}
-
-/* texto mais compacto */
-.small-actions .action-card-title {
-    font-size: 0.75rem;
-    margin-top: 2px;
-}
-
-/* ÍCONE AO LADO DO TEXTO */
-.small-actions .card-body {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px; /* espaço entre ícone e texto */
-    padding: 10px 8px !important;
-}
-
-/* ícone alinhado */
-.small-actions .action-card i {
-    font-size: 1.4rem;
-    margin: 0; /* remove margin vertical antiga */
-}
-
-/* texto alinhado */
-.small-actions .action-card-title {
-    font-size: 0.8rem;
-    margin: 0; /* remove margin-top */
-}
-
-/* ===============================
-   NAVBAR FIXA (ACIMA DO FOOTER)
-================================ */
-
-.bottom-nav {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    margin-top: 20px;
-}
-
-/* container */
-.navigation {
-    width: 100%;
-    max-width: 420px;
-    height: 70px;
-    background: #ffffff;
-    border-radius: 14px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-}
-
-/* lista */
-.navigation ul {
-    display: flex;
-    width: 100%;
-    justify-content: space-around;
-    padding: 0;
-    margin: 0;
-    position: relative;
-}
-
-.navigation ul li {
-    list-style: none;
-    width: 70px;
-    height: 70px;
-    position: relative;
-    z-index: 2; /* IMPORTANTE */
-}
-
-/* link */
-.navigation ul li a {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center; /* ISSO resolve o centro vertical */
-    height: 100%;
-}
-
-/* icone */
-.navigation ul li a .icon {
-    font-size: 1.4rem;
-    color: #3b7197;
-    transition: transform 0.3s ease, color 0.3s ease;
-    transform: translateY(6px); /* desce o ícone */
-}
-
-/* texto */
-.navigation ul li a .text {
-    font-size: 0.7rem;
-    color: #3b7197;
-    opacity: 0;
-    transform: translateY(8px);
-    transition: 0.3s;
-    margin-top: 2px;
-}
-
-/* posição padrão (mais baixo) */
-.navigation ul li a .icon {
-    transform: translateY(6px);
-}
-
-/* hover */
-.navigation ul li:hover a .icon {
-    transform: translateY(2px);
-}
-
-/* ativo (BEM mais equilibrado) */
-.navigation ul li.active a .icon {
-    transform: translateY(0px);
-}
-
-.navigation ul li.active a .text {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-/* ===============================
-   HOVER EFFECT (INTERATIVO)
-================================ */
-
-/* levanta o ícone no hover */
-.navigation ul li:hover a .icon {
-    transform: translateY(-12px);
-    color: #3b7197;
-}
-
-/* mostra o texto no hover */
-.navigation ul li:hover a .text {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-/* leve destaque no fundo */
-.navigation ul li:hover {
-    filter: brightness(1.05);
 }
