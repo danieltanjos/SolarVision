@@ -14,6 +14,7 @@
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
     <!-- CSS Personalizado (Referenciado externamente) -->
+    <script src="../js/theme.js"></script>
     <link rel="stylesheet" href="../css/style.css">
 
     <style>
@@ -255,17 +256,23 @@
             return;
         }
 
+        const temaEscuro = document.documentElement.classList.contains('dark-mode');
+
         const options = {
             series: [{ name: 'Potência', data: dados }],
             chart: {
                 type: 'area',
                 height: 350,
+                foreColor: temaEscuro ? '#e7edf3' : '#2c3e50',
                 toolbar: { show: false },
                 zoom: { enabled: false },
                 animations: { enabled: true }
             },
             dataLabels: { enabled: false },
             stroke: { curve: 'smooth', width: 2 },
+            grid: {
+                borderColor: temaEscuro ? '#34465a' : '#e9ecef'
+            },
             xaxis: { 
                 type: 'datetime',
                 tooltip: { enabled: false }

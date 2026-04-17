@@ -294,3 +294,126 @@ body {
     background-color: #3b7197;
     color: #fff;
 }
+
+/* =========================================================
+   Modo escuro
+   ========================================================= */
+html.dark-mode,
+html.dark-mode body {
+    background-color: #111820;
+    color: #e7edf3;
+    color-scheme: dark;
+}
+
+html.dark-mode .bg-light,
+html.dark-mode .bg-white,
+html.dark-mode .navbar,
+html.dark-mode .footer,
+html.dark-mode .dropdown-menu {
+    background-color: #18222d !important;
+    color: #e7edf3;
+}
+
+html.dark-mode .card,
+html.dark-mode .calendar,
+html.dark-mode .navigation {
+    background: #1d2834;
+    color: #e7edf3;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+html.dark-mode .kpi-card {
+    background: linear-gradient(135deg, #1d2834, #243342);
+}
+
+html.dark-mode .navbar-brand,
+html.dark-mode .nav-link,
+html.dark-mode .dropdown-item,
+html.dark-mode .form-label,
+html.dark-mode .form-check-label,
+html.dark-mode .table,
+html.dark-mode .text-secondary {
+    color: #e7edf3 !important;
+}
+
+html.dark-mode .text-muted,
+html.dark-mode .kpi-title,
+html.dark-mode .calendar .inactive {
+    color: #9caab8 !important;
+}
+
+html.dark-mode .kpi-value {
+    color: #f4f8fb;
+}
+
+html.dark-mode .dropdown-item:hover,
+html.dark-mode .dropdown-item:focus,
+html.dark-mode .calendar button:hover {
+    background-color: #263647;
+    color: #fff !important;
+}
+
+html.dark-mode .form-control,
+html.dark-mode .form-select {
+    border-color: #3a4b5c;
+    background-color: #121b24;
+    color: #e7edf3;
+}
+
+html.dark-mode .form-control::placeholder {
+    color: #8f9daa;
+}
+
+html.dark-mode .form-control:focus,
+html.dark-mode .form-select:focus {
+    border-color: #6ca0c6;
+    box-shadow: 0 0 0 0.25rem rgba(108, 160, 198, 0.25);
+}
+
+html.dark-mode .btn-outline-primary,
+html.dark-mode .btn-outline-secondary {
+    border-color: #5b7084;
+    color: #d8e4ef;
+}
+
+html.dark-mode .btn-outline-primary:hover,
+html.dark-mode .btn-outline-primary.active,
+html.dark-mode .btn-outline-secondary:hover,
+html.dark-mode .btn-outline-secondary.active {
+    border-color: #3b7197;
+    background-color: #3b7197;
+    color: #fff;
+}
+
+html.dark-mode .nav-tabs {
+    border-bottom-color: #34465a;
+}
+
+html.dark-mode .nav-tabs .nav-link {
+    color: #d8e4ef;
+}
+
+html.dark-mode .scroll-box,
+html.dark-mode .placa-item {
+    border-color: #34465a;
+}
+
+html.dark-mode .navbar-toggler {
+    border-color: #5b7084;
+}
+
+html.dark-mode .navbar-toggler-icon {
+    filter: invert(1) grayscale(1);
+}
+
+html.dark-mode #displayData {
+    border-color: #5b7084 !important;
+    color: #e7edf3 !important;
+}
+
+html.dark-mode .apexcharts-tooltip,
+html.dark-mode .apexcharts-tooltip-title {
+    border-color: #34465a !important;
+    background: #18222d !important;
+    color: #e7edf3;
+}
