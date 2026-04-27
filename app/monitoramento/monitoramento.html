@@ -14,6 +14,7 @@
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
     <!-- CSS Personalizado (Referenciado externamente) -->
+    <script src="../js/theme.js"></script>
     <link rel="stylesheet" href="../css/style.css">
 
     <style>
@@ -70,8 +71,8 @@
                             <i class="bi bi-person-circle fs-5 me-2"></i> Gustavo
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="../home/configuracoes.html">Meu Perfil</a></li>
-                            <li><a class="dropdown-item" href="../home/configuracoes.html">Configurações</a></li>
+                            <li><a class="dropdown-item" href="../home/configuracoes.html#perfil">Meu Perfil</a></li>
+                            <li><a class="dropdown-item" href="../home/configuracoes.html#sistema">Configurações</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item text-danger" href="../index.html">Sair</a></li>
                         </ul>
@@ -255,17 +256,23 @@
             return;
         }
 
+        const temaEscuro = document.documentElement.classList.contains('dark-mode');
+
         const options = {
             series: [{ name: 'Potência', data: dados }],
             chart: {
                 type: 'area',
                 height: 350,
+                foreColor: temaEscuro ? '#e7edf3' : '#2c3e50',
                 toolbar: { show: false },
                 zoom: { enabled: false },
                 animations: { enabled: true }
             },
             dataLabels: { enabled: false },
             stroke: { curve: 'smooth', width: 2 },
+            grid: {
+                borderColor: temaEscuro ? '#34465a' : '#e9ecef'
+            },
             xaxis: { 
                 type: 'datetime',
                 tooltip: { enabled: false }
