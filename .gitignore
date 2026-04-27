@@ -1,16 +1,17 @@
-# Dados locais
+# Arquivo .gitignore para o projeto SolarVision
+
+# --- Pastas de Dados dos Bancos de Dados ---
+# Ignora completamente as pastas de dados gerados.
 postgres-data/
 
-# Dependencias e artefatos de build
-backend/node_modules/
-backend/springboot/target/
-
-# Arquivos de ambiente
+# --- Arquivos de Ambiente ---
+# Nunca salve senhas ou chaves de API no Git!
 .env
 .env.*
 !.env.example
 
-# Sistema operacional e IDE
+# --- Arquivos de Sistema Operacional e IDEs ---
 .DS_Store
 Thumbs.db
 .vscode/
+backend/target/
