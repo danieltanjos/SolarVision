@@ -1,48 +1,84 @@
 package br.com.solarvision.api.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
 
 import java.time.OffsetDateTime;
+import java.math.BigDecimal;
 
 @Entity
-@Table(name = "panel_readings")
+@Table(name = "leituras_energia")
 public class PanelReading {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "panel_id", nullable = false)
-    private Panel panel;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "placa_id", nullable = false)
+    private Panel placa;
 
-    @Column(nullable = false)
-    private OffsetDateTime timestamp;
+    @Column(name = "data_hora", nullable = false)
+    private OffsetDateTime dataHora;
 
-    @Column(name = "generation_kw", nullable = false)
-    private Double generationKw;
+    @Column(name = "wats_gerados", nullable = false)
+    private BigDecimal watsGerados;
 
-    @Column(name = "soiling_index", nullable = false)
-    private Double soilingIndex;
+    @Column(name = "criado_em", nullable = false)
+    private OffsetDateTime criadoEm;
 
-    @Column(name = "water_reuse_liters", nullable = false)
-    private Double waterReuseLiters;
+    @PrePersist
+    public void prePersist() {
+        if (criadoEm == null) {
+            criadoEm = OffsetDateTime.now();
+        }
+    }
 
-    @Column(nullable = false)
-    private Double efficiency;
+    public Long getId() {
+        return id;
+    }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public Panel getPanel() { return panel; }
-    public void setPanel(Panel panel) { this.panel = panel; }
-    public OffsetDateTime getTimestamp() { return timestamp; }
-    public void setTimestamp(OffsetDateTime timestamp) { this.timestamp = timestamp; }
-    public Double getGenerationKw() { return generationKw; }
-    public void setGenerationKw(Double generationKw) { this.generationKw = generationKw; }
-    public Double getSoilingIndex() { return soilingIndex; }
-    public void setSoilingIndex(Double soilingIndex) { this.soilingIndex = soilingIndex; }
-    public Double getWaterReuseLiters() { return waterReuseLiters; }
-    public void setWaterReuseLiters(Double waterReuseLiters) { this.waterReuseLiters = waterReuseLiters; }
-    public Double getEfficiency() { return efficiency; }
-    public void setEfficiency(Double efficiency) { this.efficiency = efficiency; }
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Panel getPlaca() {
+        return placa;
+    }
+
+    public void setPlaca(Panel placa) {
+        this.placa = placa;
+    }
+
+    public OffsetDateTime getDataHora() {
+        return dataHora;
+    }
+
+    public void setDataHora(OffsetDateTime dataHora) {
+        this.dataHora = dataHora;
+    }
+
+    public BigDecimal getWatsGerados() {
+        return watsGerados;
+    }
+
+    public void setWatsGerados(BigDecimal watsGerados) {
+        this.watsGerados = watsGerados;
+    }
+
+    public OffsetDateTime getCriadoEm() {
+        return criadoEm;
+    }
+
+    public void setCriadoEm(OffsetDateTime criadoEm) {
+        this.criadoEm = criadoEm;
+    }
 }

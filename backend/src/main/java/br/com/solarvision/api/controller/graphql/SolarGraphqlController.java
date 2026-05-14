@@ -1,8 +1,9 @@
 package br.com.solarvision.api.controller.graphql;
 
-import br.com.solarvision.api.dto.DashboardDtos;
 import br.com.solarvision.api.dto.GraphqlDtos;
-import br.com.solarvision.api.service.GraphqlQueryService;
+import br.com.solarvision.api.service.GraphqlService;
+import org.springframework.graphql.data.method.annotation.Argument;
+import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.stereotype.Controller;
 
@@ -11,34 +12,29 @@ import java.util.List;
 @Controller
 public class SolarGraphqlController {
 
-    private final GraphqlQueryService graphqlQueryService;
+    private final GraphqlService graphqlService;
 
-    public SolarGraphqlController(GraphqlQueryService graphqlQueryService) {
-        this.graphqlQueryService = graphqlQueryService;
+    public SolarGraphqlController(GraphqlService graphqlService) {
+        this.graphqlService = graphqlService;
     }
 
     @QueryMapping
-    public DashboardDtos.GraphqlDashboardResponse dashboard() {
-        return graphqlQueryService.dashboard();
+    public List<GraphqlDtos.GraphqlPanelResponse> panels(@Argument("filter") GraphqlDtos.PanelFilter filter) {
+        return graphqlService.findPanels(filter);
     }
 
     @QueryMapping
-    public List<GraphqlDtos.GraphqlGroupResponse> groups() {
-        return graphqlQueryService.groups();
+    public List<GraphqlDtos.GraphqlCleaningResponse> cleanings(@Argument("filter") GraphqlDtos.CleaningFilter filter) {
+        return graphqlService.findCleanings(filter);
     }
 
-    @QueryMapping
-    public List<GraphqlDtos.GraphqlPanelResponse> panels() {
-        return graphqlQueryService.panels();
+    @MutationMapping
+    public GraphqlDtos.GraphqlPanelResponse createPanel(@Argument("input") GraphqlDtos.CreatePanelInput input) {
+        return graphqlService.createPanel(input);
     }
 
-    @QueryMapping
-    public List<GraphqlDtos.GraphqlAlertResponse> alerts() {
-        return graphqlQueryService.alerts();
-    }
-
-    @QueryMapping
-    public List<GraphqlDtos.GraphqlCleaningResponse> cleanings() {
-        return graphqlQueryService.cleanings();
+    @MutationMapping
+    public GraphqlDtos.GraphqlCleaningResponse createCleaning(@Argument("input") GraphqlDtos.CreateCleaningInput input) {
+        return graphqlService.createCleaning(input);
     }
 }

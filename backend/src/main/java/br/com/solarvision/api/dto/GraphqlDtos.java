@@ -1,9 +1,55 @@
 package br.com.solarvision.api.dto;
 
-public class GraphqlDtos {
+public final class GraphqlDtos {
 
-    public record GraphqlGroupResponse(Long id, String name, String location, String status, String createdAt) {}
-    public record GraphqlPanelResponse(Long id, Long groupId, String serialNumber, String model, String status) {}
-    public record GraphqlAlertResponse(Long id, Long panelId, String type, String severity, Double soilingIndex, String createdAt, boolean active) {}
-    public record GraphqlCleaningResponse(Long id, Long panelId, String performedAt, Double waterUsedLiters, String performedBy, String notes) {}
+    private GraphqlDtos() {
+    }
+
+    public record PanelFilter(
+            Long grupoId,
+            String status,
+            String modelo
+    ) {
+    }
+
+    public record CleaningFilter(
+            Long placaId,
+            String dataInicio,
+            String dataFim
+    ) {
+    }
+
+    public record CreatePanelInput(
+            Long grupoId,
+            String modelo,
+            String status
+    ) {
+    }
+
+    public record CreateCleaningInput(
+            Long placaId,
+            String dataLimpeza,
+            String observacao
+    ) {
+    }
+
+    public record GraphqlPanelResponse(
+            Long id,
+            Long grupoId,
+            String grupoNome,
+            String modelo,
+            String status,
+            String criadoEm
+    ) {
+    }
+
+    public record GraphqlCleaningResponse(
+            Long id,
+            Long placaId,
+            String placaModelo,
+            String dataLimpeza,
+            String observacao,
+            String criadoEm
+    ) {
+    }
 }
