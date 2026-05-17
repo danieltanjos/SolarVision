@@ -5,28 +5,35 @@ const items = [
   { to: "/app/limpeza", label: "Limpeza", icon: "bi-droplet-fill" },
   { to: "/app/monitoramento", label: "Monitoramento", icon: "bi-lightning-charge-fill" },
   { to: "/app/cadastro", label: "Cadastro", icon: "bi-grid-fill" },
-  { to: "/app/configuracoes", label: "Config", icon: "bi-gear-fill" }
+  { to: "/app/configuracoes", label: "Configurações", icon: "bi-gear-fill" }
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ isCollapsed, onToggle }) {
   return (
-    <aside className="sv-sidebar d-none d-lg-flex">
-      <div className="sv-sidebar-inner">
-        <div className="sv-sidebar-header">
-          <span className="sv-sidebar-eyebrow">Microsserviços + React</span>
-          <h1>SolarVision</h1>
-          <p>Painel operacional para grupos, placas, limpezas e geração.</p>
-        </div>
+    <aside className={`sv-sidebar d-none d-lg-flex ${isCollapsed ? "is-collapsed" : ""}`}>
+      <div className="sv-sidebar-frame">
+        <button
+          type="button"
+          className="sv-sidebar-handle"
+          onClick={onToggle}
+          aria-label={isCollapsed ? "Abrir menu lateral" : "Fechar menu lateral"}
+          aria-expanded={!isCollapsed}
+        >
+          <i className="bi bi-list" />
+        </button>
 
-        <nav className="sv-sidebar-nav">
+        <nav className="sv-sidebar-nav" aria-label="Menu principal">
           {items.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
+              title={isCollapsed ? item.label : undefined}
               className={({ isActive }) => `sv-nav-item ${isActive ? "active" : ""}`}
             >
-              <i className={`bi ${item.icon}`} />
-              <span>{item.label}</span>
+              <span className="sv-nav-icon">
+                <i className={`bi ${item.icon}`} />
+              </span>
+              <span className="sv-nav-label">{item.label}</span>
             </NavLink>
           ))}
         </nav>
