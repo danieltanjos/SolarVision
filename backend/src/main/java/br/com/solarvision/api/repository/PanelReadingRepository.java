@@ -2,11 +2,16 @@ package br.com.solarvision.api.repository;
 
 import br.com.solarvision.api.model.PanelReading;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.List;
 
-public interface PanelReadingRepository extends JpaRepository<PanelReading, Long> {
-    List<PanelReading> findByTimestampBetweenOrderByTimestampAsc(OffsetDateTime start, OffsetDateTime end);
-    List<PanelReading> findTop100ByOrderByTimestampDesc();
+public interface PanelReadingRepository extends JpaRepository<PanelReading, Long>, PanelReadingRepositoryCustom {
+    @Query("""
+            select coalesce(sum(pr.watsGerados), 0)
+            from PanelReading pr
+            where pr.dataHora between :start and :end
+            """)
+    BigDecimal sumByDataHoraBetween(OffsetDateTime start, OffsetDateTime end);
 }

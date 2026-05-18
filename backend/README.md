@@ -1,99 +1,67 @@
-# SolarVision API - Spring Boot
+# SolarVision Backend
 
-Backend Spring Boot criado a partir do diagrama enviado. Ele cobre os contratos REST principais, uma camada GraphQL, endpoint interno de notificação por email e os contratos `.proto` do trecho gRPC do desenho.
+Backend único e ativo do projeto SolarVision.
 
 ## Stack
-- Java 21
+
+- Java 25
 - Spring Boot 3.5.12
 - Spring Web
-- Spring Security + JWT
+- Spring Security com JWT
 - Spring Data JPA
 - Spring GraphQL
 - PostgreSQL
 
-Usei Spring Boot 3.5.12 com Java 21 para manter boa compatibilidade com o ecossistema Spring atual e com o ambiente moderno de execução.
+## Estrutura
 
-## O que foi implementado
-### Autenticação
-- `POST /auth/google`
-- `GET /users/me`
+```text
+backend/
+├── data-seeder/
+├── postgres-init/
+├── src/main/java/br/com/solarvision/api
+│   ├── config
+│   ├── controller
+│   ├── dto
+│   ├── exception
+│   ├── model
+│   ├── repository
+│   ├── security
+│   └── service
+├── src/main/resources
+│   ├── application.yml
+│   └── graphql/schema.graphqls
+├── Dockerfile
+└── pom.xml
+```
 
-### Grupos
-- `GET /groups`
-- `POST /groups`
-- `GET /groups/{groupId}`
-- `PATCH /groups/{groupId}`
-- `DELETE /groups/{groupId}`
-- `GET /groups/{groupId}/panels`
+## Endpoints principais
 
-### Placas
-- `GET /panels`
-- `POST /panels`
-- `GET /panels/{panelId}`
-- `PATCH /panels/{panelId}`
-- `DELETE /panels/{panelId}`
+### Públicos
 
-### Limpezas
-- `GET /panels/{panelId}/cleanings`
-- `POST /cleanings`
-- `PATCH /cleanings/{cleaningId}`
-- `DELETE /cleanings/{cleaningId}`
+- `POST /api/auth/register`
+- `POST /api/auth/login`
 
-### Dashboard
-- `GET /dashboard/summary`
-- `GET /dashboard/metrics`
+### Protegidos
 
-### Interno
-- `POST /internal/notifications/email`
-- `POST /graphql`
-- `GET /graphiql`
+- `GET /api/users/me`
+- `GET/POST /api/groups`
+- `GET /api/groups/{groupId}/panels`
+- `GET/POST /api/panels`
+- `GET/POST /api/cleanings`
+- `GET /api/dashboard/metrics`
+- `GET /api/dashboard/summary`
+- `POST /api/graphql`
 
-## Observações importantes
-- O endpoint `/auth/google` está pronto no contrato, mas a validação real do token Google ficou como **stub local** para facilitar seus testes sem depender da integração externa agora.
-- O diagrama parecia ter alguns typos, e eu corrigi no código:
-  - `access_token` no lugar de `acess_token`
-  - `DateTime` no lugar de `DataTime`
-  - `DELETE /panels/{panelId}` no lugar de `/panels/{groupId}`
-- Existe um seeder (`DataSeederConfig`) para subir o projeto já com dados de exemplo.
+## Observações
 
-## Como rodar
-Você vai precisar de Java 21 e Maven.
+- O schema do banco é validado com `spring.jpa.hibernate.ddl-auto=validate`.
+- O endpoint GraphQL ativo é `POST /api/graphql`.
+- O backend legado duplicado foi removido; só esta árvore `backend/` deve ser usada.
+
+## Execução isolada
+
+O fluxo preferido é pela raiz do projeto:
 
 ```bash
-cd backend
-mvn spring-boot:run
-```
-
-Ou gerar o jar:
-
-```bash
-mvn clean package
-java -jar target/solarvision-api-0.0.1-SNAPSHOT.jar
-```
-
-## Variáveis de ambiente
-- `DB_URL`
-- `DB_USER`
-- `DB_PASSWORD`
-- `JWT_SECRET`
-- `JWT_EXPIRATION_SECONDS`
-- `INTERNAL_API_TOKEN`
-
-## Exemplo de login
-```json
-POST /auth/google
-{
-  "google_token": "Daniel|daniel@solarvision.com"
-}
-```
-
-## Exemplo GraphQL
-```graphql
-query {
-  dashboard {
-    totalGroups
-    totalPanels
-    activeAlerts
-  }
-}
+docker compose up --build -d backend
 ```

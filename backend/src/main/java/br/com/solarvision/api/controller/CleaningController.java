@@ -3,11 +3,16 @@ package br.com.solarvision.api.controller;
 import br.com.solarvision.api.dto.CleaningDtos;
 import br.com.solarvision.api.service.CleaningService;
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
 @RestController
+@RequestMapping("/api/cleanings")
 public class CleaningController {
 
     private final CleaningService cleaningService;
@@ -16,24 +21,13 @@ public class CleaningController {
         this.cleaningService = cleaningService;
     }
 
-    @GetMapping("/panels/{panelId}/cleanings")
-    public List<CleaningDtos.CleaningResponse> listByPanel(@PathVariable Long panelId) {
-        return cleaningService.listByPanel(panelId);
+    @GetMapping
+    public List<CleaningDtos.CleaningResponse> listCleanings() {
+        return cleaningService.listCleanings();
     }
 
-    @PostMapping("/cleanings")
-    public CleaningDtos.CleaningResponse create(@Valid @RequestBody CleaningDtos.CleaningRequest request) {
-        return cleaningService.create(request);
-    }
-
-    @PatchMapping("/cleanings/{cleaningId}")
-    public CleaningDtos.CleaningResponse update(@PathVariable Long cleaningId,
-                                                @Valid @RequestBody CleaningDtos.CleaningRequest request) {
-        return cleaningService.update(cleaningId, request);
-    }
-
-    @DeleteMapping("/cleanings/{cleaningId}")
-    public CleaningDtos.CleaningDeleteResponse delete(@PathVariable Long cleaningId) {
-        return cleaningService.delete(cleaningId);
+    @PostMapping
+    public CleaningDtos.CleaningResponse createCleaning(@Valid @RequestBody CleaningDtos.CreateCleaningRequest request) {
+        return cleaningService.createCleaning(request);
     }
 }

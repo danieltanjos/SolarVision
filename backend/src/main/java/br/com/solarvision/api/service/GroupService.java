@@ -1,79 +1,74 @@
 package br.com.solarvision.api.service;
 
-import br.com.solarvision.api.model.SolarGroup;
-import br.com.solarvision.api.model.GroupStatus;
 import br.com.solarvision.api.dto.GroupDtos;
-import br.com.solarvision.api.exception.BadRequestException;
+import br.com.solarvision.api.dto.PanelDtos;
 import br.com.solarvision.api.exception.NotFoundException;
+import br.com.solarvision.api.model.GroupStatus;
+import br.com.solarvision.api.model.Panel;
+import br.com.solarvision.api.model.SolarGroup;
+import br.com.solarvision.api.repository.PanelRepository;
 import br.com.solarvision.api.repository.SolarGroupRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 
 @Service
-@Transactional
 public class GroupService {
 
     private final SolarGroupRepository solarGroupRepository;
+    private final PanelRepository panelRepository;
 
-    public GroupService(SolarGroupRepository solarGroupRepository) {
+    public GroupService(SolarGroupRepository solarGroupRepository, PanelRepository panelRepository) {
         this.solarGroupRepository = solarGroupRepository;
+        this.panelRepository = panelRepository;
     }
 
-    public List<GroupDtos.GroupResponse> listAll() {
-        return solarGroupRepository.findAll().stream().map(this::toResponse).toList();
+    @Transactional(readOnly = true)
+    public List<GroupDtos.GroupResponse> listGroups() {
+        return solarGroupRepository.findAllByOrderByIdAsc().stream()
+                .map(this::toGroupResponse)
+                .toList();
     }
 
-    public GroupDtos.GroupResponse getById(Long id) {
-        return toResponse(findEntity(id));
-    }
-
-    public GroupDtos.GroupResponse create(GroupDtos.GroupRequest request) {
+    @Transactional
+    public GroupDtos.GroupResponse createGroup(GroupDtos.CreateGroupRequest request) {
         SolarGroup group = new SolarGroup();
-        apply(group, request);
-        return toResponse(solarGroupRepository.save(group));
+        group.setNome(request.nome().trim());
+        group.setStatus(request.status() == null ? GroupStatus.ATIVO : request.status());
+
+        SolarGroup savedGroup = solarGroupRepository.save(group);
+        return toGroupResponse(savedGroup);
     }
 
-    public GroupDtos.GroupResponse update(Long id, GroupDtos.GroupRequest request) {
-        SolarGroup group = findEntity(id);
-        apply(group, request);
-        return toResponse(solarGroupRepository.save(group));
+    @Transactional(readOnly = true)
+    public List<PanelDtos.PanelResponse> listPanelsByGroup(Long groupId) {
+        SolarGroup group = solarGroupRepository.findById(groupId)
+                .orElseThrow(() -> new NotFoundException("Grupo solar não encontrado."));
+
+        return panelRepository.findAllByGrupoIdOrderByIdAsc(group.getId()).stream()
+                .map(this::toPanelResponse)
+                .toList();
     }
 
-    public GroupDtos.DeleteResponse delete(Long id) {
-        SolarGroup group = findEntity(id);
-        solarGroupRepository.delete(group);
-        return new GroupDtos.DeleteResponse("Grupo deletado com sucesso.", id, OffsetDateTime.now());
-    }
-
-    public SolarGroup findEntity(Long id) {
-        return solarGroupRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Grupo não encontrado: " + id));
-    }
-
-    private void apply(SolarGroup group, GroupDtos.GroupRequest request) {
-        group.setName(request.name());
-        group.setLocation(request.location());
-        group.setStatus(parseStatus(request.status()));
-    }
-
-    private GroupStatus parseStatus(String status) {
-        try {
-            return GroupStatus.valueOf(status.toUpperCase());
-        } catch (IllegalArgumentException ex) {
-            throw new BadRequestException("Status de grupo inválido: " + status);
-        }
-    }
-
-    private GroupDtos.GroupResponse toResponse(SolarGroup group) {
+    private GroupDtos.GroupResponse toGroupResponse(SolarGroup group) {
         return new GroupDtos.GroupResponse(
                 group.getId(),
-                group.getName(),
-                group.getLocation(),
+                group.getNome(),
                 group.getStatus().name(),
-                group.getCreatedAt()
+                group.getCriadoEm(),
+                group.getPlacas().size()
+        );
+    }
+
+    private PanelDtos.PanelResponse toPanelResponse(Panel panel) {
+        return new PanelDtos.PanelResponse(
+                panel.getId(),
+                panel.getGrupo().getId(),
+                panel.getGrupo().getNome(),
+                panel.getModel(),
+                panel.getStatus().name(),
+                panel.getCriadoEm()
         );
     }
 }
