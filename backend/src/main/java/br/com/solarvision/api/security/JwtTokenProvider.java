@@ -33,7 +33,7 @@ public class JwtTokenProvider {
         return Jwts.builder()
                 .subject(user.getEmail())
                 .claim("userId", user.getId())
-                .claim("name", user.getName())
+                .claim("nome", user.getNome())
                 .claim("role", user.getRole().name())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusSeconds(expirationSeconds)))
@@ -50,15 +50,22 @@ public class JwtTokenProvider {
         }
     }
 
-    public Claims getClaims(String token) {
-        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload();
+    public boolean shouldAuthenticate() {
+        return SecurityContextHolder.getContext().getAuthentication() == null;
     }
 
     public void authenticate(String token) {
-        Claims claims = getClaims(token);
+        Claims claims = Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload();
         String role = claims.get("role", String.class);
-        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+        AuthenticatedUser principal = new AuthenticatedUser(
+                claims.get("userId", Long.class),
                 claims.getSubject(),
+                claims.get("nome", String.class),
+                role
+        );
+
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                principal,
                 null,
                 List.of(new SimpleGrantedAuthority("ROLE_" + role))
         );

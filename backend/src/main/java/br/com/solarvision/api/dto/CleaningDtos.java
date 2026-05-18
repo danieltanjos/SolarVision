@@ -1,32 +1,32 @@
 package br.com.solarvision.api.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.OffsetDateTime;
 
-public class CleaningDtos {
+public final class CleaningDtos {
 
-    public record CleaningRequest(
-            @NotNull Long panel_id,
-            @NotNull OffsetDateTime performed_at,
-            @NotNull Double water_used_liters,
-            @NotBlank String performed_by,
-            String notes
-    ) {}
+    private CleaningDtos() {
+    }
+
+    public record CreateCleaningRequest(
+            @NotNull(message = "placaId é obrigatório.")
+            Long placaId,
+            @NotNull(message = "dataLimpeza é obrigatória.")
+            OffsetDateTime dataLimpeza,
+            @Size(max = 1000, message = "Observação deve ter no máximo 1000 caracteres.")
+            String observacao
+    ) {
+    }
 
     public record CleaningResponse(
-            Long cleaning_id,
-            Long panel_id,
-            OffsetDateTime performed_at,
-            Double water_used_liters,
-            String performed_by,
-            String notes
-    ) {}
-
-    public record CleaningDeleteResponse(
-            String message,
-            Long cleaning_id,
-            OffsetDateTime deleted_at
-    ) {}
+            Long id,
+            Long placaId,
+            String placaModelo,
+            OffsetDateTime dataLimpeza,
+            String observacao,
+            OffsetDateTime criadoEm
+    ) {
+    }
 }

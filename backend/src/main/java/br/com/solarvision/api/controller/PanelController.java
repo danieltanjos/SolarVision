@@ -1,15 +1,18 @@
 package br.com.solarvision.api.controller;
 
-import br.com.solarvision.api.dto.GroupDtos;
 import br.com.solarvision.api.dto.PanelDtos;
 import br.com.solarvision.api.service.PanelService;
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/panels")
+@RequestMapping("/api/panels")
 public class PanelController {
 
     private final PanelService panelService;
@@ -19,27 +22,12 @@ public class PanelController {
     }
 
     @GetMapping
-    public List<PanelDtos.PanelResponse> list() {
-        return panelService.listAll();
+    public List<PanelDtos.PanelResponse> listPanels() {
+        return panelService.listPanels();
     }
 
     @PostMapping
-    public PanelDtos.PanelResponse create(@Valid @RequestBody PanelDtos.PanelRequest request) {
-        return panelService.create(request);
-    }
-
-    @GetMapping("/{panelId}")
-    public PanelDtos.PanelResponse getById(@PathVariable Long panelId) {
-        return panelService.getById(panelId);
-    }
-
-    @PatchMapping("/{panelId}")
-    public PanelDtos.PanelResponse update(@PathVariable Long panelId, @Valid @RequestBody PanelDtos.PanelRequest request) {
-        return panelService.update(panelId, request);
-    }
-
-    @DeleteMapping("/{panelId}")
-    public GroupDtos.DeleteResponse delete(@PathVariable Long panelId) {
-        return panelService.delete(panelId);
+    public PanelDtos.PanelResponse createPanel(@Valid @RequestBody PanelDtos.CreatePanelRequest request) {
+        return panelService.createPanel(request);
     }
 }

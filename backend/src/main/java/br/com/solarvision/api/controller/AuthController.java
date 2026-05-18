@@ -3,11 +3,13 @@ package br.com.solarvision.api.controller;
 import br.com.solarvision.api.dto.AuthDtos;
 import br.com.solarvision.api.service.AuthService;
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.*;
-
-import java.security.Principal;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequestMapping("/api/auth")
 public class AuthController {
 
     private final AuthService authService;
@@ -16,13 +18,13 @@ public class AuthController {
         this.authService = authService;
     }
 
-    @PostMapping("/auth/google")
-    public AuthDtos.AuthResponse loginWithGoogle(@Valid @RequestBody AuthDtos.GoogleAuthRequest request) {
-        return authService.loginWithGoogle(request.google_token());
+    @PostMapping("/register")
+    public AuthDtos.AuthResponse register(@Valid @RequestBody AuthDtos.RegisterRequest request) {
+        return authService.register(request);
     }
 
-    @GetMapping("/users/me")
-    public AuthDtos.UserMeResponse me(Principal principal) {
-        return authService.me(principal);
+    @PostMapping("/login")
+    public AuthDtos.AuthResponse login(@Valid @RequestBody AuthDtos.LoginRequest request) {
+        return authService.login(request);
     }
 }

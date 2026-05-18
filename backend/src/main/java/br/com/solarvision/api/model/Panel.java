@@ -1,68 +1,112 @@
 package br.com.solarvision.api.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "panels")
+@Table(name = "placas")
 public class Panel {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "group_id", nullable = false)
-    private SolarGroup solarGroup;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "grupo_id", nullable = false)
+    private SolarGroup grupo;
 
-    @Column(name = "serial_number", nullable = false, unique = true)
-    private String serialNumber;
-
-    @Column(nullable = false)
+    @Column(name = "modelo", nullable = false, length = 120)
     private String model;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private PanelStatus status;
+    @Column(name = "status", nullable = false, length = 30)
+    private PanelStatus status = PanelStatus.ATIVA;
 
-    @Column(name = "created_at", nullable = false)
-    private OffsetDateTime createdAt;
+    @Column(name = "criado_em", nullable = false)
+    private OffsetDateTime criadoEm;
 
-    @OneToMany(mappedBy = "panel", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Cleaning> cleanings = new ArrayList<>();
+    @OneToMany(mappedBy = "placa", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Cleaning> limpezas = new ArrayList<>();
 
-    @OneToMany(mappedBy = "panel", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Alert> alerts = new ArrayList<>();
-
-    @OneToMany(mappedBy = "panel", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<PanelReading> readings = new ArrayList<>();
+    @OneToMany(mappedBy = "placa", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PanelReading> leituras = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {
-        if (createdAt == null) {
-            createdAt = OffsetDateTime.now();
+        if (criadoEm == null) {
+            criadoEm = OffsetDateTime.now();
         }
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public SolarGroup getSolarGroup() { return solarGroup; }
-    public void setSolarGroup(SolarGroup solarGroup) { this.solarGroup = solarGroup; }
-    public String getSerialNumber() { return serialNumber; }
-    public void setSerialNumber(String serialNumber) { this.serialNumber = serialNumber; }
-    public String getModel() { return model; }
-    public void setModel(String model) { this.model = model; }
-    public PanelStatus getStatus() { return status; }
-    public void setStatus(PanelStatus status) { this.status = status; }
-    public OffsetDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
-    public List<Cleaning> getCleanings() { return cleanings; }
-    public void setCleanings(List<Cleaning> cleanings) { this.cleanings = cleanings; }
-    public List<Alert> getAlerts() { return alerts; }
-    public void setAlerts(List<Alert> alerts) { this.alerts = alerts; }
-    public List<PanelReading> getReadings() { return readings; }
-    public void setReadings(List<PanelReading> readings) { this.readings = readings; }
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public SolarGroup getGrupo() {
+        return grupo;
+    }
+
+    public void setGrupo(SolarGroup grupo) {
+        this.grupo = grupo;
+    }
+
+    public String getModel() {
+        return model;
+    }
+
+    public void setModel(String model) {
+        this.model = model;
+    }
+
+    public PanelStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(PanelStatus status) {
+        this.status = status;
+    }
+
+    public OffsetDateTime getCriadoEm() {
+        return criadoEm;
+    }
+
+    public void setCriadoEm(OffsetDateTime criadoEm) {
+        this.criadoEm = criadoEm;
+    }
+
+    public List<Cleaning> getLimpezas() {
+        return limpezas;
+    }
+
+    public void setLimpezas(List<Cleaning> limpezas) {
+        this.limpezas = limpezas;
+    }
+
+    public List<PanelReading> getLeituras() {
+        return leituras;
+    }
+
+    public void setLeituras(List<PanelReading> leituras) {
+        this.leituras = leituras;
+    }
 }

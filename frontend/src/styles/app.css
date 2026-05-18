@@ -1,0 +1,222 @@
+.sv-shell {
+    min-height: 100vh;
+    display: flex;
+    background:
+        radial-gradient(circle at top left, rgba(59, 113, 151, 0.12), transparent 30%),
+        linear-gradient(180deg, #f7fafc 0%, #eef3f7 100%);
+}
+
+.sv-main {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.sv-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+}
+
+.sv-sidebar {
+    width: 290px;
+    min-height: 100vh;
+    padding: 1.25rem;
+    position: sticky;
+    top: 0;
+}
+
+.sv-sidebar-inner {
+    border-radius: 28px;
+    padding: 1.5rem;
+    min-height: calc(100vh - 2.5rem);
+    background: linear-gradient(180deg, #1d3242 0%, #27465d 42%, #335e7c 100%);
+    color: #f5f9fc;
+    box-shadow: 0 24px 48px rgba(27, 54, 75, 0.22);
+    display: flex;
+    flex-direction: column;
+}
+
+.sv-sidebar-eyebrow {
+    display: inline-block;
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    font-size: 0.74rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.sv-sidebar-header h1 {
+    margin: 1rem 0 0.5rem;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.sv-sidebar-header p {
+    color: rgba(255, 255, 255, 0.78);
+    line-height: 1.55;
+}
+
+.sv-sidebar-nav {
+    margin-top: 2rem;
+    display: grid;
+    gap: 0.75rem;
+}
+
+.sv-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.9rem 1rem;
+    color: rgba(255, 255, 255, 0.82);
+    text-decoration: none;
+    border-radius: 16px;
+    transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
+}
+
+.sv-nav-item i {
+    font-size: 1.15rem;
+}
+
+.sv-nav-item.active,
+.sv-nav-item:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.14);
+    transform: translateX(3px);
+}
+
+.sv-page-stack {
+    display: grid;
+    gap: 1.5rem;
+    padding-bottom: 6rem;
+}
+
+.sv-page-tag {
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.sv-kpi-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    display: grid;
+    place-items: center;
+    background: rgba(59, 113, 151, 0.1);
+    color: #3b7197;
+    font-size: 1.4rem;
+}
+
+.sv-summary-tile {
+    height: 100%;
+    border-radius: 18px;
+    padding: 1rem 1.1rem;
+    background: linear-gradient(180deg, rgba(59, 113, 151, 0.05), rgba(59, 113, 151, 0.01));
+    border: 1px solid rgba(59, 113, 151, 0.09);
+}
+
+.sv-summary-tile h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.sv-summary-tile p {
+    margin: 0.35rem 0 0;
+    color: #6c757d;
+}
+
+.sv-state-block {
+    min-height: 240px;
+    display: grid;
+    place-items: center;
+}
+
+.sv-range-label {
+    min-width: 190px;
+    color: inherit !important;
+}
+
+.sv-table-wrap {
+    overflow-x: auto;
+}
+
+.sv-search {
+    max-width: 340px;
+}
+
+.sv-profile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.sv-auth-screen {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 2rem 1rem;
+    background:
+        radial-gradient(circle at top, rgba(59, 113, 151, 0.16), transparent 28%),
+        linear-gradient(180deg, #f8fafc 0%, #eef3f7 100%);
+}
+
+.sv-auth-card {
+    width: min(100%, 420px);
+    border-radius: 24px;
+    padding: 1.75rem;
+}
+
+html.dark-mode .sv-shell,
+html.dark-mode .sv-auth-screen {
+    background:
+        radial-gradient(circle at top left, rgba(108, 160, 198, 0.18), transparent 26%),
+        linear-gradient(180deg, #0f1720 0%, #16212c 100%);
+}
+
+html.dark-mode .sv-sidebar-inner {
+    background: linear-gradient(180deg, #111a23 0%, #182633 48%, #1f3444 100%);
+}
+
+html.dark-mode .sv-nav-item.active,
+html.dark-mode .sv-nav-item:hover {
+    background: rgba(108, 160, 198, 0.18);
+}
+
+html.dark-mode .sv-summary-tile {
+    background: linear-gradient(180deg, rgba(108, 160, 198, 0.08), rgba(108, 160, 198, 0.02));
+    border-color: rgba(108, 160, 198, 0.12);
+}
+
+@media (max-width: 991.98px) {
+    .sv-shell {
+        display: block;
+    }
+
+    .sv-auth-card {
+        padding: 1.4rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .sv-profile-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .page-content {
+        padding-bottom: 7rem;
+    }
+
+    .navigation ul li a.active .text,
+    .navigation ul li a:hover .text {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .navigation ul li a.active .icon,
+    .navigation ul li a:hover .icon {
+        transform: translateY(-6px);
+    }
+}
