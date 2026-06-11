@@ -1,6 +1,6 @@
 package br.com.solarvision.api.controller;
 
-import br.com.solarvision.api.dto.DashboardDtos;
+import br.com.solarvision.api.model.DashboardDtos;
 import br.com.solarvision.api.service.DashboardService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;

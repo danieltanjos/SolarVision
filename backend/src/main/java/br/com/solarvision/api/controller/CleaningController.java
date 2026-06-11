@@ -1,6 +1,6 @@
 package br.com.solarvision.api.controller;
 
-import br.com.solarvision.api.dto.CleaningDtos;
+import br.com.solarvision.api.model.CleaningDtos;
 import br.com.solarvision.api.service.CleaningService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;

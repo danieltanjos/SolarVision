@@ -1,6 +1,6 @@
 package br.com.solarvision.api.controller;
 
-import br.com.solarvision.api.dto.PanelDtos;
+import br.com.solarvision.api.model.PanelDtos;
 import br.com.solarvision.api.service.PanelService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;

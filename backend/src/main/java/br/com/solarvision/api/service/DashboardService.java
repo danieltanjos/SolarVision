@@ -1,11 +1,11 @@
 package br.com.solarvision.api.service;
 
-import br.com.solarvision.api.dto.DashboardDtos;
+import br.com.solarvision.api.dao.CleaningDAO;
+import br.com.solarvision.api.dao.PanelDAO;
+import br.com.solarvision.api.dao.PanelReadingDAO;
 import br.com.solarvision.api.model.Cleaning;
+import br.com.solarvision.api.model.DashboardDtos;
 import br.com.solarvision.api.model.PanelStatus;
-import br.com.solarvision.api.repository.CleaningRepository;
-import br.com.solarvision.api.repository.PanelReadingRepository;
-import br.com.solarvision.api.repository.PanelRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,18 +20,18 @@ import java.util.List;
 @Service
 public class DashboardService {
 
-    private final PanelReadingRepository panelReadingRepository;
-    private final PanelRepository panelRepository;
-    private final CleaningRepository cleaningRepository;
+    private final PanelReadingDAO panelReadingDAO;
+    private final PanelDAO panelDAO;
+    private final CleaningDAO cleaningDAO;
     private final ZoneId dashboardZoneId;
 
-    public DashboardService(PanelReadingRepository panelReadingRepository,
-                            PanelRepository panelRepository,
-                            CleaningRepository cleaningRepository,
+    public DashboardService(PanelReadingDAO panelReadingDAO,
+                            PanelDAO panelDAO,
+                            CleaningDAO cleaningDAO,
                             @Value("${app.dashboard.zone-id:America/Sao_Paulo}") String dashboardZoneId) {
-        this.panelReadingRepository = panelReadingRepository;
-        this.panelRepository = panelRepository;
-        this.cleaningRepository = cleaningRepository;
+        this.panelReadingDAO = panelReadingDAO;
+        this.panelDAO = panelDAO;
+        this.cleaningDAO = cleaningDAO;
         this.dashboardZoneId = ZoneId.of(dashboardZoneId);
     }
 
@@ -46,7 +46,7 @@ public class DashboardService {
         }
 
         DashboardGranularity granularity = DashboardGranularity.fromParam(granularityParam);
-        return panelReadingRepository.aggregateMetrics(effectiveStart, effectiveEnd, granularity, dashboardZoneId).stream()
+        return panelReadingDAO.agruparMetricas(effectiveStart, effectiveEnd, granularity, dashboardZoneId).stream()
                 .map(row -> new DashboardDtos.MetricPointResponse(row.bucket(), row.totalWatts()))
                 .toList();
     }
@@ -55,9 +55,9 @@ public class DashboardService {
     public DashboardDtos.SummaryResponse getSummary() {
         ZonedDateTime now = now();
         OffsetDateTime startOfDay = now.toLocalDate().atStartOfDay(dashboardZoneId).toOffsetDateTime();
-        BigDecimal totalGeradoHoje = panelReadingRepository.sumByDataHoraBetween(startOfDay, now.toOffsetDateTime());
-        long placasAtivas = panelRepository.countByStatus(PanelStatus.ATIVA);
-        DashboardDtos.LastCleaningResponse ultimaLimpeza = cleaningRepository.findFirstByOrderByDataLimpezaDescIdDesc()
+        BigDecimal totalGeradoHoje = panelReadingDAO.somarPorPeriodo(startOfDay, now.toOffsetDateTime());
+        long placasAtivas = panelDAO.contarPorStatus(PanelStatus.ATIVA);
+        DashboardDtos.LastCleaningResponse ultimaLimpeza = cleaningDAO.buscarUltima()
                 .map(this::toLastCleaningResponse)
                 .orElse(null);
 

@@ -1,4 +1,4 @@
-package br.com.solarvision.api.dto;
+package br.com.solarvision.api.model;
 
 import br.com.solarvision.api.model.GroupStatus;
 import jakarta.validation.constraints.NotBlank;

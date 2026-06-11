@@ -1,14 +1,14 @@
 package br.com.solarvision.api.service;
 
-import br.com.solarvision.api.dto.CleaningDtos;
-import br.com.solarvision.api.dto.GraphqlDtos;
-import br.com.solarvision.api.dto.PanelDtos;
+import br.com.solarvision.api.dao.CleaningDAO;
+import br.com.solarvision.api.dao.PanelDAO;
 import br.com.solarvision.api.exception.BadRequestException;
 import br.com.solarvision.api.model.Cleaning;
+import br.com.solarvision.api.model.CleaningDtos;
+import br.com.solarvision.api.model.GraphqlDtos;
 import br.com.solarvision.api.model.Panel;
+import br.com.solarvision.api.model.PanelDtos;
 import br.com.solarvision.api.model.PanelStatus;
-import br.com.solarvision.api.repository.CleaningRepository;
-import br.com.solarvision.api.repository.PanelRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,17 +21,17 @@ public class GraphqlService {
 
     private static final DateTimeFormatter ISO_DATE_TIME = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
-    private final PanelRepository panelRepository;
-    private final CleaningRepository cleaningRepository;
+    private final PanelDAO panelDAO;
+    private final CleaningDAO cleaningDAO;
     private final PanelService panelService;
     private final CleaningService cleaningService;
 
-    public GraphqlService(PanelRepository panelRepository,
-                          CleaningRepository cleaningRepository,
+    public GraphqlService(PanelDAO panelDAO,
+                          CleaningDAO cleaningDAO,
                           PanelService panelService,
                           CleaningService cleaningService) {
-        this.panelRepository = panelRepository;
-        this.cleaningRepository = cleaningRepository;
+        this.panelDAO = panelDAO;
+        this.cleaningDAO = cleaningDAO;
         this.panelService = panelService;
         this.cleaningService = cleaningService;
     }
@@ -64,10 +64,7 @@ public class GraphqlService {
             throw new BadRequestException("dataInicio deve ser anterior ou igual a dataFim.");
         }
 
-        return cleaningRepository.findAllByOrderByDataLimpezaDescIdDesc().stream()
-                .filter(cleaning -> effectiveFilter.placaId() == null || cleaning.getPlaca().getId().equals(effectiveFilter.placaId()))
-                .filter(cleaning -> dataInicio == null || !cleaning.getDataLimpeza().isBefore(dataInicio))
-                .filter(cleaning -> dataFim == null || !cleaning.getDataLimpeza().isAfter(dataFim))
+        return cleaningDAO.buscar(effectiveFilter.placaId(), dataInicio, dataFim).stream()
                 .map(this::toGraphqlCleaningResponse)
                 .toList();
     }
@@ -187,9 +184,9 @@ public class GraphqlService {
 
     private List<Panel> loadPanels(Long grupoId) {
         if (grupoId == null) {
-            return panelRepository.findAllByOrderByIdAsc();
+            return panelDAO.listarTodos();
         }
-        return panelRepository.findAllByGrupoIdOrderByIdAsc(grupoId);
+        return panelDAO.listarPorGrupo(grupoId);
     }
 
     private boolean containsIgnoreCase(String source, String target) {

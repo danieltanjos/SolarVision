@@ -1,12 +1,12 @@
 package br.com.solarvision.api.service;
 
-import br.com.solarvision.api.dto.PanelDtos;
+import br.com.solarvision.api.dao.PanelDAO;
+import br.com.solarvision.api.dao.SolarGroupDAO;
 import br.com.solarvision.api.exception.NotFoundException;
 import br.com.solarvision.api.model.Panel;
+import br.com.solarvision.api.model.PanelDtos;
 import br.com.solarvision.api.model.PanelStatus;
 import br.com.solarvision.api.model.SolarGroup;
-import br.com.solarvision.api.repository.PanelRepository;
-import br.com.solarvision.api.repository.SolarGroupRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,24 +15,24 @@ import java.util.List;
 @Service
 public class PanelService {
 
-    private final PanelRepository panelRepository;
-    private final SolarGroupRepository solarGroupRepository;
+    private final PanelDAO panelDAO;
+    private final SolarGroupDAO solarGroupDAO;
 
-    public PanelService(PanelRepository panelRepository, SolarGroupRepository solarGroupRepository) {
-        this.panelRepository = panelRepository;
-        this.solarGroupRepository = solarGroupRepository;
+    public PanelService(PanelDAO panelDAO, SolarGroupDAO solarGroupDAO) {
+        this.panelDAO = panelDAO;
+        this.solarGroupDAO = solarGroupDAO;
     }
 
     @Transactional(readOnly = true)
     public List<PanelDtos.PanelResponse> listPanels() {
-        return panelRepository.findAllByOrderByIdAsc().stream()
+        return panelDAO.listarTodos().stream()
                 .map(this::toPanelResponse)
                 .toList();
     }
 
     @Transactional
     public PanelDtos.PanelResponse createPanel(PanelDtos.CreatePanelRequest request) {
-        SolarGroup group = solarGroupRepository.findById(request.grupoId())
+        SolarGroup group = solarGroupDAO.buscarPorId(request.grupoId())
                 .orElseThrow(() -> new NotFoundException("Grupo solar não encontrado."));
 
         Panel panel = new Panel();
@@ -40,7 +40,7 @@ public class PanelService {
         panel.setModel(request.modelo().trim());
         panel.setStatus(request.status() == null ? PanelStatus.ATIVA : request.status());
 
-        Panel savedPanel = panelRepository.save(panel);
+        Panel savedPanel = panelDAO.salvar(panel);
         return toPanelResponse(savedPanel);
     }
 

@@ -1,4 +1,4 @@
-package br.com.solarvision.api.dto;
+package br.com.solarvision.api.model;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;

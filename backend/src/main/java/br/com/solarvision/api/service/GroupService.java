@@ -1,13 +1,13 @@
 package br.com.solarvision.api.service;
 
-import br.com.solarvision.api.dto.GroupDtos;
-import br.com.solarvision.api.dto.PanelDtos;
+import br.com.solarvision.api.dao.PanelDAO;
+import br.com.solarvision.api.dao.SolarGroupDAO;
 import br.com.solarvision.api.exception.NotFoundException;
+import br.com.solarvision.api.model.GroupDtos;
 import br.com.solarvision.api.model.GroupStatus;
 import br.com.solarvision.api.model.Panel;
+import br.com.solarvision.api.model.PanelDtos;
 import br.com.solarvision.api.model.SolarGroup;
-import br.com.solarvision.api.repository.PanelRepository;
-import br.com.solarvision.api.repository.SolarGroupRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,17 +16,17 @@ import java.util.List;
 @Service
 public class GroupService {
 
-    private final SolarGroupRepository solarGroupRepository;
-    private final PanelRepository panelRepository;
+    private final SolarGroupDAO solarGroupDAO;
+    private final PanelDAO panelDAO;
 
-    public GroupService(SolarGroupRepository solarGroupRepository, PanelRepository panelRepository) {
-        this.solarGroupRepository = solarGroupRepository;
-        this.panelRepository = panelRepository;
+    public GroupService(SolarGroupDAO solarGroupDAO, PanelDAO panelDAO) {
+        this.solarGroupDAO = solarGroupDAO;
+        this.panelDAO = panelDAO;
     }
 
     @Transactional(readOnly = true)
     public List<GroupDtos.GroupResponse> listGroups() {
-        return solarGroupRepository.findAllByOrderByIdAsc().stream()
+        return solarGroupDAO.listarTodos().stream()
                 .map(this::toGroupResponse)
                 .toList();
     }
@@ -37,16 +37,16 @@ public class GroupService {
         group.setNome(request.nome().trim());
         group.setStatus(request.status() == null ? GroupStatus.ATIVO : request.status());
 
-        SolarGroup savedGroup = solarGroupRepository.save(group);
+        SolarGroup savedGroup = solarGroupDAO.salvar(group);
         return toGroupResponse(savedGroup);
     }
 
     @Transactional(readOnly = true)
     public List<PanelDtos.PanelResponse> listPanelsByGroup(Long groupId) {
-        SolarGroup group = solarGroupRepository.findById(groupId)
+        SolarGroup group = solarGroupDAO.buscarPorId(groupId)
                 .orElseThrow(() -> new NotFoundException("Grupo solar não encontrado."));
 
-        return panelRepository.findAllByGrupoIdOrderByIdAsc(group.getId()).stream()
+        return panelDAO.listarPorGrupo(group.getId()).stream()
                 .map(this::toPanelResponse)
                 .toList();
     }
@@ -57,7 +57,7 @@ public class GroupService {
                 group.getNome(),
                 group.getStatus().name(),
                 group.getCriadoEm(),
-                group.getPlacas().size()
+                solarGroupDAO.contarPlacas(group.getId())
         );
     }
 

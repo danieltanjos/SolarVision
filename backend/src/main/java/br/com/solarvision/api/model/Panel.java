@@ -1,58 +1,18 @@
 package br.com.solarvision.api.model;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
-
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
-@Table(name = "placas")
 public class Panel {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "grupo_id", nullable = false)
     private SolarGroup grupo;
-
-    @Column(name = "modelo", nullable = false, length = 120)
     private String model;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 30)
     private PanelStatus status = PanelStatus.ATIVA;
-
-    @Column(name = "criado_em", nullable = false)
     private OffsetDateTime criadoEm;
-
-    @OneToMany(mappedBy = "placa", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Cleaning> limpezas = new ArrayList<>();
-
-    @OneToMany(mappedBy = "placa", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PanelReading> leituras = new ArrayList<>();
-
-    @PrePersist
-    public void prePersist() {
-        if (criadoEm == null) {
-            criadoEm = OffsetDateTime.now();
-        }
-    }
 
     public Long getId() {
         return id;

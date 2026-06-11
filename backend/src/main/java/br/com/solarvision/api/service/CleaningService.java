@@ -1,11 +1,11 @@
 package br.com.solarvision.api.service;
 
-import br.com.solarvision.api.dto.CleaningDtos;
+import br.com.solarvision.api.dao.CleaningDAO;
+import br.com.solarvision.api.dao.PanelDAO;
 import br.com.solarvision.api.exception.NotFoundException;
 import br.com.solarvision.api.model.Cleaning;
+import br.com.solarvision.api.model.CleaningDtos;
 import br.com.solarvision.api.model.Panel;
-import br.com.solarvision.api.repository.CleaningRepository;
-import br.com.solarvision.api.repository.PanelRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,24 +14,24 @@ import java.util.List;
 @Service
 public class CleaningService {
 
-    private final CleaningRepository cleaningRepository;
-    private final PanelRepository panelRepository;
+    private final CleaningDAO cleaningDAO;
+    private final PanelDAO panelDAO;
 
-    public CleaningService(CleaningRepository cleaningRepository, PanelRepository panelRepository) {
-        this.cleaningRepository = cleaningRepository;
-        this.panelRepository = panelRepository;
+    public CleaningService(CleaningDAO cleaningDAO, PanelDAO panelDAO) {
+        this.cleaningDAO = cleaningDAO;
+        this.panelDAO = panelDAO;
     }
 
     @Transactional(readOnly = true)
     public List<CleaningDtos.CleaningResponse> listCleanings() {
-        return cleaningRepository.findAllByOrderByDataLimpezaDescIdDesc().stream()
+        return cleaningDAO.listarTodos().stream()
                 .map(this::toCleaningResponse)
                 .toList();
     }
 
     @Transactional
     public CleaningDtos.CleaningResponse createCleaning(CleaningDtos.CreateCleaningRequest request) {
-        Panel panel = panelRepository.findById(request.placaId())
+        Panel panel = panelDAO.buscarPorId(request.placaId())
                 .orElseThrow(() -> new NotFoundException("Placa não encontrada."));
 
         Cleaning cleaning = new Cleaning();
@@ -39,7 +39,7 @@ public class CleaningService {
         cleaning.setDataLimpeza(request.dataLimpeza());
         cleaning.setObservacao(request.observacao() == null ? null : request.observacao().trim());
 
-        Cleaning savedCleaning = cleaningRepository.save(cleaning);
+        Cleaning savedCleaning = cleaningDAO.salvar(cleaning);
         return toCleaningResponse(savedCleaning);
     }
 
