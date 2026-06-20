@@ -19,6 +19,14 @@ public final class GroupDtos {
     ) {
     }
 
+    public record UpdateGroupRequest(
+            @NotBlank(message = "Nome do grupo é obrigatório.")
+            @Size(max = 120, message = "Nome do grupo deve ter no máximo 120 caracteres.")
+            String nome,
+            GroupStatus status
+    ) {
+    }
+
     public record GroupResponse(
             Long id,
             String nome,

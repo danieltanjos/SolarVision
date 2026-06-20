@@ -29,6 +29,14 @@ public class CleaningService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public CleaningDtos.CleaningResponse getCleaning(Long cleaningId) {
+        Cleaning cleaning = cleaningDAO.buscarPorId(cleaningId)
+                .orElseThrow(() -> new NotFoundException("Limpeza não encontrada."));
+
+        return toCleaningResponse(cleaning);
+    }
+
     @Transactional
     public CleaningDtos.CleaningResponse createCleaning(CleaningDtos.CreateCleaningRequest request) {
         Panel panel = panelDAO.buscarPorId(request.placaId())
@@ -41,6 +49,28 @@ public class CleaningService {
 
         Cleaning savedCleaning = cleaningDAO.salvar(cleaning);
         return toCleaningResponse(savedCleaning);
+    }
+
+    @Transactional
+    public CleaningDtos.CleaningResponse updateCleaning(Long cleaningId, CleaningDtos.UpdateCleaningRequest request) {
+        Cleaning cleaning = cleaningDAO.buscarPorId(cleaningId)
+                .orElseThrow(() -> new NotFoundException("Limpeza não encontrada."));
+        Panel panel = panelDAO.buscarPorId(request.placaId())
+                .orElseThrow(() -> new NotFoundException("Placa não encontrada."));
+
+        cleaning.setPlaca(panel);
+        cleaning.setDataLimpeza(request.dataLimpeza());
+        cleaning.setObservacao(request.observacao() == null ? null : request.observacao().trim());
+
+        cleaningDAO.alterar(cleaning);
+        return getCleaning(cleaningId);
+    }
+
+    @Transactional
+    public void deleteCleaning(Long cleaningId) {
+        if (!cleaningDAO.excluir(cleaningId)) {
+            throw new NotFoundException("Limpeza não encontrada.");
+        }
     }
 
     private CleaningDtos.CleaningResponse toCleaningResponse(Cleaning cleaning) {

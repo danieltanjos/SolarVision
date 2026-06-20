@@ -8,15 +8,6 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/solarvision_db}
     username: ${DB_USER:solarvision_user}
     password: ${DB_PASSWORD:solarvision_password}
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    properties:
-      hibernate:
-        format_sql: true
-        jdbc:
-          time_zone: UTC
-    open-in-view: false
   jackson:
     time-zone: UTC
   graphql:

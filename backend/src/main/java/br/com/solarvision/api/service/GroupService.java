@@ -31,6 +31,14 @@ public class GroupService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public GroupDtos.GroupResponse getGroup(Long groupId) {
+        SolarGroup group = solarGroupDAO.buscarPorId(groupId)
+                .orElseThrow(() -> new NotFoundException("Grupo solar não encontrado."));
+
+        return toGroupResponse(group);
+    }
+
     @Transactional
     public GroupDtos.GroupResponse createGroup(GroupDtos.CreateGroupRequest request) {
         SolarGroup group = new SolarGroup();
@@ -39,6 +47,25 @@ public class GroupService {
 
         SolarGroup savedGroup = solarGroupDAO.salvar(group);
         return toGroupResponse(savedGroup);
+    }
+
+    @Transactional
+    public GroupDtos.GroupResponse updateGroup(Long groupId, GroupDtos.UpdateGroupRequest request) {
+        SolarGroup group = solarGroupDAO.buscarPorId(groupId)
+                .orElseThrow(() -> new NotFoundException("Grupo solar não encontrado."));
+
+        group.setNome(request.nome().trim());
+        group.setStatus(request.status() == null ? GroupStatus.ATIVO : request.status());
+
+        solarGroupDAO.alterar(group);
+        return getGroup(groupId);
+    }
+
+    @Transactional
+    public void deleteGroup(Long groupId) {
+        if (!solarGroupDAO.excluir(groupId)) {
+            throw new NotFoundException("Grupo solar não encontrado.");
+        }
     }
 
     @Transactional(readOnly = true)

@@ -61,6 +61,34 @@ public class PanelDAO {
         return buscarPorId(id.longValue()).orElseThrow();
     }
 
+    public boolean alterar(Panel panel) {
+        int rows = jdbcClient.sql("""
+                        UPDATE placas
+                        SET grupo_id = :grupoId,
+                            modelo = :modelo,
+                            status = :status
+                        WHERE id = :id
+                        """)
+                .param("grupoId", panel.getGrupo().getId())
+                .param("modelo", panel.getModel())
+                .param("status", panel.getStatus().name())
+                .param("id", panel.getId())
+                .update();
+
+        return rows > 0;
+    }
+
+    public boolean excluir(Long id) {
+        int rows = jdbcClient.sql("""
+                        DELETE FROM placas
+                        WHERE id = :id
+                        """)
+                .param("id", id)
+                .update();
+
+        return rows > 0;
+    }
+
     public Optional<Panel> buscarPorId(Long id) {
         return jdbcClient.sql(baseSelect() + " WHERE p.id = :id")
                 .param("id", id)

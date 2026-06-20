@@ -3,8 +3,12 @@ package br.com.solarvision.api.controller;
 import br.com.solarvision.api.model.CleaningDtos;
 import br.com.solarvision.api.service.CleaningService;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,8 +30,25 @@ public class CleaningController {
         return cleaningService.listCleanings();
     }
 
+    @GetMapping("/{cleaningId}")
+    public CleaningDtos.CleaningResponse getCleaning(@PathVariable Long cleaningId) {
+        return cleaningService.getCleaning(cleaningId);
+    }
+
     @PostMapping
     public CleaningDtos.CleaningResponse createCleaning(@Valid @RequestBody CleaningDtos.CreateCleaningRequest request) {
         return cleaningService.createCleaning(request);
+    }
+
+    @PutMapping("/{cleaningId}")
+    public CleaningDtos.CleaningResponse updateCleaning(@PathVariable Long cleaningId,
+                                                        @Valid @RequestBody CleaningDtos.UpdateCleaningRequest request) {
+        return cleaningService.updateCleaning(cleaningId, request);
+    }
+
+    @DeleteMapping("/{cleaningId}")
+    public ResponseEntity<Void> deleteCleaning(@PathVariable Long cleaningId) {
+        cleaningService.deleteCleaning(cleaningId);
+        return ResponseEntity.noContent().build();
     }
 }

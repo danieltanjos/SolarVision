@@ -51,6 +51,32 @@ public class SolarGroupDAO {
         return buscarPorId(id.longValue()).orElseThrow();
     }
 
+    public boolean alterar(SolarGroup group) {
+        int rows = jdbcClient.sql("""
+                        UPDATE grupos_solares
+                        SET nome = :nome,
+                            status = :status
+                        WHERE id = :id
+                        """)
+                .param("nome", group.getNome())
+                .param("status", group.getStatus().name())
+                .param("id", group.getId())
+                .update();
+
+        return rows > 0;
+    }
+
+    public boolean excluir(Long id) {
+        int rows = jdbcClient.sql("""
+                        DELETE FROM grupos_solares
+                        WHERE id = :id
+                        """)
+                .param("id", id)
+                .update();
+
+        return rows > 0;
+    }
+
     public Optional<SolarGroup> buscarPorId(Long id) {
         return jdbcClient.sql("""
                         SELECT id, nome, status, criado_em

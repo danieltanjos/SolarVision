@@ -22,6 +22,16 @@ public final class PanelDtos {
     ) {
     }
 
+    public record UpdatePanelRequest(
+            @NotNull(message = "grupoId é obrigatório.")
+            Long grupoId,
+            @NotBlank(message = "Modelo da placa é obrigatório.")
+            @Size(max = 120, message = "Modelo da placa deve ter no máximo 120 caracteres.")
+            String modelo,
+            PanelStatus status
+    ) {
+    }
+
     public record PanelResponse(
             Long id,
             Long grupoId,

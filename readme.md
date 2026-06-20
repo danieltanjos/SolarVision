@@ -13,7 +13,7 @@ SolarVision/
 
 ## Stack
 
-- Backend: Java 25, Spring Boot 3.5.12, Spring Security, JPA, GraphQL
+- Backend: Java 25, Spring Boot 3.5.12, Spring Security, Spring JDBC, GraphQL
 - Frontend: React, Vite, React Router, Axios, ApexCharts, Bootstrap
 - Banco: PostgreSQL 17
 - Seeder: Python 3.12 + psycopg2

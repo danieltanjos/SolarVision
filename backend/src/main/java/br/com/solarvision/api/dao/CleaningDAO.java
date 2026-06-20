@@ -69,6 +69,34 @@ public class CleaningDAO {
         return buscarPorId(id.longValue()).orElseThrow();
     }
 
+    public boolean alterar(Cleaning cleaning) {
+        int rows = jdbcClient.sql("""
+                        UPDATE limpezas
+                        SET placa_id = :placaId,
+                            data_limpeza = :dataLimpeza,
+                            observacao = :observacao
+                        WHERE id = :id
+                        """)
+                .param("placaId", cleaning.getPlaca().getId())
+                .param("dataLimpeza", cleaning.getDataLimpeza())
+                .param("observacao", cleaning.getObservacao())
+                .param("id", cleaning.getId())
+                .update();
+
+        return rows > 0;
+    }
+
+    public boolean excluir(Long id) {
+        int rows = jdbcClient.sql("""
+                        DELETE FROM limpezas
+                        WHERE id = :id
+                        """)
+                .param("id", id)
+                .update();
+
+        return rows > 0;
+    }
+
     public Optional<Cleaning> buscarPorId(Long id) {
         return jdbcClient.sql(baseSelect() + " WHERE l.id = :id")
                 .param("id", id)

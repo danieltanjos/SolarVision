@@ -20,6 +20,16 @@ public final class CleaningDtos {
     ) {
     }
 
+    public record UpdateCleaningRequest(
+            @NotNull(message = "placaId é obrigatório.")
+            Long placaId,
+            @NotNull(message = "dataLimpeza é obrigatória.")
+            OffsetDateTime dataLimpeza,
+            @Size(max = 1000, message = "Observação deve ter no máximo 1000 caracteres.")
+            String observacao
+    ) {
+    }
+
     public record CleaningResponse(
             Long id,
             Long placaId,

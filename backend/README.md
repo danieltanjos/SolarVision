@@ -8,7 +8,7 @@ Backend único e ativo do projeto SolarVision.
 - Spring Boot 3.5.12
 - Spring Web
 - Spring Security com JWT
-- Spring Data JPA
+- Spring JDBC com DAO
 - Spring GraphQL
 - PostgreSQL
 
@@ -21,10 +21,9 @@ backend/
 ├── src/main/java/br/com/solarvision/api
 │   ├── config
 │   ├── controller
-│   ├── dto
+│   ├── dao
 │   ├── exception
 │   ├── model
-│   ├── repository
 │   ├── security
 │   └── service
 ├── src/main/resources
@@ -45,16 +44,19 @@ backend/
 
 - `GET /api/users/me`
 - `GET/POST /api/groups`
+- `GET/PUT/DELETE /api/groups/{groupId}`
 - `GET /api/groups/{groupId}/panels`
 - `GET/POST /api/panels`
+- `GET/PUT/DELETE /api/panels/{panelId}`
 - `GET/POST /api/cleanings`
+- `GET/PUT/DELETE /api/cleanings/{cleaningId}`
 - `GET /api/dashboard/metrics`
 - `GET /api/dashboard/summary`
 - `POST /api/graphql`
 
 ## Observações
 
-- O schema do banco é validado com `spring.jpa.hibernate.ddl-auto=validate`.
+- O schema do banco é criado pelo script `postgres-init/01-init-schema.sql`.
 - O endpoint GraphQL ativo é `POST /api/graphql`.
 - O backend legado duplicado foi removido; só esta árvore `backend/` deve ser usada.
 

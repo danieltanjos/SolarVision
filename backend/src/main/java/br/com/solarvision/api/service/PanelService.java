@@ -30,6 +30,14 @@ public class PanelService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public PanelDtos.PanelResponse getPanel(Long panelId) {
+        Panel panel = panelDAO.buscarPorId(panelId)
+                .orElseThrow(() -> new NotFoundException("Placa não encontrada."));
+
+        return toPanelResponse(panel);
+    }
+
     @Transactional
     public PanelDtos.PanelResponse createPanel(PanelDtos.CreatePanelRequest request) {
         SolarGroup group = solarGroupDAO.buscarPorId(request.grupoId())
@@ -42,6 +50,28 @@ public class PanelService {
 
         Panel savedPanel = panelDAO.salvar(panel);
         return toPanelResponse(savedPanel);
+    }
+
+    @Transactional
+    public PanelDtos.PanelResponse updatePanel(Long panelId, PanelDtos.UpdatePanelRequest request) {
+        Panel panel = panelDAO.buscarPorId(panelId)
+                .orElseThrow(() -> new NotFoundException("Placa não encontrada."));
+        SolarGroup group = solarGroupDAO.buscarPorId(request.grupoId())
+                .orElseThrow(() -> new NotFoundException("Grupo solar não encontrado."));
+
+        panel.setGrupo(group);
+        panel.setModel(request.modelo().trim());
+        panel.setStatus(request.status() == null ? PanelStatus.ATIVA : request.status());
+
+        panelDAO.alterar(panel);
+        return getPanel(panelId);
+    }
+
+    @Transactional
+    public void deletePanel(Long panelId) {
+        if (!panelDAO.excluir(panelId)) {
+            throw new NotFoundException("Placa não encontrada.");
+        }
     }
 
     private PanelDtos.PanelResponse toPanelResponse(Panel panel) {
