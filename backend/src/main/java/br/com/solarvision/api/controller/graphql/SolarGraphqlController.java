@@ -1,6 +1,6 @@
 package br.com.solarvision.api.controller.graphql;
 
-import br.com.solarvision.api.dto.GraphqlDtos;
+import br.com.solarvision.api.model.GraphqlDtos;
 import br.com.solarvision.api.service.GraphqlService;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;

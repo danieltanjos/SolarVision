@@ -1,14 +1,28 @@
+import { Suspense, lazy } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import AppShell from "./components/AppShell";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuth } from "./context/AuthContext";
-import CadastroPage from "./pages/CadastroPage";
-import CleaningPage from "./pages/CleaningPage";
-import HomePage from "./pages/HomePage";
-import LoginPage from "./pages/LoginPage";
-import MonitoringPage from "./pages/MonitoringPage";
-import RegisterPage from "./pages/RegisterPage";
-import SettingsPage from "./pages/SettingsPage";
+
+const CadastroPage = lazy(() => import("./pages/CadastroPage"));
+const CleaningPage = lazy(() => import("./pages/CleaningPage"));
+const HomePage = lazy(() => import("./pages/HomePage"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const MonitoringPage = lazy(() => import("./pages/MonitoringPage"));
+const RegisterPage = lazy(() => import("./pages/RegisterPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+
+function RouteFallback() {
+  return (
+    <div className="sv-route-fallback">
+      <div className="spinner-border text-primary" role="status" />
+    </div>
+  );
+}
+
+function LazyPage({ children }) {
+  return <Suspense fallback={<RouteFallback />}>{children}</Suspense>;
+}
 
 function LandingRedirect() {
   const { isAuthenticated } = useAuth();
@@ -19,23 +33,72 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingRedirect />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      <Route
+        path="/login"
+        element={(
+          <LazyPage>
+            <LoginPage />
+          </LazyPage>
+        )}
+      />
+      <Route
+        path="/register"
+        element={(
+          <LazyPage>
+            <RegisterPage />
+          </LazyPage>
+        )}
+      />
 
       <Route
         path="/app"
-        element={
+        element={(
           <ProtectedRoute>
             <AppShell />
           </ProtectedRoute>
-        }
+        )}
       >
         <Route index element={<Navigate to="/app/home" replace />} />
-        <Route path="home" element={<HomePage />} />
-        <Route path="limpeza" element={<CleaningPage />} />
-        <Route path="monitoramento" element={<MonitoringPage />} />
-        <Route path="cadastro" element={<CadastroPage />} />
-        <Route path="configuracoes" element={<SettingsPage />} />
+        <Route
+          path="home"
+          element={(
+            <LazyPage>
+              <HomePage />
+            </LazyPage>
+          )}
+        />
+        <Route
+          path="limpeza"
+          element={(
+            <LazyPage>
+              <CleaningPage />
+            </LazyPage>
+          )}
+        />
+        <Route
+          path="monitoramento"
+          element={(
+            <LazyPage>
+              <MonitoringPage />
+            </LazyPage>
+          )}
+        />
+        <Route
+          path="cadastro"
+          element={(
+            <LazyPage>
+              <CadastroPage />
+            </LazyPage>
+          )}
+        />
+        <Route
+          path="configuracoes"
+          element={(
+            <LazyPage>
+              <SettingsPage />
+            </LazyPage>
+          )}
+        />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

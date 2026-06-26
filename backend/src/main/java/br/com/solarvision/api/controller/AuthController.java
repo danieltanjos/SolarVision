@@ -1,6 +1,6 @@
 package br.com.solarvision.api.controller;
 
-import br.com.solarvision.api.dto.AuthDtos;
+import br.com.solarvision.api.model.AuthDtos;
 import br.com.solarvision.api.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;

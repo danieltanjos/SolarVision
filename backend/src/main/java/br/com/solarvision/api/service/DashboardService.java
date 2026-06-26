@@ -1,7 +1,8 @@
 package br.com.solarvision.api.service;
 
-import br.com.solarvision.api.dto.DashboardDtos;
+import br.com.solarvision.api.exception.BadRequestException;
 import br.com.solarvision.api.model.Cleaning;
+import br.com.solarvision.api.model.DashboardDtos;
 import br.com.solarvision.api.model.PanelStatus;
 import br.com.solarvision.api.repository.CleaningRepository;
 import br.com.solarvision.api.repository.PanelReadingRepository;
@@ -11,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -42,22 +45,36 @@ public class DashboardService {
         OffsetDateTime effectiveStart = start == null ? defaultStart() : start;
         OffsetDateTime effectiveEnd = end == null ? now().toOffsetDateTime() : end;
         if (effectiveStart.isAfter(effectiveEnd)) {
-            throw new br.com.solarvision.api.exception.BadRequestException("dataInicio deve ser anterior ou igual a dataFim.");
+            throw new BadRequestException("dataInicio deve ser anterior ou igual a dataFim.");
         }
 
         DashboardGranularity granularity = DashboardGranularity.fromParam(granularityParam);
-        return panelReadingRepository.aggregateMetrics(effectiveStart, effectiveEnd, granularity, dashboardZoneId).stream()
-                .map(row -> new DashboardDtos.MetricPointResponse(row.bucket(), row.totalWatts()))
+        return panelReadingRepository
+                .agruparMetricas(granularity.sqlToken(), dashboardZoneId.getId(), effectiveStart, effectiveEnd)
+                .stream()
+                .map(row -> new DashboardDtos.MetricPointResponse(
+                        toOffsetDateTime(row[0]),
+                        toBigDecimal(row[1])
+                ))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public DashboardDtos.RangeResponse getRange() {
+        return new DashboardDtos.RangeResponse(
+                panelReadingRepository.buscarPrimeiraLeitura(),
+                panelReadingRepository.buscarUltimaLeitura()
+        );
     }
 
     @Transactional(readOnly = true)
     public DashboardDtos.SummaryResponse getSummary() {
         ZonedDateTime now = now();
         OffsetDateTime startOfDay = now.toLocalDate().atStartOfDay(dashboardZoneId).toOffsetDateTime();
-        BigDecimal totalGeradoHoje = panelReadingRepository.sumByDataHoraBetween(startOfDay, now.toOffsetDateTime());
+        BigDecimal totalGeradoHoje = panelReadingRepository.somarPorPeriodo(startOfDay, now.toOffsetDateTime());
         long placasAtivas = panelRepository.countByStatus(PanelStatus.ATIVA);
-        DashboardDtos.LastCleaningResponse ultimaLimpeza = cleaningRepository.findFirstByOrderByDataLimpezaDescIdDesc()
+        DashboardDtos.LastCleaningResponse ultimaLimpeza = cleaningRepository
+                .findFirstByOrderByDataLimpezaDescIdDesc()
                 .map(this::toLastCleaningResponse)
                 .orElse(null);
 
@@ -74,6 +91,31 @@ public class DashboardService {
 
     private ZonedDateTime now() {
         return ZonedDateTime.now(dashboardZoneId).truncatedTo(ChronoUnit.SECONDS);
+    }
+
+    private OffsetDateTime toOffsetDateTime(Object bucket) {
+        return toLocalDateTime(bucket).atZone(dashboardZoneId).toOffsetDateTime();
+    }
+
+    private LocalDateTime toLocalDateTime(Object value) {
+        if (value instanceof LocalDateTime localDateTime) {
+            return localDateTime;
+        }
+        if (value instanceof Timestamp timestamp) {
+            return timestamp.toLocalDateTime();
+        }
+        throw new IllegalStateException("Tipo inesperado para bucket do dashboard: "
+                + (value == null ? "null" : value.getClass().getName()));
+    }
+
+    private BigDecimal toBigDecimal(Object value) {
+        if (value == null) {
+            return BigDecimal.ZERO;
+        }
+        if (value instanceof BigDecimal bigDecimal) {
+            return bigDecimal;
+        }
+        return new BigDecimal(value.toString());
     }
 
     private DashboardDtos.LastCleaningResponse toLastCleaningResponse(Cleaning cleaning) {

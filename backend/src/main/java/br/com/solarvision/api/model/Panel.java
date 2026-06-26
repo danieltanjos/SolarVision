@@ -12,8 +12,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -27,7 +27,7 @@ public class Panel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "grupo_id", nullable = false)
     private SolarGroup grupo;
 
@@ -38,7 +38,8 @@ public class Panel {
     @Column(name = "status", nullable = false, length = 30)
     private PanelStatus status = PanelStatus.ATIVA;
 
-    @Column(name = "criado_em", nullable = false)
+    @CreationTimestamp
+    @Column(name = "criado_em", nullable = false, updatable = false)
     private OffsetDateTime criadoEm;
 
     @OneToMany(mappedBy = "placa", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -46,13 +47,6 @@ public class Panel {
 
     @OneToMany(mappedBy = "placa", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PanelReading> leituras = new ArrayList<>();
-
-    @PrePersist
-    public void prePersist() {
-        if (criadoEm == null) {
-            criadoEm = OffsetDateTime.now();
-        }
-    }
 
     public Long getId() {
         return id;

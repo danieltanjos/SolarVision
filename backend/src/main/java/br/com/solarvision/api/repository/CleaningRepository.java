@@ -10,19 +10,19 @@ import java.util.List;
 import java.util.Optional;
 
 public interface CleaningRepository extends JpaRepository<Cleaning, Long> {
+
     List<Cleaning> findAllByOrderByDataLimpezaDescIdDesc();
+
     Optional<Cleaning> findFirstByOrderByDataLimpezaDescIdDesc();
 
     @Query("""
-            select c
-            from Cleaning c
-            join fetch c.placa p
-            where (:placaId is null or p.id = :placaId)
-              and (:dataInicio is null or c.dataLimpeza >= :dataInicio)
-              and (:dataFim is null or c.dataLimpeza <= :dataFim)
-            order by c.dataLimpeza desc, c.id desc
+            SELECT c FROM Cleaning c
+            WHERE (:placaId IS NULL OR c.placa.id = :placaId)
+              AND (:dataInicio IS NULL OR c.dataLimpeza >= :dataInicio)
+              AND (:dataFim IS NULL OR c.dataLimpeza <= :dataFim)
+            ORDER BY c.dataLimpeza DESC, c.id DESC
             """)
-    List<Cleaning> search(@Param("placaId") Long placaId,
+    List<Cleaning> buscar(@Param("placaId") Long placaId,
                           @Param("dataInicio") OffsetDateTime dataInicio,
                           @Param("dataFim") OffsetDateTime dataFim);
 }

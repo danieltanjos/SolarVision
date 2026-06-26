@@ -1,11 +1,11 @@
 package br.com.solarvision.api.service;
 
-import br.com.solarvision.api.dto.CleaningDtos;
-import br.com.solarvision.api.dto.GraphqlDtos;
-import br.com.solarvision.api.dto.PanelDtos;
 import br.com.solarvision.api.exception.BadRequestException;
 import br.com.solarvision.api.model.Cleaning;
+import br.com.solarvision.api.model.CleaningDtos;
+import br.com.solarvision.api.model.GraphqlDtos;
 import br.com.solarvision.api.model.Panel;
+import br.com.solarvision.api.model.PanelDtos;
 import br.com.solarvision.api.model.PanelStatus;
 import br.com.solarvision.api.repository.CleaningRepository;
 import br.com.solarvision.api.repository.PanelRepository;
@@ -64,10 +64,7 @@ public class GraphqlService {
             throw new BadRequestException("dataInicio deve ser anterior ou igual a dataFim.");
         }
 
-        return cleaningRepository.findAllByOrderByDataLimpezaDescIdDesc().stream()
-                .filter(cleaning -> effectiveFilter.placaId() == null || cleaning.getPlaca().getId().equals(effectiveFilter.placaId()))
-                .filter(cleaning -> dataInicio == null || !cleaning.getDataLimpeza().isBefore(dataInicio))
-                .filter(cleaning -> dataFim == null || !cleaning.getDataLimpeza().isAfter(dataFim))
+        return cleaningRepository.buscar(effectiveFilter.placaId(), dataInicio, dataFim).stream()
                 .map(this::toGraphqlCleaningResponse)
                 .toList();
     }
@@ -189,7 +186,7 @@ public class GraphqlService {
         if (grupoId == null) {
             return panelRepository.findAllByOrderByIdAsc();
         }
-        return panelRepository.findAllByGrupoIdOrderByIdAsc(grupoId);
+        return panelRepository.findByGrupoIdOrderByIdAsc(grupoId);
     }
 
     private boolean containsIgnoreCase(String source, String target) {

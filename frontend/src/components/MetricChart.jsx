@@ -19,18 +19,20 @@ function shiftDate(date, granularity, direction) {
 }
 
 function rangeFor(granularity, referenceDate) {
-  const end = new Date(referenceDate);
+  // A janela começa na data de referência e avança no tempo,
+  // de modo que o gráfico inicia no primeiro dia com dados.
   const start = new Date(referenceDate);
+  const end = new Date(referenceDate);
 
   if (granularity === "hora") {
     start.setHours(0, 0, 0, 0);
     end.setHours(23, 59, 59, 999);
   } else if (granularity === "dia") {
-    start.setDate(start.getDate() - 7);
+    end.setDate(end.getDate() + 7);
   } else if (granularity === "semana") {
-    start.setDate(start.getDate() - 28);
+    end.setDate(end.getDate() + 28);
   } else {
-    start.setMonth(start.getMonth() - 6);
+    end.setMonth(end.getMonth() + 6);
   }
 
   return {
@@ -53,12 +55,28 @@ function formatRangeLabel(granularity, referenceDate) {
 
 export default function MetricChart() {
   const [granularity, setGranularity] = useState("dia");
-  const [referenceDate, setReferenceDate] = useState(() => new Date());
+  const [referenceDate, setReferenceDate] = useState(null);
   const [points, setPoints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Ancora o gráfico no primeiro dia com dados na base (carga do CSV).
   useEffect(() => {
+    async function fetchRange() {
+      try {
+        const { data } = await api.get("/api/dashboard/range");
+        setReferenceDate(data?.primeiraLeitura ? new Date(data.primeiraLeitura) : new Date());
+      } catch {
+        setReferenceDate(new Date());
+      }
+    }
+
+    fetchRange();
+  }, []);
+
+  useEffect(() => {
+    if (!referenceDate) return;
+
     async function fetchMetrics() {
       setLoading(true);
       setError("");
@@ -133,16 +151,16 @@ export default function MetricChart() {
           <div className="btn-group">
             <button
               className="btn btn-outline-secondary"
-              onClick={() => setReferenceDate((current) => shiftDate(current, granularity, -1))}
+              onClick={() => setReferenceDate((current) => (current ? shiftDate(current, granularity, -1) : current))}
             >
               <i className="bi bi-chevron-left" />
             </button>
             <button className="btn btn-outline-secondary disabled sv-range-label">
-              {formatRangeLabel(granularity, referenceDate)}
+              {referenceDate ? formatRangeLabel(granularity, referenceDate) : "—"}
             </button>
             <button
               className="btn btn-outline-secondary"
-              onClick={() => setReferenceDate((current) => shiftDate(current, granularity, 1))}
+              onClick={() => setReferenceDate((current) => (current ? shiftDate(current, granularity, 1) : current))}
             >
               <i className="bi bi-chevron-right" />
             </button>

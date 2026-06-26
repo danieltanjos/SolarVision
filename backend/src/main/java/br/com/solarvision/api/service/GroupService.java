@@ -1,10 +1,10 @@
 package br.com.solarvision.api.service;
 
-import br.com.solarvision.api.dto.GroupDtos;
-import br.com.solarvision.api.dto.PanelDtos;
 import br.com.solarvision.api.exception.NotFoundException;
+import br.com.solarvision.api.model.GroupDtos;
 import br.com.solarvision.api.model.GroupStatus;
 import br.com.solarvision.api.model.Panel;
+import br.com.solarvision.api.model.PanelDtos;
 import br.com.solarvision.api.model.SolarGroup;
 import br.com.solarvision.api.repository.PanelRepository;
 import br.com.solarvision.api.repository.SolarGroupRepository;
@@ -31,6 +31,14 @@ public class GroupService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public GroupDtos.GroupResponse getGroup(Long groupId) {
+        SolarGroup group = solarGroupRepository.findById(groupId)
+                .orElseThrow(() -> new NotFoundException("Grupo solar não encontrado."));
+
+        return toGroupResponse(group);
+    }
+
     @Transactional
     public GroupDtos.GroupResponse createGroup(GroupDtos.CreateGroupRequest request) {
         SolarGroup group = new SolarGroup();
@@ -41,12 +49,32 @@ public class GroupService {
         return toGroupResponse(savedGroup);
     }
 
+    @Transactional
+    public GroupDtos.GroupResponse updateGroup(Long groupId, GroupDtos.UpdateGroupRequest request) {
+        SolarGroup group = solarGroupRepository.findById(groupId)
+                .orElseThrow(() -> new NotFoundException("Grupo solar não encontrado."));
+
+        group.setNome(request.nome().trim());
+        group.setStatus(request.status() == null ? GroupStatus.ATIVO : request.status());
+
+        SolarGroup savedGroup = solarGroupRepository.save(group);
+        return toGroupResponse(savedGroup);
+    }
+
+    @Transactional
+    public void deleteGroup(Long groupId) {
+        if (!solarGroupRepository.existsById(groupId)) {
+            throw new NotFoundException("Grupo solar não encontrado.");
+        }
+        solarGroupRepository.deleteById(groupId);
+    }
+
     @Transactional(readOnly = true)
     public List<PanelDtos.PanelResponse> listPanelsByGroup(Long groupId) {
         SolarGroup group = solarGroupRepository.findById(groupId)
                 .orElseThrow(() -> new NotFoundException("Grupo solar não encontrado."));
 
-        return panelRepository.findAllByGrupoIdOrderByIdAsc(group.getId()).stream()
+        return panelRepository.findByGrupoIdOrderByIdAsc(group.getId()).stream()
                 .map(this::toPanelResponse)
                 .toList();
     }
@@ -57,7 +85,7 @@ public class GroupService {
                 group.getNome(),
                 group.getStatus().name(),
                 group.getCriadoEm(),
-                group.getPlacas().size()
+                (int) panelRepository.countByGrupoId(group.getId())
         );
     }
 

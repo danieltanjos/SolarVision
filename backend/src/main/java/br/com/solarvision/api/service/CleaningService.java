@@ -1,8 +1,8 @@
 package br.com.solarvision.api.service;
 
-import br.com.solarvision.api.dto.CleaningDtos;
 import br.com.solarvision.api.exception.NotFoundException;
 import br.com.solarvision.api.model.Cleaning;
+import br.com.solarvision.api.model.CleaningDtos;
 import br.com.solarvision.api.model.Panel;
 import br.com.solarvision.api.repository.CleaningRepository;
 import br.com.solarvision.api.repository.PanelRepository;
@@ -29,6 +29,14 @@ public class CleaningService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public CleaningDtos.CleaningResponse getCleaning(Long cleaningId) {
+        Cleaning cleaning = cleaningRepository.findById(cleaningId)
+                .orElseThrow(() -> new NotFoundException("Limpeza não encontrada."));
+
+        return toCleaningResponse(cleaning);
+    }
+
     @Transactional
     public CleaningDtos.CleaningResponse createCleaning(CleaningDtos.CreateCleaningRequest request) {
         Panel panel = panelRepository.findById(request.placaId())
@@ -41,6 +49,29 @@ public class CleaningService {
 
         Cleaning savedCleaning = cleaningRepository.save(cleaning);
         return toCleaningResponse(savedCleaning);
+    }
+
+    @Transactional
+    public CleaningDtos.CleaningResponse updateCleaning(Long cleaningId, CleaningDtos.UpdateCleaningRequest request) {
+        Cleaning cleaning = cleaningRepository.findById(cleaningId)
+                .orElseThrow(() -> new NotFoundException("Limpeza não encontrada."));
+        Panel panel = panelRepository.findById(request.placaId())
+                .orElseThrow(() -> new NotFoundException("Placa não encontrada."));
+
+        cleaning.setPlaca(panel);
+        cleaning.setDataLimpeza(request.dataLimpeza());
+        cleaning.setObservacao(request.observacao() == null ? null : request.observacao().trim());
+
+        Cleaning savedCleaning = cleaningRepository.save(cleaning);
+        return toCleaningResponse(savedCleaning);
+    }
+
+    @Transactional
+    public void deleteCleaning(Long cleaningId) {
+        if (!cleaningRepository.existsById(cleaningId)) {
+            throw new NotFoundException("Limpeza não encontrada.");
+        }
+        cleaningRepository.deleteById(cleaningId);
     }
 
     private CleaningDtos.CleaningResponse toCleaningResponse(Cleaning cleaning) {

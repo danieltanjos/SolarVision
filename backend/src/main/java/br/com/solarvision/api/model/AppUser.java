@@ -7,8 +7,8 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.OffsetDateTime;
 
@@ -23,7 +23,7 @@ public class AppUser {
     @Column(name = "nome", nullable = false, length = 100)
     private String nome;
 
-    @Column(name = "email", nullable = false, unique = true, length = 255)
+    @Column(name = "email", nullable = false, length = 255, unique = true)
     private String email;
 
     @Column(name = "senha_hash", nullable = false, length = 255)
@@ -33,15 +33,9 @@ public class AppUser {
     @Column(name = "role", nullable = false, length = 30)
     private UserRole role = UserRole.USER;
 
-    @Column(name = "criado_em", nullable = false)
+    @CreationTimestamp
+    @Column(name = "criado_em", nullable = false, updatable = false)
     private OffsetDateTime criadoEm;
-
-    @PrePersist
-    public void prePersist() {
-        if (criadoEm == null) {
-            criadoEm = OffsetDateTime.now();
-        }
-    }
 
     public Long getId() {
         return id;

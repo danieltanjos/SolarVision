@@ -1,4 +1,4 @@
-package br.com.solarvision.api.dto;
+package br.com.solarvision.api.model;
 
 import br.com.solarvision.api.model.PanelStatus;
 import jakarta.validation.constraints.NotBlank;
@@ -13,6 +13,16 @@ public final class PanelDtos {
     }
 
     public record CreatePanelRequest(
+            @NotNull(message = "grupoId é obrigatório.")
+            Long grupoId,
+            @NotBlank(message = "Modelo da placa é obrigatório.")
+            @Size(max = 120, message = "Modelo da placa deve ter no máximo 120 caracteres.")
+            String modelo,
+            PanelStatus status
+    ) {
+    }
+
+    public record UpdatePanelRequest(
             @NotNull(message = "grupoId é obrigatório.")
             Long grupoId,
             @NotBlank(message = "Modelo da placa é obrigatório.")

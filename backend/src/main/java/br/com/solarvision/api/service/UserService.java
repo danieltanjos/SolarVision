@@ -1,8 +1,8 @@
 package br.com.solarvision.api.service;
 
-import br.com.solarvision.api.dto.UserDtos;
 import br.com.solarvision.api.exception.NotFoundException;
 import br.com.solarvision.api.model.AppUser;
+import br.com.solarvision.api.model.UserDtos;
 import br.com.solarvision.api.repository.AppUserRepository;
 import br.com.solarvision.api.security.AuthenticatedUser;
 import org.springframework.stereotype.Service;

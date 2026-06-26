@@ -1,4 +1,4 @@
-package br.com.solarvision.api.dto;
+package br.com.solarvision.api.model;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -27,6 +27,12 @@ public final class DashboardDtos {
             BigDecimal totalGeradoHoje,
             long placasAtivas,
             LastCleaningResponse ultimaLimpeza
+    ) {
+    }
+
+    public record RangeResponse(
+            OffsetDateTime primeiraLeitura,
+            OffsetDateTime ultimaLeitura
     ) {
     }
 }

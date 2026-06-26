@@ -16,9 +16,24 @@ api.interceptors.request.use((config) => {
 });
 
 export function extractErrorMessage(error) {
+  // Sem resposta do servidor (rede fora do ar / backend indisponível)
+  if (error?.request && !error?.response) {
+    return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
+  }
+
+  const data = error?.response?.data;
+
+  // Erros de validação por campo (HTTP 400): { errors: { campo: "mensagem" } }
+  if (data?.errors && typeof data.errors === "object") {
+    const mensagens = Object.values(data.errors).filter(Boolean);
+    if (mensagens.length > 0) {
+      return mensagens.join(" · ");
+    }
+  }
+
   return (
-    error?.response?.data?.message ||
-    error?.response?.data?.error ||
+    data?.message ||
+    data?.error ||
     "Não foi possível concluir a operação."
   );
 }
