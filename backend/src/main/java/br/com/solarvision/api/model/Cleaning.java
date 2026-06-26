@@ -8,8 +8,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.OffsetDateTime;
 
@@ -21,25 +21,19 @@ public class Cleaning {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "placa_id", nullable = false)
     private Panel placa;
 
     @Column(name = "data_limpeza", nullable = false)
     private OffsetDateTime dataLimpeza;
 
-    @Column(name = "observacao")
+    @Column(name = "observacao", columnDefinition = "text")
     private String observacao;
 
-    @Column(name = "criado_em", nullable = false)
+    @CreationTimestamp
+    @Column(name = "criado_em", nullable = false, updatable = false)
     private OffsetDateTime criadoEm;
-
-    @PrePersist
-    public void prePersist() {
-        if (criadoEm == null) {
-            criadoEm = OffsetDateTime.now();
-        }
-    }
 
     public Long getId() {
         return id;

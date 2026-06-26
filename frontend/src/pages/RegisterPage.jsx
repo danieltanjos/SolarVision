@@ -22,6 +22,11 @@ export default function RegisterPage() {
   async function handleSubmit(event) {
     event.preventDefault();
 
+    if (form.senha.length < 8) {
+      setError("A senha deve ter no mínimo 8 caracteres.");
+      return;
+    }
+
     if (form.senha !== form.confirmarSenha) {
       setError("As senhas não coincidem.");
       return;
@@ -77,8 +82,10 @@ export default function RegisterPage() {
               placeholder="Senha"
               value={form.senha}
               onChange={(event) => setForm((current) => ({ ...current, senha: event.target.value }))}
+              minLength={8}
               required
             />
+            <div className="form-text">A senha deve ter no mínimo 8 caracteres.</div>
           </div>
           <div className="mb-3">
             <input

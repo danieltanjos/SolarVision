@@ -9,8 +9,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -31,18 +31,12 @@ public class SolarGroup {
     @Column(name = "status", nullable = false, length = 30)
     private GroupStatus status = GroupStatus.ATIVO;
 
-    @Column(name = "criado_em", nullable = false)
+    @CreationTimestamp
+    @Column(name = "criado_em", nullable = false, updatable = false)
     private OffsetDateTime criadoEm;
 
     @OneToMany(mappedBy = "grupo", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Panel> placas = new ArrayList<>();
-
-    @PrePersist
-    public void prePersist() {
-        if (criadoEm == null) {
-            criadoEm = OffsetDateTime.now();
-        }
-    }
 
     public Long getId() {
         return id;

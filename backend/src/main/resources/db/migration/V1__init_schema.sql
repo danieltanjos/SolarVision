@@ -1,5 +1,3 @@
-BEGIN;
-
 CREATE TABLE IF NOT EXISTS usuarios (
     id BIGSERIAL PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
@@ -75,5 +73,3 @@ CREATE INDEX IF NOT EXISTS idx_limpezas_data_limpeza
 
 CREATE INDEX IF NOT EXISTS idx_leituras_energia_placa_data_hora
     ON leituras_energia (placa_id, data_hora DESC);
-
-COMMIT;

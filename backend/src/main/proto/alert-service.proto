@@ -2,6 +2,9 @@ syntax = "proto3";
 
 package grpc.internal;
 
+option java_package = "br.com.solarvision.api.grpc.alert";
+option java_multiple_files = true;
+
 service AlertService {
   rpc GerarAlerta(GenerateAlertRequest) returns (GenerateAlertResponse);
   rpc DispararEmailAlerta(DispatchAlertEmailRequest) returns (DispatchAlertEmailResponse);

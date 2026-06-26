@@ -1,6 +1,6 @@
 package br.com.solarvision.api.controller;
 
-import br.com.solarvision.api.dto.UserDtos;
+import br.com.solarvision.api.model.UserDtos;
 import br.com.solarvision.api.security.AuthenticatedUser;
 import br.com.solarvision.api.service.UserService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

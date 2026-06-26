@@ -2,6 +2,9 @@ syntax = "proto3";
 
 package grpc.internal;
 
+option java_package = "br.com.solarvision.api.grpc.panel";
+option java_multiple_files = true;
+
 service PanelService {
   rpc ChecarPlaca(PanelAvailabilityRequest) returns (PanelAvailabilityResponse);
 }

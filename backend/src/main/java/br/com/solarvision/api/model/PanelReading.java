@@ -8,11 +8,11 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.OffsetDateTime;
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "leituras_energia")
@@ -29,18 +29,12 @@ public class PanelReading {
     @Column(name = "data_hora", nullable = false)
     private OffsetDateTime dataHora;
 
-    @Column(name = "wats_gerados", nullable = false)
+    @Column(name = "wats_gerados", nullable = false, precision = 14, scale = 4)
     private BigDecimal watsGerados;
 
-    @Column(name = "criado_em", nullable = false)
+    @CreationTimestamp
+    @Column(name = "criado_em", nullable = false, updatable = false)
     private OffsetDateTime criadoEm;
-
-    @PrePersist
-    public void prePersist() {
-        if (criadoEm == null) {
-            criadoEm = OffsetDateTime.now();
-        }
-    }
 
     public Long getId() {
         return id;

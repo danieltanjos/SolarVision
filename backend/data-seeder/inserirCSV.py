@@ -43,6 +43,29 @@ def connect_with_retry():
     raise last_error
 
 
+def wait_for_schema(connection):
+    """Aguarda o schema ser criado (pelo Flyway no backend) antes de inserir."""
+    required_tables = ("grupos_solares", "placas", "leituras_energia")
+    for attempt in range(1, MAX_RETRIES + 1):
+        missing = []
+        with connection.cursor() as cursor:
+            for table in required_tables:
+                cursor.execute("SELECT to_regclass(%s)", (f"public.{table}",))
+                if cursor.fetchone()[0] is None:
+                    missing.append(table)
+        connection.rollback()
+        if not missing:
+            return
+        faltantes = ", ".join(missing)
+        print(
+            f"Schema ainda nao pronto (faltam: {faltantes}) "
+            f"tentativa {attempt}/{MAX_RETRIES}. Aguardando {RETRY_DELAY_SECONDS}s..."
+        )
+        time.sleep(RETRY_DELAY_SECONDS)
+
+    raise RuntimeError("Schema do banco nao ficou disponivel a tempo.")
+
+
 def ensure_seed_panel(cursor):
     cursor.execute(
         """
@@ -153,6 +176,8 @@ def insert_batches(cursor, rows):
 def main():
     connection = connect_with_retry()
     try:
+        print("Aguardando schema do banco (Flyway)...")
+        wait_for_schema(connection)
         with connection:
             with connection.cursor() as cursor:
                 print("Preparando grupo e placa padrao para importacao...")

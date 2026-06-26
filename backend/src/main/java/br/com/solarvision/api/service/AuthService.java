@@ -1,12 +1,11 @@
 package br.com.solarvision.api.service;
 
-import br.com.solarvision.api.dto.AuthDtos;
 import br.com.solarvision.api.exception.BadRequestException;
 import br.com.solarvision.api.exception.NotFoundException;
 import br.com.solarvision.api.model.AppUser;
+import br.com.solarvision.api.model.AuthDtos;
 import br.com.solarvision.api.model.UserRole;
 import br.com.solarvision.api.repository.AppUserRepository;
-import br.com.solarvision.api.security.JwtTokenProvider;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,14 +14,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
 
     private final AppUserRepository appUserRepository;
-    private final JwtTokenProvider jwtTokenProvider;
+    private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
 
     public AuthService(AppUserRepository appUserRepository,
-                       JwtTokenProvider jwtTokenProvider,
+                       JwtService jwtService,
                        PasswordEncoder passwordEncoder) {
         this.appUserRepository = appUserRepository;
-        this.jwtTokenProvider = jwtTokenProvider;
+        this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -40,7 +39,7 @@ public class AuthService {
         user.setRole(UserRole.USER);
 
         AppUser savedUser = appUserRepository.save(user);
-        return new AuthDtos.AuthResponse(jwtTokenProvider.generateToken(savedUser), toUserResponse(savedUser));
+        return new AuthDtos.AuthResponse(jwtService.gerarToken(savedUser), toUserResponse(savedUser));
     }
 
     @Transactional(readOnly = true)
@@ -53,7 +52,7 @@ public class AuthService {
             throw new BadRequestException("Credenciais inválidas.");
         }
 
-        return new AuthDtos.AuthResponse(jwtTokenProvider.generateToken(user), toUserResponse(user));
+        return new AuthDtos.AuthResponse(jwtService.gerarToken(user), toUserResponse(user));
     }
 
     private AuthDtos.AuthUserResponse toUserResponse(AppUser user) {
