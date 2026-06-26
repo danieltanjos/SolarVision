@@ -11,6 +11,28 @@ SolarVision/
 └── docker-compose.yml
 ```
 
+## Arquitetura (visão geral)
+
+```mermaid
+flowchart LR
+    browser["Navegador (usuário)"]
+
+    subgraph compose["Docker Compose — rede solarvision-net"]
+        frontend["frontend<br/>React + Vite + Nginx<br/>porta 8080"]
+        backend["backend<br/>Spring Boot<br/>REST/GraphQL 8081 · gRPC 9090"]
+        db[("postgres<br/>PostgreSQL 17<br/>porta 5432")]
+        seeder["seed-data<br/>carga inicial (Python)<br/>executa uma vez e encerra"]
+    end
+
+    browser -->|HTTP 8080| frontend
+    frontend -->|proxy reverso /api| backend
+    backend -->|JDBC + pool de conexões| db
+    seeder -->|INSERT em lote do CSV| db
+    backend -.->|Flyway aplica as migrations no startup| db
+```
+
+Detalhes de arquitetura (camadas, fluxos, stack e decisões) em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) e o modelo de domínio em [`docs/MODELO-DE-CLASSES.md`](docs/MODELO-DE-CLASSES.md).
+
 ## Stack
 
 - Backend: Java 25, Spring Boot 3.5.12, Spring Security (JWT), Spring Data JPA, Flyway, GraphQL, gRPC (Spring gRPC), springdoc-openapi (Swagger)
@@ -51,7 +73,9 @@ docker compose down -v
 3. O container `seed-data` usa `backend/data-seeder/`, aguarda o schema, importa o CSV e encerra automaticamente.
 4. O frontend React consome a API via Nginx reverse proxy em `/api`.
 
-## Documentação por módulo
+## Documentação
 
-- Backend: `backend/README.md`
-- Frontend: `frontend/README.md`
+- Arquitetura (infra, camadas, fluxos): [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md)
+- Modelo de classes (domínio): [`docs/MODELO-DE-CLASSES.md`](docs/MODELO-DE-CLASSES.md)
+- Funcionalidades e endpoints: [`docs/FUNCIONALIDADES.md`](docs/FUNCIONALIDADES.md)
+- Por módulo: [`backend/README.md`](backend/README.md) · [`frontend/README.md`](frontend/README.md)

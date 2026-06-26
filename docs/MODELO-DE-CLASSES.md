@@ -70,14 +70,20 @@ classDiagram
         MANUTENCAO
     }
 
+    %% Composições (losango cheio) refletem ON DELETE CASCADE:
+    %% remover o pai remove os filhos.
     SolarGroup "1" *-- "0..*" Panel : placas
     Panel "1" *-- "0..*" Cleaning : limpezas
     Panel "1" *-- "0..*" PanelReading : leituras
     Panel "1" *-- "0..*" Alert : alertas
-    Panel "0..*" --> "1" SolarGroup : grupo
-    AppUser --> UserRole : role
-    SolarGroup --> GroupStatus : status
-    Panel --> PanelStatus : status
+
+    %% Enums de domínio (papel / status) usados como atributos
+    AppUser ..> UserRole : role
+    SolarGroup ..> GroupStatus : status
+    Panel ..> PanelStatus : status
+
+    note for AppUser "Entidade de autenticação (JWT); não se relaciona ao domínio solar."
+    note for Panel "Núcleo do domínio: pertence a um SolarGroup e agrega limpezas, leituras e alertas."
 ```
 
 ---
