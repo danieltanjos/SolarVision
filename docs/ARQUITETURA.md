@@ -122,7 +122,32 @@ A autenticação é **stateless**: não há sessão no servidor. O JWT assinado 
 
 ---
 
-## 4. Comunicação gRPC (in-process)
+## 4. Segurança
+
+A autenticação é **stateless** baseada em **JWT** — não há sessão no servidor.
+
+### Fluxo e componentes
+- **Login/Registro** (`/api/auth/login`, `/api/auth/register`) emitem um **JWT** assinado.
+- O **`JwtAuthenticatorFilter`** (um `OncePerRequestFilter`) intercepta toda requisição, lê o header `Authorization: Bearer <token>`, valida a assinatura/expiração e popula o `SecurityContext`. Token inválido → `401`.
+- O **`SecurityConfig`** define a cadeia de filtros: sessão `STATELESS`, CSRF desabilitado (API sem sessão/cookies), CORS restrito a origens conhecidas, rotas públicas (`/api/auth/**`, Swagger) e `anyRequest().authenticated()` para o resto.
+
+### Mecanismos
+| Mecanismo | Implementação |
+|---|---|
+| Token | JWT assinado com **HMAC** (`JwtService`); segredo via env `JWT_SECRET` (Base64), expiração configurável (`app.jwt.expiration-seconds`) |
+| Senha | Hash **BCrypt** (com salt) na coluna `senha_hash`; a senha original nunca é armazenada |
+| Autorização | Papéis **ADMIN/USER** (`UserRole`) mapeados para authorities `ROLE_*` |
+| CORS | Origens permitidas explícitas (ex.: `localhost:8080`/`5173`); métodos e headers controlados |
+| Validação | DTOs com Bean Validation (`@Valid`); erros padronizados pelo `GlobalExceptionHandler` (HTTP 400 com mensagens por campo) |
+| Segredos | Fora do código: `JWT_SECRET`, credenciais de banco etc. vêm de variáveis de ambiente |
+
+### Observações
+- O segredo JWT e a senha do banco têm **defaults apenas para ambiente local**; em produção devem vir de variáveis de ambiente/secret manager.
+- O servidor **gRPC (porta 9090)** é interno e não passa pela cadeia de filtros HTTP do Spring Security; o acesso externo a ele se dá pela **ponte REST autenticada** (`/api/internal/grpc/**`).
+
+---
+
+## 5. Comunicação gRPC (in-process)
 
 O backend expõe um servidor gRPC interno na porta 9090 e atua, ele mesmo, como cliente — demonstrando a comunicação ponta a ponta dentro do JVM.
 
@@ -141,7 +166,7 @@ O contrato é definido em arquivos `.proto` (Protobuf); o plugin de build gera a
 
 ---
 
-## 5. Stack tecnológica
+## 6. Stack tecnológica
 
 | Camada | Tecnologia | Função |
 |---|---|---|
@@ -172,7 +197,7 @@ O contrato é definido em arquivos `.proto` (Protobuf); o plugin de build gera a
 
 ---
 
-## 6. Decisões de arquitetura
+## 7. Decisões de arquitetura
 
 - **Spring Data JPA como persistência única.** O projeto adota JPA/Hibernate em toda a camada de dados, em vez de acesso JDBC manual, padronizando o mapeamento objeto-relacional.
 - **Flyway como dono do schema.** A criação e evolução do banco ficam versionadas no repositório, e não em scripts de init do contêiner; o Hibernate apenas valida.
@@ -180,11 +205,11 @@ O contrato é definido em arquivos `.proto` (Protobuf); o plugin de build gera a
 - **DTOs nas bordas.** Controllers e services trafegam DTOs (records), nunca expõem entidades diretamente.
 - **Tratamento de erros centralizado.** Um handler global converte exceções de negócio em respostas HTTP consistentes.
 - **gRPC in-process.** O servidor gRPC roda no mesmo processo do backend, demonstrando o padrão sem introduzir um contêiner adicional.
-- **Spring gRPC em versão milestone (0.9.0).** Necessário para manter compatibilidade com o Spring Boot 3.5 — ver seção 7.
+- **Spring gRPC em versão milestone (0.9.0).** Necessário para manter compatibilidade com o Spring Boot 3.5 — ver seção 8.
 
 ---
 
-## 7. Dependência gRPC (Spring gRPC — versão milestone)
+## 8. Dependência gRPC (Spring gRPC — versão milestone)
 
 O suporte a gRPC vem do projeto oficial **Spring gRPC**, que **não** é gerenciado pelo BOM do Spring Boot — por isso a versão é declarada explicitamente no `pom.xml`.
 
@@ -220,7 +245,7 @@ O plugin que gera as classes Java a partir dos `.proto` precisa usar **as mesmas
 
 ---
 
-## 8. Estrutura de pastas (backend)
+## 9. Estrutura de pastas (backend)
 
 ```text
 backend/

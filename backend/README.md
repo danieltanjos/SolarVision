@@ -77,7 +77,7 @@ backend/
 - A persistência usa **Spring Data JPA**; `spring.jpa.hibernate.ddl-auto=validate` valida o mapeamento contra o schema do Flyway.
 - O endpoint GraphQL ativo é `POST /api/graphql`.
 - O backend legado duplicado foi removido; só esta árvore `backend/` deve ser usada.
-- **Spring gRPC em versão milestone (`0.9.0`)**: é a linha compatível com o Spring Boot 3.5 (a `1.0.x` exige Boot 4.0). Por ser não-GA, vem do repositório **Spring Milestones** (declarado no `pom.xml`), e o gerador de código está fixado nas versões do BOM 0.9.0 (`protoc` 4.30.2, `protoc-gen-grpc-java` 1.72.0). Detalhes e plano de migração em [`docs/ARQUITETURA.md`](../docs/ARQUITETURA.md) (seção 7).
+- **Spring gRPC em versão milestone (`0.9.0`)**: é a linha compatível com o Spring Boot 3.5 (a `1.0.x` exige Boot 4.0). Por ser não-GA, vem do repositório **Spring Milestones** (declarado no `pom.xml`), e o gerador de código está fixado nas versões do BOM 0.9.0 (`protoc` 4.30.2, `protoc-gen-grpc-java` 1.72.0). Detalhes e plano de migração em [`docs/ARQUITETURA.md`](../docs/ARQUITETURA.md) (seção 8).
 
 ## Execução isolada
 
