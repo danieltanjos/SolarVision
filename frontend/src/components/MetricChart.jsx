@@ -156,7 +156,7 @@ export default function MetricChart() {
               <i className="bi bi-chevron-left" />
             </button>
             <button className="btn btn-outline-secondary disabled sv-range-label">
-              {referenceDate ? formatRangeLabel(granularity, referenceDate) : "—"}
+              {referenceDate ? formatRangeLabel(granularity, referenceDate) : "-"}
             </button>
             <button
               className="btn btn-outline-secondary"

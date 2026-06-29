@@ -11,7 +11,7 @@ Backend único e ativo do projeto SolarVision.
 - Spring Data JPA (Hibernate)
 - Flyway (migrations versionadas)
 - Spring GraphQL
-- gRPC (Spring gRPC) — servidor in-process
+- gRPC (Spring gRPC) - servidor in-process
 - springdoc-openapi (Swagger UI)
 - PostgreSQL
 

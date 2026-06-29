@@ -1,4 +1,4 @@
-# Decisões Técnicas e Justificativas — SolarVision
+# Decisões Técnicas e Justificativas - SolarVision
 
 Este documento registra **as escolhas tecnológicas e as decisões de projeto**, justificando-as sob diferentes referenciais (técnico, legal/normativo, institucional/acadêmico e ético/social).
 
@@ -8,7 +8,7 @@ Este documento registra **as escolhas tecnológicas e as decisões de projeto**,
 
 ## 1. Contexto e critério condutor
 
-O SolarVision é um **trabalho acadêmico**. Por isso, o critério que mais pesou nas escolhas foi **institucional/acadêmico**: demonstrar domínio das tecnologias e padrões trabalhados na disciplina e presentes no código de referência do professor (projeto `LojaProduto`) — **Spring Data JPA, Spring Security/JWT, Flyway, Swagger/OpenAPI** — somando um diferencial (**GraphQL** e **gRPC**) para evidenciar repertório.
+O SolarVision é um **trabalho acadêmico**. Por isso, o critério que mais pesou nas escolhas foi **institucional/acadêmico**: demonstrar domínio das tecnologias e padrões trabalhados na disciplina e presentes no código de referência do professor (projeto `LojaProduto`) - **Spring Data JPA, Spring Security/JWT, Flyway, Swagger/OpenAPI** - somando um diferencial (**GraphQL** e **gRPC**) para evidenciar repertório.
 
 As justificativas técnicas abaixo são reais, mas o **driver principal foi atender à avaliação técnica da matéria**, não requisitos de um cliente de produção.
 
@@ -19,11 +19,11 @@ As justificativas técnicas abaixo são reais, mas o **driver principal foi aten
 **Plataforma do sistema:** serviço **back-end web** (API REST/GraphQL/gRPC) + **SPA** no navegador.
 
 **Linguagem do back-end: Java 25 (LTS mais recente)**
-- Linguagem **compilada e fortemente tipada** sobre a JVM — detecta erros em tempo de compilação e é referência no mercado corporativo de back-end.
-- Ecossistema maduro para APIs web (Spring), com forte empregabilidade — adequado ao objetivo de aprendizado.
+- Linguagem **compilada e fortemente tipada** sobre a JVM - detecta erros em tempo de compilação e é referência no mercado corporativo de back-end.
+- Ecossistema maduro para APIs web (Spring), com forte empregabilidade - adequado ao objetivo de aprendizado.
 - Java 25 por ser a versão **LTS** mais atual, demonstrando uso de tecnologia vigente.
 
-**Front-end: JavaScript (React + Vite)** — plataforma navegador, onde JS é a linguagem nativa; React é o padrão de mercado para SPAs.
+**Front-end: JavaScript (React + Vite)** - plataforma navegador, onde JS é a linguagem nativa; React é o padrão de mercado para SPAs.
 
 > Reconhecimento da adequação linguagem ↔ plataforma: Java/JVM para o serviço de back-end; JavaScript/browser para a interface. Cada linguagem foi escolhida conforme a plataforma-alvo.
 
@@ -33,7 +33,7 @@ As justificativas técnicas abaixo são reais, mas o **driver principal foi aten
 
 Distinção conceitual usada no projeto:
 
-- **Framework**: impõe a estrutura e o fluxo da aplicação (inversão de controle — "ele chama o seu código"). Você preenche os pontos de extensão.
+- **Framework**: impõe a estrutura e o fluxo da aplicação (inversão de controle - "ele chama o seu código"). Você preenche os pontos de extensão.
 - **Biblioteca**: você chama quando precisa; não dita a estrutura.
 - **Ferramenta**: utilitário externo ao código, usado no build, na infraestrutura ou na operação.
 
@@ -58,7 +58,7 @@ Distinção conceitual usada no projeto:
 ## 4. Justificativas por dimensão
 
 ### Técnica
-- **Spring Data JPA** (em vez de JDBC manual): menos código, mapeamento objeto-relacional, e é o padrão **ativo** no código do professor. Onde o JPA é fraco (agregações), usamos **SQL nativo** pontual (`@Query`) — abordagem híbrida de mercado.
+- **Spring Data JPA** (em vez de JDBC manual): menos código, mapeamento objeto-relacional, e é o padrão **ativo** no código do professor. Onde o JPA é fraco (agregações), usamos **SQL nativo** pontual (`@Query`) - abordagem híbrida de mercado.
 - **Flyway**: schema versionado e reprodutível ("schema as code"), em vez de script manual no contêiner.
 - **JWT stateless + BCrypt**: autenticação sem sessão (escala horizontal) e senha protegida por hash com salt.
 - **Swagger/OpenAPI**: documentação viva e testável da API.
@@ -66,12 +66,12 @@ Distinção conceitual usada no projeto:
 - Detalhes e trade-offs em [ARQUITETURA.md](ARQUITETURA.md) (seções 7 e 8).
 
 ### Legal / Normativa
-- **LGPD**: o sistema trata dados pessoais (nome, e-mail, senha). A senha é armazenada apenas como **hash BCrypt** (irreversível); o token JWT **não** carrega a senha — boas práticas de proteção e minimização de dados.
-- **Licenças open-source**: as dependências usadas são predominantemente **Apache 2.0** (Spring, gRPC), **MIT** (React) e a licença do **PostgreSQL** — compatíveis com uso acadêmico e comercial, sem cláusulas restritivas (copyleft forte).
+- **LGPD**: o sistema trata dados pessoais (nome, e-mail, senha). A senha é armazenada apenas como **hash BCrypt** (irreversível); o token JWT **não** carrega a senha - boas práticas de proteção e minimização de dados.
+- **Licenças open-source**: as dependências usadas são predominantemente **Apache 2.0** (Spring, gRPC), **MIT** (React) e a licença do **PostgreSQL** - compatíveis com uso acadêmico e comercial, sem cláusulas restritivas (copyleft forte).
 - **Boas práticas de segurança**: consultas parametrizadas (proteção contra SQL injection) e recomendação de HTTPS em produção.
 
 ### Institucional / Acadêmica
-- **Alinhamento ao stack e aos padrões da disciplina** (código de referência do professor) — critério condutor do trabalho.
+- **Alinhamento ao stack e aos padrões da disciplina** (código de referência do professor) - critério condutor do trabalho.
 - **Convenções de engenharia**: versionamento com Git, fluxo de **branches + Pull Requests**, mensagens de commit objetivas e documentação no diretório `docs/`.
 
 ### Ética / Social
