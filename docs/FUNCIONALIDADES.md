@@ -21,6 +21,7 @@ CRUD completo de grupos (uma instalação/usina que agrupa placas):
 - Criar, listar, detalhar, atualizar e excluir grupos.
 - Listar as placas de um grupo (`GET /api/groups/{id}/panels`).
 - Cada grupo tem um **status**: ATIVO, INATIVO ou MANUTENCAO.
+- **Localização** opcional (latitude/longitude), usada futuramente pelo Performance Ratio.
 - A resposta de grupo inclui a **contagem de placas**.
 
 ## 3. Placas / painéis
@@ -29,7 +30,10 @@ CRUD completo de placas, sempre vinculadas a um grupo:
 
 - Criar, listar, detalhar, atualizar e excluir placas.
 - Cada placa tem **modelo** e **status** (ATIVA, INATIVA, MANUTENCAO).
+- **Specs opcionais para o Performance Ratio**: potência (Wp), inclinação, azimute, coeficiente de temperatura e data de instalação.
 - Excluir um grupo remove suas placas em cascata.
+
+A tela de **Cadastro** apresenta as placas **agrupadas por grupo**, com edição e exclusão de grupos e placas, e formulários que já capturam os campos opcionais do Performance Ratio.
 
 ## 4. Limpezas
 

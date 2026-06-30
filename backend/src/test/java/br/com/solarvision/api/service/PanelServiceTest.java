@@ -43,7 +43,7 @@ class PanelServiceTest {
 
     @Test
     void deveCriarPlaca() {
-        var request = new PanelDtos.CreatePanelRequest(1L, "Modelo X", PanelStatus.ATIVA);
+        var request = new PanelDtos.CreatePanelRequest(1L, "Modelo X", PanelStatus.ATIVA, null, null, null, null, null);
         when(solarGroupRepository.findById(1L)).thenReturn(Optional.of(grupo()));
         when(panelRepository.save(any(Panel.class))).thenAnswer(invocation -> {
             Panel p = invocation.getArgument(0);
@@ -61,7 +61,7 @@ class PanelServiceTest {
 
     @Test
     void naoDeveCriarPlacaComGrupoInexistente() {
-        var request = new PanelDtos.CreatePanelRequest(404L, "Modelo X", PanelStatus.ATIVA);
+        var request = new PanelDtos.CreatePanelRequest(404L, "Modelo X", PanelStatus.ATIVA, null, null, null, null, null);
         when(solarGroupRepository.findById(404L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> panelService.createPanel(request))

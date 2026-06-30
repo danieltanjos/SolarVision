@@ -31,6 +31,12 @@ public class SolarGroup {
     @Column(name = "status", nullable = false, length = 30)
     private GroupStatus status = GroupStatus.ATIVO;
 
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
     @CreationTimestamp
     @Column(name = "criado_em", nullable = false, updatable = false)
     private OffsetDateTime criadoEm;
@@ -60,6 +66,22 @@ public class SolarGroup {
 
     public void setStatus(GroupStatus status) {
         this.status = status;
+    }
+
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
     }
 
     public OffsetDateTime getCriadoEm() {

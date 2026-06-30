@@ -44,6 +44,8 @@ public class GroupService {
         SolarGroup group = new SolarGroup();
         group.setNome(request.nome().trim());
         group.setStatus(request.status() == null ? GroupStatus.ATIVO : request.status());
+        group.setLatitude(request.latitude());
+        group.setLongitude(request.longitude());
 
         SolarGroup savedGroup = solarGroupRepository.save(group);
         return toGroupResponse(savedGroup);
@@ -56,6 +58,8 @@ public class GroupService {
 
         group.setNome(request.nome().trim());
         group.setStatus(request.status() == null ? GroupStatus.ATIVO : request.status());
+        group.setLatitude(request.latitude());
+        group.setLongitude(request.longitude());
 
         SolarGroup savedGroup = solarGroupRepository.save(group);
         return toGroupResponse(savedGroup);
@@ -84,6 +88,8 @@ public class GroupService {
                 group.getId(),
                 group.getNome(),
                 group.getStatus().name(),
+                group.getLatitude(),
+                group.getLongitude(),
                 group.getCriadoEm(),
                 (int) panelRepository.countByGrupoId(group.getId())
         );
@@ -96,6 +102,11 @@ public class GroupService {
                 panel.getGrupo().getNome(),
                 panel.getModel(),
                 panel.getStatus().name(),
+                panel.getPotenciaWp(),
+                panel.getInclinacao(),
+                panel.getAzimute(),
+                panel.getCoefTemperatura(),
+                panel.getDataInstalacao(),
                 panel.getCriadoEm()
         );
     }

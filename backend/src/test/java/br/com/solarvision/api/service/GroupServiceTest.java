@@ -33,7 +33,7 @@ class GroupServiceTest {
 
     @Test
     void deveCriarGrupoEContarPlacas() {
-        var request = new GroupDtos.CreateGroupRequest("Grupo Norte", GroupStatus.ATIVO);
+        var request = new GroupDtos.CreateGroupRequest("Grupo Norte", GroupStatus.ATIVO, null, null);
         when(solarGroupRepository.save(any(SolarGroup.class))).thenAnswer(invocation -> {
             SolarGroup g = invocation.getArgument(0);
             g.setId(1L);

@@ -1,10 +1,12 @@
 package br.com.solarvision.api.model;
 
-import br.com.solarvision.api.model.PanelStatus;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 public final class PanelDtos {
@@ -18,7 +20,13 @@ public final class PanelDtos {
             @NotBlank(message = "Modelo da placa é obrigatório.")
             @Size(max = 120, message = "Modelo da placa deve ter no máximo 120 caracteres.")
             String modelo,
-            PanelStatus status
+            PanelStatus status,
+            @DecimalMin(value = "0.0", message = "Potência (Wp) não pode ser negativa.")
+            BigDecimal potenciaWp,
+            Double inclinacao,
+            Double azimute,
+            Double coefTemperatura,
+            LocalDate dataInstalacao
     ) {
     }
 
@@ -28,7 +36,13 @@ public final class PanelDtos {
             @NotBlank(message = "Modelo da placa é obrigatório.")
             @Size(max = 120, message = "Modelo da placa deve ter no máximo 120 caracteres.")
             String modelo,
-            PanelStatus status
+            PanelStatus status,
+            @DecimalMin(value = "0.0", message = "Potência (Wp) não pode ser negativa.")
+            BigDecimal potenciaWp,
+            Double inclinacao,
+            Double azimute,
+            Double coefTemperatura,
+            LocalDate dataInstalacao
     ) {
     }
 
@@ -38,6 +52,11 @@ public final class PanelDtos {
             String grupoNome,
             String modelo,
             String status,
+            BigDecimal potenciaWp,
+            Double inclinacao,
+            Double azimute,
+            Double coefTemperatura,
+            LocalDate dataInstalacao,
             OffsetDateTime criadoEm
     ) {
     }

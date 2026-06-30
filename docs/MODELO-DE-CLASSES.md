@@ -110,6 +110,8 @@ Agrupamento de placas (ex.: uma usina/instalação).
 | id | Long | id (PK) | |
 | nome | String | nome | obrigatório |
 | status | GroupStatus | status | enum |
+| latitude | Double | latitude | opcional (Performance Ratio) |
+| longitude | Double | longitude | opcional (Performance Ratio) |
 | criadoEm | OffsetDateTime | criado_em | |
 | placas | List&lt;Panel&gt; | - | relacionamento 1:N |
 
@@ -122,6 +124,11 @@ Placa/painel solar, pertencente a um grupo.
 | grupo | SolarGroup | grupo_id (FK) | obrigatório |
 | model | String | modelo | obrigatório |
 | status | PanelStatus | status | enum |
+| potenciaWp | BigDecimal | potencia_wp | opcional (Performance Ratio) |
+| inclinacao | Double | inclinacao | opcional (tilt, °) |
+| azimute | Double | azimute | opcional (°) |
+| coefTemperatura | Double | coef_temperatura | opcional (%/°C) |
+| dataInstalacao | LocalDate | data_instalacao | opcional |
 | criadoEm | OffsetDateTime | criado_em | |
 | limpezas | List&lt;Cleaning&gt; | - | relacionamento 1:N |
 | leituras | List&lt;PanelReading&gt; | - | relacionamento 1:N |

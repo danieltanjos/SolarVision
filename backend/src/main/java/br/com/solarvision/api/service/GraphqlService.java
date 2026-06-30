@@ -79,7 +79,12 @@ public class GraphqlService {
                 new PanelDtos.CreatePanelRequest(
                         input.grupoId(),
                         input.modelo(),
-                        parsePanelStatus(input.status())
+                        parsePanelStatus(input.status()),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
                 )
         );
 

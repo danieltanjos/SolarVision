@@ -15,6 +15,8 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +39,21 @@ public class Panel {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)
     private PanelStatus status = PanelStatus.ATIVA;
+
+    @Column(name = "potencia_wp", precision = 10, scale = 2)
+    private BigDecimal potenciaWp;
+
+    @Column(name = "inclinacao")
+    private Double inclinacao;
+
+    @Column(name = "azimute")
+    private Double azimute;
+
+    @Column(name = "coef_temperatura")
+    private Double coefTemperatura;
+
+    @Column(name = "data_instalacao")
+    private LocalDate dataInstalacao;
 
     @CreationTimestamp
     @Column(name = "criado_em", nullable = false, updatable = false)
@@ -78,6 +95,46 @@ public class Panel {
 
     public void setStatus(PanelStatus status) {
         this.status = status;
+    }
+
+    public BigDecimal getPotenciaWp() {
+        return potenciaWp;
+    }
+
+    public void setPotenciaWp(BigDecimal potenciaWp) {
+        this.potenciaWp = potenciaWp;
+    }
+
+    public Double getInclinacao() {
+        return inclinacao;
+    }
+
+    public void setInclinacao(Double inclinacao) {
+        this.inclinacao = inclinacao;
+    }
+
+    public Double getAzimute() {
+        return azimute;
+    }
+
+    public void setAzimute(Double azimute) {
+        this.azimute = azimute;
+    }
+
+    public Double getCoefTemperatura() {
+        return coefTemperatura;
+    }
+
+    public void setCoefTemperatura(Double coefTemperatura) {
+        this.coefTemperatura = coefTemperatura;
+    }
+
+    public LocalDate getDataInstalacao() {
+        return dataInstalacao;
+    }
+
+    public void setDataInstalacao(LocalDate dataInstalacao) {
+        this.dataInstalacao = dataInstalacao;
     }
 
     public OffsetDateTime getCriadoEm() {

@@ -47,6 +47,11 @@ public class PanelService {
         panel.setGrupo(group);
         panel.setModel(request.modelo().trim());
         panel.setStatus(request.status() == null ? PanelStatus.ATIVA : request.status());
+        panel.setPotenciaWp(request.potenciaWp());
+        panel.setInclinacao(request.inclinacao());
+        panel.setAzimute(request.azimute());
+        panel.setCoefTemperatura(request.coefTemperatura());
+        panel.setDataInstalacao(request.dataInstalacao());
 
         Panel savedPanel = panelRepository.save(panel);
         return toPanelResponse(savedPanel);
@@ -62,6 +67,11 @@ public class PanelService {
         panel.setGrupo(group);
         panel.setModel(request.modelo().trim());
         panel.setStatus(request.status() == null ? PanelStatus.ATIVA : request.status());
+        panel.setPotenciaWp(request.potenciaWp());
+        panel.setInclinacao(request.inclinacao());
+        panel.setAzimute(request.azimute());
+        panel.setCoefTemperatura(request.coefTemperatura());
+        panel.setDataInstalacao(request.dataInstalacao());
 
         Panel savedPanel = panelRepository.save(panel);
         return toPanelResponse(savedPanel);
@@ -82,6 +92,11 @@ public class PanelService {
                 panel.getGrupo().getNome(),
                 panel.getModel(),
                 panel.getStatus().name(),
+                panel.getPotenciaWp(),
+                panel.getInclinacao(),
+                panel.getAzimute(),
+                panel.getCoefTemperatura(),
+                panel.getDataInstalacao(),
                 panel.getCriadoEm()
         );
     }
