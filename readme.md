@@ -78,4 +78,5 @@ docker compose down -v
 - Arquitetura (infra, camadas, fluxos): [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md)
 - Modelo de classes (domínio): [`docs/MODELO-DE-CLASSES.md`](docs/MODELO-DE-CLASSES.md)
 - Funcionalidades e endpoints: [`docs/FUNCIONALIDADES.md`](docs/FUNCIONALIDADES.md)
-- Decisões técni
+- Decisões técnicas: [`docs/DECISOES-TECNICAS.md`](docs/DECISOES-TECNICAS.md)
+- Guia do código (backend + APIs): [`docs/GUIA-DO-CODIGO.md`](docs/GUIA-DO-CODIGO.md)
