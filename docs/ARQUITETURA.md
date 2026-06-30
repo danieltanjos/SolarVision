@@ -67,7 +67,7 @@ flowchart TD
         services["AuthService · PanelService · GroupService<br/>CleaningService · DashboardService<br/>GraphqlService · GrpcOperationsService"]
     end
 
-    subgraph grpc["Servidor gRPC in-process - porta 9090"]
+    subgraph grpc["Servidor gRPC embarcado - porta 9090"]
         grpcimpl["PanelGrpcService · AlertGrpcService"]
     end
 
@@ -136,7 +136,7 @@ A autenticação é **stateless** baseada em **JWT** - não há sessão no servi
 |---|---|
 | Token | JWT assinado com **HMAC** (`JwtService`); segredo via env `JWT_SECRET` (Base64), expiração configurável (`app.jwt.expiration-seconds`) |
 | Senha | Hash **BCrypt** (com salt) na coluna `senha_hash`; a senha original nunca é armazenada |
-| Autorização | Papéis **ADMIN/USER** (`UserRole`) mapeados para authorities `ROLE_*` |
+| Autorização | Papéis **ADMIN/USER** (`UserRole`) mapeados para authorities `ROLE_*`. **(parcial)** - ainda não há restrição por papel nos endpoints; ver [FEATURES-INCOMPLETAS.md](FEATURES-INCOMPLETAS.md) |
 | CORS | Origens permitidas explícitas (ex.: `localhost:8080`/`5173`); métodos e headers controlados |
 | Validação | DTOs com Bean Validation (`@Valid`); erros padronizados pelo `GlobalExceptionHandler` (HTTP 400 com mensagens por campo) |
 | Segredos | Fora do código: `JWT_SECRET`, credenciais de banco etc. vêm de variáveis de ambiente |
@@ -147,7 +147,7 @@ A autenticação é **stateless** baseada em **JWT** - não há sessão no servi
 
 ---
 
-## 5. Comunicação gRPC (in-process)
+## 5. Comunicação gRPC (servidor embarcado)
 
 O backend expõe um servidor gRPC interno na porta 9090 e atua, ele mesmo, como cliente - demonstrando a comunicação ponta a ponta dentro do JVM.
 
@@ -204,7 +204,7 @@ O contrato é definido em arquivos `.proto` (Protobuf); o plugin de build gera a
 - **Autenticação stateless com JWT.** Sem sessão de servidor, facilitando escala horizontal.
 - **DTOs nas bordas.** Controllers e services trafegam DTOs (records), nunca expõem entidades diretamente.
 - **Tratamento de erros centralizado.** Um handler global converte exceções de negócio em respostas HTTP consistentes.
-- **gRPC in-process.** O servidor gRPC roda no mesmo processo do backend, demonstrando o padrão sem introduzir um contêiner adicional.
+- **gRPC embarcado.** O servidor gRPC roda no mesmo processo do backend (porta 9090), demonstrando o padrão sem introduzir um contêiner adicional.
 - **Spring gRPC em versão milestone (0.9.0).** Necessário para manter compatibilidade com o Spring Boot 3.5 - ver seção 8.
 
 ---

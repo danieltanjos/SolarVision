@@ -62,7 +62,7 @@ Distinção conceitual usada no projeto:
 - **Flyway**: schema versionado e reprodutível ("schema as code"), em vez de script manual no contêiner.
 - **JWT stateless + BCrypt**: autenticação sem sessão (escala horizontal) e senha protegida por hash com salt.
 - **Swagger/OpenAPI**: documentação viva e testável da API.
-- **gRPC in-process**: demonstra RPC binário/HTTP-2 sem introduzir um contêiner extra.
+- **gRPC embarcado**: demonstra RPC binário/HTTP-2 sem introduzir um contêiner extra.
 - Detalhes e trade-offs em [ARQUITETURA.md](ARQUITETURA.md) (seções 8).
 
 ### Legal / Normativa
@@ -87,6 +87,6 @@ Distinção conceitual usada no projeto:
 |---|---|---|
 | JPA | JDBC/DAO manual | Produtividade + padrão ativo do professor (DAO fica como conceito apresentado) |
 | gRPC `0.9.0` (milestone) | `1.0.x` GA | A 1.0.x exige Spring Boot 4.0; mantivemos Boot 3.5 estável (ver ARQUITETURA, seção 8) |
-| gRPC in-process | Microsserviço separado | Demonstra o padrão sem custo de mais um contêiner |
+| gRPC embarcado | Microsserviço separado | Demonstra o padrão sem custo de mais um contêiner |
 | Flyway | `ddl-auto` do Hibernate criar o schema | Schema versionado e auditável; Hibernate apenas valida |
 | Spring Boot 3.5.12 | Spring Boot 4.0 | Ecossistema (springdoc, gRPC) estável no 3.5; migração para 4.0 é evolução futura |

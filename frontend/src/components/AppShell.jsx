@@ -2,6 +2,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { applyTheme, getInitialTheme } from "../lib/theme";
+import { titleCase } from "../lib/text";
 import MobileNav from "./MobileNav";
 import Sidebar from "./Sidebar";
 import logo from "../../img/logo.png";
@@ -82,7 +83,7 @@ export default function AppShell() {
                 aria-label="Menu do usuário"
               >
                 <i className="bi bi-person-circle me-2" />
-                <span>{user?.nome || "Usuário"}</span>
+                <span>{user?.nome ? titleCase(user.nome) : "Usuário"}</span>
               </button>
               <ul className="dropdown-menu dropdown-menu-end">
                 <li>

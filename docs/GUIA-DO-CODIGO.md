@@ -107,7 +107,7 @@ Detalhes úteis:
 
 - Contratos em `src/main/proto/*.proto`: `PanelService.ChecarPlaca` e `AlertService.GerarAlerta` / `DispararEmailAlerta`.
 - O plugin de build (`protobuf-maven-plugin`) **gera as classes Java** (mensagens + stubs) a partir dos `.proto`.
-- **Servidor** (porta 9090, in-process): `PanelGrpcService` e `AlertGrpcService` (`@Service` que estendem os `*ImplBase` gerados). A lógica real (banco) fica em `GrpcOperationsService` (checar placa registra uma leitura; gerar alerta grava na tabela `alertas`; e-mail é simulado por log).
+- **Servidor** (porta 9090, embarcado no mesmo processo): `PanelGrpcService` e `AlertGrpcService` (`@Service` que estendem os `*ImplBase` gerados). A lógica real (banco) fica em `GrpcOperationsService` (checar placa registra uma leitura; gerar alerta grava na tabela `alertas`; e-mail é simulado por log).
 - **Cliente**: `GrpcClientConfig` cria os *blocking stubs* via `GrpcChannelFactory`.
 - **Ponte REST -> gRPC**: `GrpcBridgeController` injeta os stubs e expõe os serviços gRPC por HTTP, demonstrando a comunicação ponta a ponta dentro do mesmo processo.
 

@@ -1,56 +1,77 @@
-import { startTransition, useEffect, useState } from "react";
+import { startTransition, useEffect, useMemo, useState } from "react";
 import Chart from "react-apexcharts";
 import api, { extractErrorMessage } from "../lib/api";
+import { formatPower, powerUnit } from "../lib/power";
 
-const GRANULARIDADES = [
-  { value: "hora", label: "Hora" },
-  { value: "dia", label: "Dia" },
-  { value: "semana", label: "Semana" },
-  { value: "mes", label: "Mês" }
+// Cada "view" e' a janela mostrada; o "bucket" (date_trunc no backend) e' escolhido
+// automaticamente para dar uma quantidade de pontos adequada e alinhada ao calendario.
+const VIEWS = [
+  { value: "dia", label: "Dia", bucket: "hora" },
+  { value: "semana", label: "Semana", bucket: "dia" },
+  { value: "mes", label: "Mês", bucket: "dia" },
+  { value: "ano", label: "Ano", bucket: "mes" }
 ];
 
-function shiftDate(date, granularity, direction) {
+function viewConfig(view) {
+  return VIEWS.find((item) => item.value === view) ?? VIEWS[0];
+}
+
+// Move a data de referencia em uma unidade da view (dia/semana/mes/ano).
+function shiftDate(date, view, direction) {
   const next = new Date(date);
-  if (granularity === "hora") next.setDate(next.getDate() + direction);
-  if (granularity === "dia") next.setDate(next.getDate() + direction * 7);
-  if (granularity === "semana") next.setDate(next.getDate() + direction * 28);
-  if (granularity === "mes") next.setMonth(next.getMonth() + direction);
+  if (view === "dia") next.setDate(next.getDate() + direction);
+  else if (view === "semana") next.setDate(next.getDate() + direction * 7);
+  else if (view === "mes") next.setMonth(next.getMonth() + direction);
+  else if (view === "ano") next.setFullYear(next.getFullYear() + direction);
   return next;
 }
 
-function rangeFor(granularity, referenceDate) {
-  // A janela começa na data de referência e avança no tempo,
-  // de modo que o gráfico inicia no primeiro dia com dados.
+// Janela alinhada ao calendario a partir da data de referencia.
+function rangeFor(view, referenceDate) {
   const start = new Date(referenceDate);
-  const end = new Date(referenceDate);
+  let end;
 
-  if (granularity === "hora") {
+  if (view === "dia") {
     start.setHours(0, 0, 0, 0);
+    end = new Date(start);
     end.setHours(23, 59, 59, 999);
-  } else if (granularity === "dia") {
-    end.setDate(end.getDate() + 7);
-  } else if (granularity === "semana") {
-    end.setDate(end.getDate() + 28);
+  } else if (view === "semana") {
+    start.setDate(start.getDate() - start.getDay()); // domingo
+    start.setHours(0, 0, 0, 0);
+    end = new Date(start);
+    end.setDate(start.getDate() + 6); // sabado
+    end.setHours(23, 59, 59, 999);
+  } else if (view === "mes") {
+    start.setDate(1);
+    start.setHours(0, 0, 0, 0);
+    end = new Date(start.getFullYear(), start.getMonth() + 1, 0, 23, 59, 59, 999);
   } else {
-    end.setMonth(end.getMonth() + 6);
+    start.setMonth(0, 1);
+    start.setHours(0, 0, 0, 0);
+    end = new Date(start.getFullYear(), 11, 31, 23, 59, 59, 999);
   }
 
-  return {
-    dataInicio: start.toISOString(),
-    dataFim: end.toISOString()
-  };
+  return { dataInicio: start.toISOString(), dataFim: end.toISOString() };
 }
 
-function formatRangeLabel(granularity, referenceDate) {
-  const formatter = new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric"
-  });
-  const { dataInicio, dataFim } = rangeFor(granularity, referenceDate);
-  const start = formatter.format(new Date(dataInicio));
-  const end = formatter.format(new Date(dataFim));
-  return granularity === "hora" ? end : `${start} - ${end}`;
+function formatRangeLabel(view, referenceDate) {
+  const { dataInicio, dataFim } = rangeFor(view, referenceDate);
+  const start = new Date(dataInicio);
+  const end = new Date(dataFim);
+
+  if (view === "dia") {
+    return start.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  }
+  if (view === "semana") {
+    const s = start.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+    const e = end.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+    return `${s} - ${e}`;
+  }
+  if (view === "mes") {
+    const label = start.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+  return String(start.getFullYear());
 }
 
 export default function MetricChart() {
@@ -60,12 +81,13 @@ export default function MetricChart() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Ancora o gráfico no primeiro dia com dados na base (carga do CSV).
+  // Ancora o grafico na ULTIMA leitura disponivel (com o shift do seeder, ~hoje),
+  // dando a sensacao de monitoramento em tempo real.
   useEffect(() => {
     async function fetchRange() {
       try {
         const { data } = await api.get("/api/dashboard/range");
-        setReferenceDate(data?.primeiraLeitura ? new Date(data.primeiraLeitura) : new Date());
+        setReferenceDate(data?.ultimaLeitura ? new Date(data.ultimaLeitura) : new Date());
       } catch {
         setReferenceDate(new Date());
       }
@@ -82,7 +104,7 @@ export default function MetricChart() {
       setError("");
       try {
         const params = {
-          granularidade: granularity,
+          granularidade: viewConfig(granularity).bucket,
           ...rangeFor(granularity, referenceDate)
         };
         const { data } = await api.get("/api/dashboard/metrics", { params });
@@ -97,12 +119,20 @@ export default function MetricChart() {
     fetchMetrics();
   }, [granularity, referenceDate]);
 
-  const series = [
-    {
-      name: "Watts gerados",
-      data: points.map((point) => [new Date(point.x).getTime(), Number(point.y)])
-    }
-  ];
+  const seriesData = useMemo(
+    () => points.map((point) => [new Date(point.x).getTime(), Number(point.y)]),
+    [points]
+  );
+
+  const unit = useMemo(() => {
+    const max = seriesData.reduce((acc, [, y]) => (y > acc ? y : acc), 0);
+    return powerUnit(max);
+  }, [seriesData]);
+
+  const series = [{ name: "Potência média", data: seriesData }];
+
+  const tooltipFormat =
+    granularity === "dia" ? "HH:mm" : granularity === "ano" ? "MMM/yyyy" : "dd/MM/yyyy";
 
   const options = {
     chart: {
@@ -111,31 +141,24 @@ export default function MetricChart() {
       zoom: { enabled: false }
     },
     colors: ["#3b7197"],
-    stroke: {
-      curve: "smooth",
-      width: 3
-    },
+    stroke: { curve: "smooth", width: 3 },
     fill: {
       type: "gradient",
-      gradient: {
-        shadeIntensity: 1,
-        opacityFrom: 0.38,
-        opacityTo: 0.04,
-        stops: [0, 90, 100]
-      }
+      gradient: { shadeIntensity: 1, opacityFrom: 0.38, opacityTo: 0.04, stops: [0, 90, 100] }
     },
     dataLabels: { enabled: false },
-    xaxis: { type: "datetime" },
+    legend: { show: true, position: "top", horizontalAlign: "left" },
+    xaxis: {
+      type: "datetime",
+      labels: { datetimeUTC: false }
+    },
     yaxis: {
-      labels: {
-        formatter: (value) => `${Math.round(value)} W`
-      }
+      labels: { formatter: (value) => formatPower(value, unit) }
     },
-    grid: {
-      borderColor: "rgba(59, 113, 151, 0.12)"
-    },
+    grid: { borderColor: "rgba(59, 113, 151, 0.12)" },
     tooltip: {
-      x: { format: "dd/MM/yyyy HH:mm" }
+      x: { format: tooltipFormat },
+      y: { formatter: (value) => formatPower(value, unit) }
     }
   };
 
@@ -144,7 +167,7 @@ export default function MetricChart() {
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
           <h2 className="h4 text-secondary mb-1">Geração de Energia</h2>
-          <p className="text-muted mb-0">Leitura agregada em gráfico de área suavizada.</p>
+          <p className="text-muted mb-0">Potência média gerada, agregada por período.</p>
         </div>
 
         <div className="chart-controls d-flex flex-column flex-md-row align-items-stretch gap-2">
@@ -167,7 +190,7 @@ export default function MetricChart() {
           </div>
 
           <div className="btn-group">
-            {GRANULARIDADES.map((item) => (
+            {VIEWS.map((item) => (
               <button
                 key={item.value}
                 className={`btn btn-outline-secondary ${granularity === item.value ? "active" : ""}`}
@@ -187,4 +210,10 @@ export default function MetricChart() {
       ) : error ? (
         <div className="alert alert-danger mb-0">{error}</div>
       ) : points.length === 0 ? (
-        <div classNam
+        <div className="sv-state-block text-muted">Sem leituras neste período.</div>
+      ) : (
+        <Chart options={options} series={series} type="area" height={320} />
+      )}
+    </div>
+  );
+}

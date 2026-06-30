@@ -26,7 +26,7 @@ flowchart LR
 
     browser -->|HTTP 8080| frontend
     frontend -->|proxy reverso /api| backend
-    backend -->|JDBC + pool de conexões| db
+    backend -->|JPA/Hibernate + pool HikariCP| db
     seeder -->|INSERT em lote do CSV| db
     backend -.->|Flyway aplica as migrations no startup| db
 ```
@@ -69,7 +69,7 @@ docker compose down -v
 ## Fluxo principal da aplicação
 
 1. O PostgreSQL sobe vazio; o backend aplica as **migrations Flyway** (`backend/src/main/resources/db/migration`) criando o schema.
-2. O backend conecta no banco e expõe REST + GraphQL em `/api/graphql`, Swagger em `/swagger-ui.html` e um servidor gRPC in-process na porta `9090`.
+2. O backend conecta no banco e expõe REST + GraphQL em `/api/graphql`, Swagger em `/swagger-ui.html` e um servidor gRPC embarcado na porta `9090`.
 3. O container `seed-data` usa `backend/data-seeder/`, aguarda o schema, importa o CSV e encerra automaticamente.
 4. O frontend React consome a API via Nginx reverse proxy em `/api`.
 
@@ -80,3 +80,4 @@ docker compose down -v
 - Funcionalidades e endpoints: [`docs/FUNCIONALIDADES.md`](docs/FUNCIONALIDADES.md)
 - Decisões técnicas: [`docs/DECISOES-TECNICAS.md`](docs/DECISOES-TECNICAS.md)
 - Guia do código (backend + APIs): [`docs/GUIA-DO-CODIGO.md`](docs/GUIA-DO-CODIGO.md)
+- Features incompletas (pendências): [`docs/FEATURES-INCOMPLETAS.md`](docs/FEATURES-INCOMPLETAS.md)
