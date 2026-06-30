@@ -1,7 +1,7 @@
 import csv
 import os
 import time
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 import psycopg2
@@ -17,6 +17,9 @@ SEED_GROUP_NAME = os.environ.get("SEED_GROUP_NAME", "Grupo Seeder SolarVision")
 SEED_PANEL_MODEL = os.environ.get("SEED_PANEL_MODEL", "Painel CSV CDTE-PSI")
 SEED_PANEL_STATUS = os.environ.get("SEED_PANEL_STATUS", "ATIVA")
 BATCH_SIZE = int(os.environ.get("SEED_BATCH_SIZE", "5000"))
+# Desloca as datas do CSV para que a leitura mais recente caia em ~hoje (sensacao de tempo real).
+# Mantem hora do dia e espacamento; o deslocamento e' calculado a cada execucao (sempre relativo a hoje).
+SEED_SHIFT_TO_TODAY = os.environ.get("SEED_SHIFT_TO_TODAY", "true").lower() in ("1", "true", "yes")
 MAX_RETRIES = int(os.environ.get("DB_MAX_RETRIES", "15"))
 RETRY_DELAY_SECONDS = int(os.environ.get("DB_RETRY_DELAY_SECONDS", "2"))
 
@@ -121,7 +124,38 @@ def ensure_seed_panel(cursor):
     return cursor.fetchone()[0]
 
 
-def load_rows(panel_id):
+def compute_shift():
+    """Calcula o deslocamento (em dias) para a ultima data do CSV cair em ~hoje.
+
+    Desloca por dias inteiros para preservar a hora do dia (geracao solar e' diurna).
+    Retorna timedelta(0) se o shift estiver desligado ou o CSV estiver vazio/no futuro.
+    """
+    if not SEED_SHIFT_TO_TODAY:
+        return timedelta(0)
+
+    max_dia = None
+    with open(CSV_PATH, newline="", encoding="utf-8-sig") as csv_file:
+        for row in csv.DictReader(csv_file):
+            dia = row.get("dia", "").strip()
+            if dia and (max_dia is None or dia > max_dia):
+                max_dia = dia
+
+    if not max_dia:
+        return timedelta(0)
+
+    ultima_data = datetime.strptime(max_dia, "%Y-%m-%d").date()
+    delta_dias = (date.today() - ultima_data).days
+    if delta_dias <= 0:
+        return timedelta(0)
+
+    print(
+        f"Shift de datas ativo: ultima data do CSV {ultima_data} -> +{delta_dias} dias "
+        f"(termina em ~{date.today()})."
+    )
+    return timedelta(days=delta_dias)
+
+
+def load_rows(panel_id, shift):
     with open(CSV_PATH, newline="", encoding="utf-8-sig") as csv_file:
         reader = csv.DictReader(csv_file)
         for line_number, row in enumerate(reader, start=2):
@@ -129,7 +163,7 @@ def load_rows(panel_id):
                 timestamp = datetime.strptime(
                     f"{row['dia'].strip()} {row['hora'].strip()}",
                     "%Y-%m-%d %H:%M:%S",
-                )
+                ) + shift
                 watts = Decimal(row["wats5min"].strip())
             except (KeyError, ValueError, ArithmeticError) as error:
                 raise ValueError(
@@ -190,8 +224,10 @@ def main():
                     (panel_id,),
                 )
 
+                shift = compute_shift()
+
                 print(f"Lendo CSV em {CSV_PATH}...")
-                total = insert_batches(cursor, load_rows(panel_id))
+                total = insert_batches(cursor, load_rows(panel_id, shift))
                 print(f"Sucesso! {total} leituras importadas para a placa {panel_id}.")
     finally:
         connection.close()

@@ -115,15 +115,35 @@
     width: 88px;
 }
 
+/* Recolhido: handle e itens viram caixinhas quadradas iguais (46x46), centralizadas. */
+.sv-sidebar.is-collapsed .sv-sidebar-handle {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.sv-sidebar.is-collapsed .sv-sidebar-nav {
+    justify-items: center;
+}
+
 .sv-sidebar.is-collapsed .sv-nav-item {
+    width: 46px;
+    height: 46px;
+    min-height: 46px;
+    padding: 0;
+    gap: 0;
     justify-content: center;
-    padding-inline: 0.75rem;
+    background: rgba(255, 255, 255, 0.16);
+    transform: none;
+}
+
+.sv-sidebar.is-collapsed .sv-nav-item:hover,
+.sv-sidebar.is-collapsed .sv-nav-item.active {
+    background: rgba(255, 255, 255, 0.28);
+    transform: none;
 }
 
 .sv-sidebar.is-collapsed .sv-nav-label {
-    width: 0;
-    overflow: hidden;
-    opacity: 0;
+    display: none;
 }
 
 .sv-main {
@@ -336,6 +356,15 @@ html.dark-mode .sv-sidebar-handle:hover {
 html.dark-mode .sv-nav-item.active,
 html.dark-mode .sv-nav-item:hover {
     background: rgba(108, 160, 198, 0.18);
+}
+
+html.dark-mode .sv-sidebar.is-collapsed .sv-nav-item {
+    background: rgba(108, 160, 198, 0.16);
+}
+
+html.dark-mode .sv-sidebar.is-collapsed .sv-nav-item:hover,
+html.dark-mode .sv-sidebar.is-collapsed .sv-nav-item.active {
+    background: rgba(108, 160, 198, 0.28);
 }
 
 html.dark-mode .sv-stat-card {

@@ -11,7 +11,7 @@ Backend único e ativo do projeto SolarVision.
 - Spring Data JPA (Hibernate)
 - Flyway (migrations versionadas)
 - Spring GraphQL
-- gRPC (Spring gRPC) - servidor in-process
+- gRPC (Spring gRPC) - servidor embarcado (mesmo processo)
 - springdoc-openapi (Swagger UI)
 - PostgreSQL
 
@@ -69,7 +69,7 @@ backend/
 ### Documentação / outros
 
 - Swagger UI: `GET /swagger-ui.html` (OpenAPI em `/v3/api-docs`)
-- gRPC: servidor in-process na porta `9090` (serviços `grpc.internal.PanelService` e `grpc.internal.AlertService`)
+- gRPC: servidor embarcado na porta `9090` (serviços `grpc.internal.PanelService` e `grpc.internal.AlertService`)
 
 ## Observações
 

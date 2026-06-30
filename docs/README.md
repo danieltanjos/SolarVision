@@ -9,3 +9,4 @@
 | [FUNCIONALIDADES.md](FUNCIONALIDADES.md) | Compilado das funcionalidades do sistema por módulo, com resumo dos endpoints. |
 | [DECISOES-TECNICAS.md](DECISOES-TECNICAS.md) | Justificativa das escolhas (linguagem/plataforma, framework x ferramenta x biblioteca, dimensões técnica/legal/institucional/ética e trade-offs). |
 | [GUIA-DO-CODIGO.md](GUIA-DO-CODIGO.md) | Guia de estudo do backend e das APIs: ciclo de uma requisição, camadas, segurança, REST/GraphQL/gRPC, persistência JPA e Q&A para a banca. |
+| [FEATURES-INCOMPLETAS.md](FEATURES-INCOMPLETAS.md) | Funcionalidades parciais ou ainda não implementadas (perfil/senha, papéis, leitura de alertas, e-mail real, etc.), priorizadas. |

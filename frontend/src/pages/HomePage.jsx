@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import api, { extractErrorMessage } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import StatCard from "../components/StatCard";
+import { formatPower } from "../lib/power";
+import { titleCase } from "../lib/text";
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -29,7 +31,7 @@ export default function HomePage() {
   return (
     <div className="sv-home">
       <div className="sv-home-intro">
-        <h1>Olá, {user?.nome || "Usuário"}!</h1>
+        <h1>Olá, {user?.nome ? titleCase(user.nome) : "Usuário"}!</h1>
         <p className="text-muted mb-0">
           Visão resumida da operação solar com a linguagem visual original do painel.
         </p>
@@ -40,7 +42,7 @@ export default function HomePage() {
       <section className="sv-home-stats">
         <StatCard
           title="Total Gerado Hoje"
-          value={`${Number(summary?.totalGeradoHoje || 0).toFixed(0)} W`}
+          value={formatPower(summary?.totalGeradoHoje)}
           subtitle="Somatório desde o início do dia operacional"
           icon="bi-sun-fill"
         />
