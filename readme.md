@@ -17,7 +17,7 @@ SolarVision/
 flowchart LR
     browser["Navegador (usuário)"]
 
-    subgraph compose["Docker Compose — rede solarvision-net"]
+    subgraph compose["Docker Compose - rede solarvision-net"]
         frontend["frontend<br/>React + Vite + Nginx<br/>porta 8080"]
         backend["backend<br/>Spring Boot<br/>REST/GraphQL 8081 · gRPC 9090"]
         db[("postgres<br/>PostgreSQL 17<br/>porta 5432")]
@@ -78,4 +78,4 @@ docker compose down -v
 - Arquitetura (infra, camadas, fluxos): [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md)
 - Modelo de classes (domínio): [`docs/MODELO-DE-CLASSES.md`](docs/MODELO-DE-CLASSES.md)
 - Funcionalidades e endpoints: [`docs/FUNCIONALIDADES.md`](docs/FUNCIONALIDADES.md)
-- Por módulo: [`backend/README.md`](backend/README.md) · [`frontend/README.md`](frontend/README.md)
+- Decisões técni

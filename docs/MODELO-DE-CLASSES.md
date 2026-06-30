@@ -1,4 +1,4 @@
-# Modelo de Classes — SolarVision
+# Modelo de Classes - SolarVision
 
 Modelo de domínio do backend: entidades JPA, enums, relacionamentos e mapeamento para o banco.
 
@@ -90,7 +90,7 @@ classDiagram
 
 ## Entidades
 
-### AppUser — `usuarios`
+### AppUser - `usuarios`
 Usuário do sistema (autenticação/autorização).
 
 | Campo | Tipo Java | Coluna | Observações |
@@ -102,7 +102,7 @@ Usuário do sistema (autenticação/autorização).
 | role | UserRole | role | enum (texto) |
 | criadoEm | OffsetDateTime | criado_em | preenchido na criação |
 
-### SolarGroup — `grupos_solares`
+### SolarGroup - `grupos_solares`
 Agrupamento de placas (ex.: uma usina/instalação).
 
 | Campo | Tipo Java | Coluna | Observações |
@@ -111,9 +111,9 @@ Agrupamento de placas (ex.: uma usina/instalação).
 | nome | String | nome | obrigatório |
 | status | GroupStatus | status | enum |
 | criadoEm | OffsetDateTime | criado_em | |
-| placas | List&lt;Panel&gt; | — | relacionamento 1:N |
+| placas | List&lt;Panel&gt; | - | relacionamento 1:N |
 
-### Panel — `placas`
+### Panel - `placas`
 Placa/painel solar, pertencente a um grupo.
 
 | Campo | Tipo Java | Coluna | Observações |
@@ -123,11 +123,11 @@ Placa/painel solar, pertencente a um grupo.
 | model | String | modelo | obrigatório |
 | status | PanelStatus | status | enum |
 | criadoEm | OffsetDateTime | criado_em | |
-| limpezas | List&lt;Cleaning&gt; | — | relacionamento 1:N |
-| leituras | List&lt;PanelReading&gt; | — | relacionamento 1:N |
-| alertas | List&lt;Alert&gt; | — | relacionamento 1:N |
+| limpezas | List&lt;Cleaning&gt; | - | relacionamento 1:N |
+| leituras | List&lt;PanelReading&gt; | - | relacionamento 1:N |
+| alertas | List&lt;Alert&gt; | - | relacionamento 1:N |
 
-### Cleaning — `limpezas`
+### Cleaning - `limpezas`
 Registro de limpeza de uma placa.
 
 | Campo | Tipo Java | Coluna | Observações |
@@ -138,7 +138,7 @@ Registro de limpeza de uma placa.
 | observacao | String | observacao | opcional (texto) |
 | criadoEm | OffsetDateTime | criado_em | |
 
-### PanelReading — `leituras_energia`
+### PanelReading - `leituras_energia`
 Leitura de geração de energia de uma placa (série temporal; carregada via seeder do CSV).
 
 | Campo | Tipo Java | Coluna | Observações |
@@ -149,7 +149,7 @@ Leitura de geração de energia de uma placa (série temporal; carregada via see
 | watsGerados | BigDecimal | wats_gerados | numeric(14,4) |
 | criadoEm | OffsetDateTime | criado_em | |
 
-### Alert — `alertas`
+### Alert - `alertas`
 Alerta associado a uma placa (gerado pelos serviços gRPC).
 
 | Campo | Tipo Java | Coluna | Observações |
@@ -206,6 +206,4 @@ Cada entidade é acessada por um repositório Spring Data JPA (`JpaRepository`):
 
 - Chaves primárias: `@Id @GeneratedValue(strategy = IDENTITY)` (sequência do PostgreSQL).
 - Enums persistidos como texto: `@Enumerated(EnumType.STRING)`.
-- `criadoEm` preenchido automaticamente na inserção: `@CreationTimestamp` (coluna não atualizável).
-- Relacionamentos `@ManyToOne` carregados conforme necessidade; coleções `@OneToMany` são lazy.
-- O schema é criado pelo Flyway; o Hibernate roda em `ddl-auto: validate` (somente valida o mapeamento).
+- `criadoEm` preenchido automaticamente na inserção: `@CreationTimestamp` (co

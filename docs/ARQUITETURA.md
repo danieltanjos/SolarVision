@@ -1,4 +1,4 @@
-# Arquitetura — SolarVision
+# Arquitetura - SolarVision
 
 Documento de arquitetura do SolarVision. Trata da estrutura do sistema, das camadas, dos fluxos de comunicação, da stack tecnológica e das decisões de projeto.
 
@@ -15,7 +15,7 @@ SolarVision é um sistema full-stack de monitoramento de energia solar, organiza
 flowchart LR
     browser["Navegador (usuário)"]
 
-    subgraph compose["Docker Compose — rede solarvision-net"]
+    subgraph compose["Docker Compose - rede solarvision-net"]
         frontend["frontend<br/>React + Vite + Nginx<br/>porta 8080"]
         backend["backend<br/>Spring Boot<br/>REST/GraphQL 8081 · gRPC 9090"]
         db[("postgres<br/>PostgreSQL 17<br/>porta 5432")]
@@ -34,7 +34,7 @@ flowchart LR
 | `postgres` | Banco de dados relacional | 5432 |
 | `backend` | API REST + GraphQL + servidor gRPC | 8081 / 9090 |
 | `frontend` | SPA React servida por Nginx (proxy de `/api`) | 8080 |
-| `seed-data` | Importa o CSV de leituras e encerra | — |
+| `seed-data` | Importa o CSV de leituras e encerra | - |
 
 ### Ordem de inicialização
 
@@ -54,7 +54,7 @@ flowchart TD
     client["Cliente HTTP / SPA"]
 
     subgraph filtro["Cadeia de filtros de segurança"]
-        jwt["JwtAuthenticatorFilter — valida o token JWT"]
+        jwt["JwtAuthenticatorFilter - valida o token JWT"]
     end
 
     subgraph entrada["Camada de entrada"]
@@ -67,11 +67,11 @@ flowchart TD
         services["AuthService · PanelService · GroupService<br/>CleaningService · DashboardService<br/>GraphqlService · GrpcOperationsService"]
     end
 
-    subgraph grpc["Servidor gRPC in-process — porta 9090"]
+    subgraph grpc["Servidor gRPC in-process - porta 9090"]
         grpcimpl["PanelGrpcService · AlertGrpcService"]
     end
 
-    subgraph dados["Camada de dados — Spring Data JPA"]
+    subgraph dados["Camada de dados - Spring Data JPA"]
         repos["Repositories (JpaRepository)"]
         entities["Entidades @Entity"]
     end
@@ -87,11 +87,11 @@ flowchart TD
 
 Responsabilidades:
 
-- **Controller** — expõe os endpoints e traduz HTTP ↔ objetos Java. Sem regra de negócio.
-- **Service** — concentra as regras de negócio e define a fronteira transacional (`@Transactional`).
-- **Repository** — acesso a dados via Spring Data JPA; a implementação é gerada pelo framework a partir da interface.
-- **Entity** — classe mapeada para uma tabela do banco.
-- **Filtro de segurança** — intercepta toda requisição, valida o JWT e popula o contexto de autenticação.
+- **Controller** - expõe os endpoints e traduz HTTP ↔ objetos Java. Sem regra de negócio.
+- **Service** - concentra as regras de negócio e define a fronteira transacional (`@Transactional`).
+- **Repository** - acesso a dados via Spring Data JPA; a implementação é gerada pelo framework a partir da interface.
+- **Entity** - classe mapeada para uma tabela do banco.
+- **Filtro de segurança** - intercepta toda requisição, valida o JWT e popula o contexto de autenticação.
 
 ---
 
@@ -122,9 +122,34 @@ A autenticação é **stateless**: não há sessão no servidor. O JWT assinado 
 
 ---
 
-## 4. Comunicação gRPC (in-process)
+## 4. Segurança
 
-O backend expõe um servidor gRPC interno na porta 9090 e atua, ele mesmo, como cliente — demonstrando a comunicação ponta a ponta dentro do JVM.
+A autenticação é **stateless** baseada em **JWT** - não há sessão no servidor.
+
+### Fluxo e componentes
+- **Login/Registro** (`/api/auth/login`, `/api/auth/register`) emitem um **JWT** assinado.
+- O **`JwtAuthenticatorFilter`** (um `OncePerRequestFilter`) intercepta toda requisição, lê o header `Authorization: Bearer <token>`, valida a assinatura/expiração e popula o `SecurityContext`. Token inválido resulta em `401`.
+- O **`SecurityConfig`** define a cadeia de filtros: sessão `STATELESS`, CSRF desabilitado (API sem sessão/cookies), CORS restrito a origens conhecidas, rotas públicas (`/api/auth/**`, Swagger) e `anyRequest().authenticated()` para o resto.
+
+### Mecanismos
+| Mecanismo | Implementação |
+|---|---|
+| Token | JWT assinado com **HMAC** (`JwtService`); segredo via env `JWT_SECRET` (Base64), expiração configurável (`app.jwt.expiration-seconds`) |
+| Senha | Hash **BCrypt** (com salt) na coluna `senha_hash`; a senha original nunca é armazenada |
+| Autorização | Papéis **ADMIN/USER** (`UserRole`) mapeados para authorities `ROLE_*` |
+| CORS | Origens permitidas explícitas (ex.: `localhost:8080`/`5173`); métodos e headers controlados |
+| Validação | DTOs com Bean Validation (`@Valid`); erros padronizados pelo `GlobalExceptionHandler` (HTTP 400 com mensagens por campo) |
+| Segredos | Fora do código: `JWT_SECRET`, credenciais de banco etc. vêm de variáveis de ambiente |
+
+### Observações
+- O segredo JWT e a senha do banco têm **defaults apenas para ambiente local**; em produção devem vir de variáveis de ambiente/secret manager.
+- O servidor **gRPC (porta 9090)** é interno e não passa pela cadeia de filtros HTTP do Spring Security; o acesso externo a ele se dá pela **ponte REST autenticada** (`/api/internal/grpc/**`).
+
+---
+
+## 5. Comunicação gRPC (in-process)
+
+O backend expõe um servidor gRPC interno na porta 9090 e atua, ele mesmo, como cliente - demonstrando a comunicação ponta a ponta dentro do JVM.
 
 ```mermaid
 flowchart LR
@@ -141,7 +166,7 @@ O contrato é definido em arquivos `.proto` (Protobuf); o plugin de build gera a
 
 ---
 
-## 5. Stack tecnológica
+## 6. Stack tecnológica
 
 | Camada | Tecnologia | Função |
 |---|---|---|
@@ -172,7 +197,7 @@ O contrato é definido em arquivos `.proto` (Protobuf); o plugin de build gera a
 
 ---
 
-## 6. Decisões de arquitetura
+## 7. Decisões de arquitetura
 
 - **Spring Data JPA como persistência única.** O projeto adota JPA/Hibernate em toda a camada de dados, em vez de acesso JDBC manual, padronizando o mapeamento objeto-relacional.
 - **Flyway como dono do schema.** A criação e evolução do banco ficam versionadas no repositório, e não em scripts de init do contêiner; o Hibernate apenas valida.
@@ -180,13 +205,13 @@ O contrato é definido em arquivos `.proto` (Protobuf); o plugin de build gera a
 - **DTOs nas bordas.** Controllers e services trafegam DTOs (records), nunca expõem entidades diretamente.
 - **Tratamento de erros centralizado.** Um handler global converte exceções de negócio em respostas HTTP consistentes.
 - **gRPC in-process.** O servidor gRPC roda no mesmo processo do backend, demonstrando o padrão sem introduzir um contêiner adicional.
-- **Spring gRPC em versão milestone (0.9.0).** Necessário para manter compatibilidade com o Spring Boot 3.5 — ver seção 7.
+- **Spring gRPC em versão milestone (0.9.0).** Necessário para manter compatibilidade com o Spring Boot 3.5 - ver seção 8.
 
 ---
 
-## 7. Dependência gRPC (Spring gRPC — versão milestone)
+## 8. Dependência gRPC (Spring gRPC - versão milestone)
 
-O suporte a gRPC vem do projeto oficial **Spring gRPC**, que **não** é gerenciado pelo BOM do Spring Boot — por isso a versão é declarada explicitamente no `pom.xml`.
+O suporte a gRPC vem do projeto oficial **Spring gRPC**, que **não** é gerenciado pelo BOM do Spring Boot - por isso a versão é declarada explicitamente no `pom.xml`.
 
 ### Por que a versão 0.9.0 (e não a 1.0.x GA)
 
@@ -205,44 +230,4 @@ O suporte a gRPC vem do projeto oficial **Spring gRPC**, que **não** é gerenci
 
 ### Alinhamento do gerador de código com o runtime
 
-O plugin que gera as classes Java a partir dos `.proto` precisa usar **as mesmas versões** de Protobuf e gRPC que o BOM do Spring gRPC 0.9.0 coloca em runtime. Caso contrário, o código gerado chama APIs que não existem nas bibliotecas em execução (erro de compilação, p. ex. `com.google.protobuf.Generated` ou `blockingV2UnaryCall`). As versões abaixo vêm do BOM `spring-grpc-dependencies:0.9.0`:
-
-| Componente | Versão (BOM 0.9.0) | Propriedade no `pom.xml` |
-|---|---|---|
-| Spring gRPC | 0.9.0 | `spring-grpc.version` |
-| protobuf-java (runtime) | 4.30.2 | `protoc.version` (gerador `protoc`) |
-| grpc-java (runtime) | 1.72.0 | `grpc-java-plugin.version` (gerador `protoc-gen-grpc-java`) |
-
-### Implicações e manutenção
-
-- É uma dependência **não-GA (milestone)**: aceitável para o escopo deste projeto, mas as versões devem permanecer **fixadas** (como estão) e ser revisadas em qualquer atualização.
-- **Ao migrar para Spring Boot 4.x**: trocar o Spring gRPC para a linha **1.0.x (GA)**, realinhar `protoc.version`/`grpc-java-plugin.version` às versões do novo BOM e **remover** o repositório Spring Milestones (a dependência passa a estar no Maven Central).
-
----
-
-## 8. Estrutura de pastas (backend)
-
-```text
-backend/
-├── data-seeder/                 # carga inicial do CSV (Python)
-├── src/main/java/br/com/solarvision/api
-│   ├── config/                  # OpenApiConfig (Swagger)
-│   ├── controller/              # REST + ponte REST→gRPC
-│   │   └── graphql/             # controller GraphQL
-│   ├── exception/               # exceções + handler global
-│   ├── grpc/
-│   │   ├── client/              # stubs gRPC (cliente)
-│   │   └── server/              # @GrpcService (servidor)
-│   ├── model/                   # entidades JPA + DTOs + enums
-│   ├── repository/              # Spring Data JPA
-│   ├── security/                # filtro JWT, config de segurança
-│   └── service/                 # regras de negócio
-├── src/main/proto/              # contratos gRPC (.proto)
-├── src/main/resources/
-│   ├── application.yml
-│   ├── db/migration/            # migrations Flyway (V1, V2, ...)
-│   └── graphql/schema.graphqls
-├── src/test/java/               # testes unitários (JUnit 5 + Mockito)
-├── Dockerfile                   # build multi-stage
-└── pom.xml
-```
+O plugin que gera as classes Java a partir dos `.proto` precisa usar **as mesmas versões** de Protobuf e gRPC que o BOM do Spring gRPC 0.9.0 coloca em runtime. Caso contrário, o código gerado chama APIs que não existem nas bibliotecas em execução (erro de compilação, p. ex. `com.google.protobuf.Generated` ou `blockingV2UnaryCall`). As versões abaixo vêm do BOM `spring-grpc-depende

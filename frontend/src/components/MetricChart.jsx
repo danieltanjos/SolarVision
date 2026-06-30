@@ -156,7 +156,7 @@ export default function MetricChart() {
               <i className="bi bi-chevron-left" />
             </button>
             <button className="btn btn-outline-secondary disabled sv-range-label">
-              {referenceDate ? formatRangeLabel(granularity, referenceDate) : "—"}
+              {referenceDate ? formatRangeLabel(granularity, referenceDate) : "-"}
             </button>
             <button
               className="btn btn-outline-secondary"
@@ -187,10 +187,4 @@ export default function MetricChart() {
       ) : error ? (
         <div className="alert alert-danger mb-0">{error}</div>
       ) : points.length === 0 ? (
-        <div className="sv-state-block text-muted">Sem dados para o período selecionado.</div>
-      ) : (
-        <Chart options={options} series={series} type="area" height={380} />
-      )}
-    </div>
-  );
-}
+        <div classNam

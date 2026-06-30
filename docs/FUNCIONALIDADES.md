@@ -1,4 +1,4 @@
-# Funcionalidades — SolarVision
+# Funcionalidades - SolarVision
 
 Compilado do que o sistema faz, organizado por módulo. SolarVision é uma plataforma de **monitoramento de energia solar**: cadastra grupos de placas, acompanha a geração de energia ao longo do tempo, registra limpezas e gera alertas.
 
@@ -56,7 +56,7 @@ Painel de acompanhamento alimentado por dois endpoints:
 
 Endpoint único `POST /api/graphql` como alternativa flexível ao REST:
 
-- **Queries**: `panels(filter)` e `cleanings(filter)` — com filtros por grupo, status, modelo, placa e intervalo de datas.
+- **Queries**: `panels(filter)` e `cleanings(filter)` - com filtros por grupo, status, modelo, placa e intervalo de datas.
 - **Mutations**: `createPanel` e `createCleaning`.
 
 ## 8. Serviços gRPC e alertas
@@ -108,5 +108,3 @@ O frontend consome a API via Nginx (proxy reverso de `/api`), com um interceptor
 | GET | `/api/dashboard/range` | Autenticado |
 | POST | `/api/graphql` | Autenticado |
 | POST | `/api/internal/grpc/panels/{panelId}/check` | Autenticado |
-| POST | `/api/internal/grpc/alerts` | Autenticado |
-| POST | `/api/internal/grpc/alerts/email` | Autenticado |
