@@ -1,0 +1,438 @@
+{
+  "info": {
+    "name": "SolarVision API",
+    "_postman_id": "b1f6a3c2-9a1e-4f0b-9b21-solarvision0001",
+    "description": "Coleção pronta da API SolarVision.\n\nComo usar:\n1. A variável baseUrl já aponta para http://localhost:8081 (backend direto). Se preferir passar pelo Nginx do frontend, troque para http://localhost:8080.\n2. Rode 'Auth > Login' (ou Register na 1a vez): o token JWT é salvo automaticamente na variável {{token}} e usado nas demais chamadas.\n3. Rode 'Groups > Criar grupo' e depois 'Panels > Criar placa': os IDs criados viram {{groupId}} e {{panelId}} automaticamente, alimentando os outros requests.\n\nObservacao: o registro exige senha com no minimo 8 caracteres.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{token}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8081" },
+    { "key": "token", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "groupId", "value": "" },
+    { "key": "panelId", "value": "" },
+    { "key": "cleaningId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register (cria conta + salva token)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Luiz Gustavo\",\n  \"email\": \"luiz@solarvision.com\",\n  \"senha\": \"senha1234\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.token) { pm.collectionVariables.set('token', res.token); }",
+                  "if (res.user && res.user.id) { pm.collectionVariables.set('userId', res.user.id); }",
+                  "pm.test('status 200', () => pm.response.code === 200);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (salva token)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"luiz@solarvision.com\",\n  \"senha\": \"senha1234\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.token) { pm.collectionVariables.set('token', res.token); }",
+                  "if (res.user && res.user.id) { pm.collectionVariables.set('userId', res.user.id); }",
+                  "pm.test('status 200', () => pm.response.code === 200);",
+                  "pm.test('tem token', () => !!res.token);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Meu perfil (/me)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/users/me", "host": ["{{baseUrl}}"], "path": ["api", "users", "me"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Groups",
+      "item": [
+        {
+          "name": "Listar grupos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/groups", "host": ["{{baseUrl}}"], "path": ["api", "groups"] }
+          }
+        },
+        {
+          "name": "Criar grupo (salva groupId)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/groups", "host": ["{{baseUrl}}"], "path": ["api", "groups"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Usina Teste Postman\",\n  \"status\": \"ATIVO\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.id) { pm.collectionVariables.set('groupId', res.id); }",
+                  "pm.test('status 200', () => pm.response.code === 200);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detalhar grupo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/groups/{{groupId}}", "host": ["{{baseUrl}}"], "path": ["api", "groups", "{{groupId}}"] }
+          }
+        },
+        {
+          "name": "Atualizar grupo",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/groups/{{groupId}}", "host": ["{{baseUrl}}"], "path": ["api", "groups", "{{groupId}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Usina Teste Postman (editada)\",\n  \"status\": \"MANUTENCAO\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Placas do grupo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/groups/{{groupId}}/panels", "host": ["{{baseUrl}}"], "path": ["api", "groups", "{{groupId}}", "panels"] }
+          }
+        },
+        {
+          "name": "Excluir grupo",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/groups/{{groupId}}", "host": ["{{baseUrl}}"], "path": ["api", "groups", "{{groupId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Panels",
+      "item": [
+        {
+          "name": "Listar placas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/panels", "host": ["{{baseUrl}}"], "path": ["api", "panels"] }
+          }
+        },
+        {
+          "name": "Criar placa (salva panelId)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/panels", "host": ["{{baseUrl}}"], "path": ["api", "panels"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grupoId\": {{groupId}},\n  \"modelo\": \"Painel Postman 450W\",\n  \"status\": \"ATIVA\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.id) { pm.collectionVariables.set('panelId', res.id); }",
+                  "pm.test('status 200', () => pm.response.code === 200);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detalhar placa",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/panels/{{panelId}}", "host": ["{{baseUrl}}"], "path": ["api", "panels", "{{panelId}}"] }
+          }
+        },
+        {
+          "name": "Atualizar placa",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/panels/{{panelId}}", "host": ["{{baseUrl}}"], "path": ["api", "panels", "{{panelId}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grupoId\": {{groupId}},\n  \"modelo\": \"Painel Postman 550W\",\n  \"status\": \"MANUTENCAO\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Excluir placa",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/panels/{{panelId}}", "host": ["{{baseUrl}}"], "path": ["api", "panels", "{{panelId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cleanings",
+      "item": [
+        {
+          "name": "Listar limpezas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/cleanings", "host": ["{{baseUrl}}"], "path": ["api", "cleanings"] }
+          }
+        },
+        {
+          "name": "Criar limpeza (salva cleaningId)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/cleanings", "host": ["{{baseUrl}}"], "path": ["api", "cleanings"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placaId\": {{panelId}},\n  \"dataLimpeza\": \"2026-06-30T10:00:00Z\",\n  \"observacao\": \"Limpeza de teste via Postman\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.id) { pm.collectionVariables.set('cleaningId', res.id); }",
+                  "pm.test('status 200', () => pm.response.code === 200);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detalhar limpeza",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/cleanings/{{cleaningId}}", "host": ["{{baseUrl}}"], "path": ["api", "cleanings", "{{cleaningId}}"] }
+          }
+        },
+        {
+          "name": "Atualizar limpeza",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/cleanings/{{cleaningId}}", "host": ["{{baseUrl}}"], "path": ["api", "cleanings", "{{cleaningId}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placaId\": {{panelId}},\n  \"dataLimpeza\": \"2026-06-30T15:30:00Z\",\n  \"observacao\": \"Observacao editada via Postman\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Excluir limpeza",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/cleanings/{{cleaningId}}", "host": ["{{baseUrl}}"], "path": ["api", "cleanings", "{{cleaningId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Métricas (potência média)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/metrics?granularidade=dia",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dashboard", "metrics"],
+              "query": [
+                { "key": "granularidade", "value": "dia", "description": "hora | dia | semana | mes" },
+                { "key": "dataInicio", "value": "2026-06-01T00:00:00Z", "disabled": true },
+                { "key": "dataFim", "value": "2026-07-01T00:00:00Z", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Resumo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/dashboard/summary", "host": ["{{baseUrl}}"], "path": ["api", "dashboard", "summary"] }
+          }
+        },
+        {
+          "name": "Intervalo de dados (range)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/dashboard/range", "host": ["{{baseUrl}}"], "path": ["api", "dashboard", "range"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "GraphQL",
+      "item": [
+        {
+          "name": "Query panels",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/graphql", "host": ["{{baseUrl}}"], "path": ["api", "graphql"] },
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query Panels($filter: PanelFilterInput) {\n  panels(filter: $filter) {\n    id\n    modelo\n    status\n    grupoId\n    grupoNome\n    criadoEm\n  }\n}",
+                "variables": "{\n  \"filter\": { \"status\": \"ATIVA\" }\n}"
+              }
+            }
+          }
+        },
+        {
+          "name": "Query cleanings",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/graphql", "host": ["{{baseUrl}}"], "path": ["api", "graphql"] },
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query Cleanings($filter: CleaningFilterInput) {\n  cleanings(filter: $filter) {\n    id\n    placaId\n    placaModelo\n    dataLimpeza\n    observacao\n  }\n}",
+                "variables": "{\n  \"filter\": {}\n}"
+              }
+            }
+          }
+        },
+        {
+          "name": "Mutation createPanel",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/graphql", "host": ["{{baseUrl}}"], "path": ["api", "graphql"] },
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation CreatePanel($input: CreatePanelInput!) {\n  createPanel(input: $input) {\n    id\n    modelo\n    status\n    grupoNome\n  }\n}",
+                "variables": "{\n  \"input\": { \"grupoId\": \"{{groupId}}\", \"modelo\": \"Painel GraphQL\", \"status\": \"ATIVA\" }\n}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "gRPC Bridge (REST -> gRPC)",
+      "item": [
+        {
+          "name": "Checar placa",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/internal/grpc/panels/{{panelId}}/check", "host": ["{{baseUrl}}"], "path": ["api", "internal", "grpc", "panels", "{{panelId}}", "check"] }
+          }
+        },
+        {
+          "name": "Gerar alerta",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/internal/grpc/alerts", "host": ["{{baseUrl}}"], "path": ["api", "internal", "grpc", "alerts"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"panelId\": {{panelId}},\n  \"type\": \"SOILING\",\n  \"severity\": \"ALTA\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Disparar e-mail de alerta",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/internal/grpc/alerts/email", "host": ["{{baseUrl}}"], "path": ["api", "internal", "grpc", "alerts", "email"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"to\": \"operacao@solarvision.com\",\n  \"template\": \"alerta-soiling\",\n  \"subject\": \"Alerta de sujeira na placa\",\n  \"panelId\": {{panelId}},\n  \"severity\": \"ALTA\",\n  \"soilingIndex\": 0.42\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
