@@ -4,6 +4,8 @@
 
 | Documento | Conteúdo |
 |---|---|
+| [QUALIDADE-E-TESTES.md](QUALIDADE-E-TESTES.md) | Estratégia, riscos, casos automatizados e funcionais, resultados e limitações. |
+| [Relatório PDF](../SolarVision_Qualidade_e_Testes.pdf) | Relatório acadêmico de qualidade e testes, seguindo a apresentação do exemplo fornecido. |
 | [ARQUITETURA.md](ARQUITETURA.md) | Arquitetura do sistema: visão de implantação, camadas, fluxos de comunicação, stack tecnológica e decisões de projeto. |
 | [MODELO-DE-CLASSES.md](MODELO-DE-CLASSES.md) | Modelo de domínio: diagrama de classes, entidades, enums, relacionamentos e mapeamento JPA. |
 | [FUNCIONALIDADES.md](FUNCIONALIDADES.md) | Compilado das funcionalidades do sistema por módulo, com resumo dos endpoints. |

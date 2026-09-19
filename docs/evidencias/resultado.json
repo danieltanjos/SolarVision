@@ -1,0 +1,41 @@
+{
+  "data": "2026-09-19",
+  "escopo": "Testes unitários, contrato MVC standalone e build frontend",
+  "backend": {
+    "comando": "docker compose -f compose.qa.yml --profile test run --rm backend-tests",
+    "java": "25.0.4",
+    "java_configurado_no_projeto": "25",
+    "testes": 38,
+    "falhas": 0,
+    "erros": 0,
+    "ignorados": 0,
+    "resultado": "BUILD SUCCESS",
+    "fim": "2026-09-19T22:16:00-03:00",
+    "fonte": "backend/target/surefire-reports/TEST-*.xml; resumo em backend-casos.json"
+  },
+  "frontend": {
+    "comando": "npm test",
+    "node": "24.14.1",
+    "testes": 21,
+    "falhas": 0,
+    "ignorados": 0,
+    "fonte": "frontend.tap",
+    "build": "npm run build: aprovado, 126 módulos transformados, Vite 7.3.3"
+  },
+  "integracao": {
+    "comando": "node docs/testes-integrados.cjs",
+    "ambiente": "Docker Compose isolado com PostgreSQL 17, backend Java 25, frontend Nginx e Chrome headless 152",
+    "testes": 6,
+    "falhas": 0,
+    "resultado": "APROVADO",
+    "fonte": "docs/evidencias/integracao/resultado.json"
+  },
+  "total": 59,
+  "novos": 42,
+  "preexistentes": 17,
+  "pendencias": [
+    "Executar o workflow no GitHub",
+    "Medições de carga e auditoria completa de acessibilidade",
+    "Teste de envio real de e-mail"
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "inicio": "2026-09-19T22:11:56.677Z",
+  "ambiente": "Docker Compose solarvision-qa; PostgreSQL 17; backend Java 25; navegador Chrome headless",
+  "casos": [
+    {
+      "id": "FT-01",
+      "descricao": "Registro, saída e login pelo navegador",
+      "inicio": "2026-09-19T22:11:57.951Z",
+      "obtido": "Conta persistida; logout removeu token; novo login abriu dashboard; GET /api/users/me confirmou a conta.",
+      "estado": "aprovado",
+      "fim": "2026-09-19T22:12:00.637Z"
+    },
+    {
+      "id": "FT-02",
+      "descricao": "API e rota privada sem autenticação",
+      "inicio": "2026-09-19T22:12:00.640Z",
+      "obtido": "API recusou com HTTP 403; rota privada redirecionou para login.",
+      "estado": "aprovado",
+      "fim": "2026-09-19T22:12:02.029Z"
+    },
+    {
+      "id": "FT-03",
+      "descricao": "Cadastro e atualização de grupo e placa com persistência",
+      "inicio": "2026-09-19T22:12:02.032Z",
+      "obtido": "Grupo 2 e placa 2 criados e atualizados; consulta HTTP e PostgreSQL confirmaram os dados.",
+      "estado": "aprovado",
+      "fim": "2026-09-19T22:12:06.028Z"
+    },
+    {
+      "id": "FT-04",
+      "descricao": "Limpeza pela interface, recarga e exclusão pela API",
+      "inicio": "2026-09-19T22:12:06.031Z",
+      "obtido": "Limpeza criada pela interface e mantida após recarga; registro confirmado no PostgreSQL; exclusão retornou 204, consulta posterior 404 e banco sem registro.",
+      "estado": "aprovado",
+      "fim": "2026-09-19T22:12:10.235Z"
+    },
+    {
+      "id": "FT-05",
+      "descricao": "Médias do dashboard por hora/dia com fixture PostgreSQL",
+      "inicio": "2026-09-19T22:12:10.237Z",
+      "obtido": {
+        "fixture": [
+          100,
+          300,
+          500
+        ],
+        "hora": [
+          {
+            "x": "2052-03-26T13:00:00Z",
+            "y": 200
+          },
+          {
+            "x": "2052-03-26T14:00:00Z",
+            "y": 500
+          }
+        ],
+        "dia": [
+          {
+            "x": "2052-03-26T03:00:00Z",
+            "y": 300
+          }
+        ]
+      },
+      "estado": "aprovado",
+      "fim": "2026-09-19T22:12:11.109Z"
+    },
+    {
+      "id": "FT-06",
+      "descricao": "Ponte HTTP-gRPC e persistência da leitura/alerta",
+      "inicio": "2026-09-19T22:12:11.112Z",
+      "obtido": {
+        "readingId": 8,
+        "alertId": 2,
+        "persistencia": "Confirmada em PostgreSQL",
+        "email": "Fora do escopo: envio real não implementado"
+      },
+      "estado": "aprovado",
+      "fim": "2026-09-19T22:12:12.510Z"
+    }
+  ],
+  "navegador": "152.0.7977.83",
+  "fim": "2026-09-19T22:12:12.989Z",
+  "aprovados": 6,
+  "falhas": 0
+}

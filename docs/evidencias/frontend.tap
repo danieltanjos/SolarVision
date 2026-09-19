@@ -1,0 +1,136 @@
+TAP version 13
+# Subtest: FE-POT: unidade no limite 0
+ok 1 - FE-POT: unidade no limite 0
+  ---
+  duration_ms: 6.3795
+  type: 'test'
+  ...
+# Subtest: FE-POT: unidade no limite 999
+ok 2 - FE-POT: unidade no limite 999
+  ---
+  duration_ms: 0.2905
+  type: 'test'
+  ...
+# Subtest: FE-POT: unidade no limite 1000
+ok 3 - FE-POT: unidade no limite 1000
+  ---
+  duration_ms: 0.1797
+  type: 'test'
+  ...
+# Subtest: FE-POT: unidade no limite 999999
+ok 4 - FE-POT: unidade no limite 999999
+  ---
+  duration_ms: 0.1892
+  type: 'test'
+  ...
+# Subtest: FE-POT: unidade no limite 1000000
+ok 5 - FE-POT: unidade no limite 1000000
+  ---
+  duration_ms: 0.5793
+  type: 'test'
+  ...
+# Subtest: FE-POT: unidade no limite 1000000000
+ok 6 - FE-POT: unidade no limite 1000000000
+  ---
+  duration_ms: 0.1775
+  type: 'test'
+  ...
+# Subtest: FE-POT: unidade no limite -1500
+ok 7 - FE-POT: unidade no limite -1500
+  ---
+  duration_ms: 0.172
+  type: 'test'
+  ...
+# Subtest: FE-FMT: formatação 0
+ok 8 - FE-FMT: formatação 0
+  ---
+  duration_ms: 85.8287
+  type: 'test'
+  ...
+# Subtest: FE-FMT: formatação 1500
+ok 9 - FE-FMT: formatação 1500
+  ---
+  duration_ms: 0.7821
+  type: 'test'
+  ...
+# Subtest: FE-FMT: formatação 12500
+ok 10 - FE-FMT: formatação 12500
+  ---
+  duration_ms: 0.8431
+  type: 'test'
+  ...
+# Subtest: FE-FMT: formatação 125000
+ok 11 - FE-FMT: formatação 125000
+  ---
+  duration_ms: 0.5318
+  type: 'test'
+  ...
+# Subtest: FE-FMT: formatação 2500
+ok 12 - FE-FMT: formatação 2500
+  ---
+  duration_ms: 0.38
+  type: 'test'
+  ...
+# Subtest: FE-FMT: formatação null
+ok 13 - FE-FMT: formatação null
+  ---
+  duration_ms: 0.5033
+  type: 'test'
+  ...
+# Subtest: FE-FMT: formatação inválido
+ok 14 - FE-FMT: formatação inválido
+  ---
+  duration_ms: 0.5598
+  type: 'test'
+  ...
+# Subtest: FE-FMT: série mantém unidade comum do gráfico
+ok 15 - FE-FMT: série mantém unidade comum do gráfico
+  ---
+  duration_ms: 0.663
+  type: 'test'
+  ...
+# Subtest: FE-NOME: "JOÃO ÁLVARES"
+ok 16 - FE-NOME: "JOÃO ÁLVARES"
+  ---
+  duration_ms: 2.1783
+  type: 'test'
+  ...
+# Subtest: FE-NOME: "ana-maria"
+ok 17 - FE-NOME: "ana-maria"
+  ---
+  duration_ms: 0.2719
+  type: 'test'
+  ...
+# Subtest: FE-NOME: "  maria   silva "
+ok 18 - FE-NOME: "  maria   silva "
+  ---
+  duration_ms: 0.1447
+  type: 'test'
+  ...
+# Subtest: FE-NOME: ""
+ok 19 - FE-NOME: ""
+  ---
+  duration_ms: 1.133
+  type: 'test'
+  ...
+# Subtest: FE-NOME: null
+ok 20 - FE-NOME: null
+  ---
+  duration_ms: 0.2134
+  type: 'test'
+  ...
+# Subtest: FE-NOME: undefined
+ok 21 - FE-NOME: undefined
+  ---
+  duration_ms: 0.136
+  type: 'test'
+  ...
+1..21
+# tests 21
+# suites 0
+# pass 21
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 371.2056
