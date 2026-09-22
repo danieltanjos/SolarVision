@@ -1,0 +1,230 @@
+﻿[
+    {
+        "classe":  "br.com.solarvision.api.controller.CleaningControllerTest",
+        "caso":  "rejeitaCamposObrigatoriosAusentes",
+        "segundos":  "7.207",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.controller.CleaningControllerTest",
+        "caso":  "aceitaObservacaoNosLimites(int)[1]",
+        "segundos":  "0.183",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.controller.CleaningControllerTest",
+        "caso":  "aceitaObservacaoNosLimites(int)[2]",
+        "segundos":  "0.068",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.controller.CleaningControllerTest",
+        "caso":  "exclusaoRetorna204SemCorpo",
+        "segundos":  "0.054",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.controller.CleaningControllerTest",
+        "caso":  "rejeitaObservacaoAcimaDoLimite",
+        "segundos":  "0.064",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.controller.CleaningControllerTest",
+        "caso":  "recursoAusenteRetorna404",
+        "segundos":  "0.074",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.AuthServiceTest",
+        "caso":  "naoDeveRegistrarComEmailDuplicado",
+        "segundos":  "0.935",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.AuthServiceTest",
+        "caso":  "naoDeveAutenticarComSenhaIncorreta",
+        "segundos":  "0.016",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.AuthServiceTest",
+        "caso":  "deveRegistrarNovoUsuario",
+        "segundos":  "0.024",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.AuthServiceTest",
+        "caso":  "naoDeveAutenticarUsuarioInexistente",
+        "segundos":  "0.008",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.AuthServiceTest",
+        "caso":  "deveAutenticarComCredenciaisValidas",
+        "segundos":  "0.009",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.CleaningServiceTest",
+        "caso":  "criaLimpezaNormalizandoObservacao",
+        "segundos":  "0.38",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.CleaningServiceTest",
+        "caso":  "atualizaPlacaDataEObservacaoNula",
+        "segundos":  "0.01",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.CleaningServiceTest",
+        "caso":  "consultaInexistenteRetornaErro",
+        "segundos":  "0.007",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.CleaningServiceTest",
+        "caso":  "naoSalvaLimpezaComPlacaInexistente",
+        "segundos":  "0.007",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.CleaningServiceTest",
+        "caso":  "excluiLimpezaExistente",
+        "segundos":  "0.009",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.CleaningServiceTest",
+        "caso":  "naoExcluiLimpezaInexistente",
+        "segundos":  "0.008",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.DashboardServiceTest",
+        "caso":  "rejeitaGranularidadeDesconhecida",
+        "segundos":  "0.153",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.DashboardServiceTest",
+        "caso":  "selecionaAgrupamentoSeguro(String, String)[1]",
+        "segundos":  "0.05",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.DashboardServiceTest",
+        "caso":  "selecionaAgrupamentoSeguro(String, String)[2]",
+        "segundos":  "0.005",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.DashboardServiceTest",
+        "caso":  "selecionaAgrupamentoSeguro(String, String)[3]",
+        "segundos":  "0.007",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.DashboardServiceTest",
+        "caso":  "selecionaAgrupamentoSeguro(String, String)[4]",
+        "segundos":  "0.008",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.DashboardServiceTest",
+        "caso":  "selecionaAgrupamentoSeguro(String, String)[5]",
+        "segundos":  "0.007",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.DashboardServiceTest",
+        "caso":  "converteBucketEValorPreservandoFuso",
+        "segundos":  "0.014",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.DashboardServiceTest",
+        "caso":  "resumoSemDadosRetornaZeroESemLimpeza",
+        "segundos":  "0.01",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.DashboardServiceTest",
+        "caso":  "rejeitaPeriodoInvertidoSemConsultarBanco",
+        "segundos":  "0.004",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.GroupServiceTest",
+        "caso":  "deveCriarGrupoEContarPlacas",
+        "segundos":  "0.175",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.GroupServiceTest",
+        "caso":  "deveLancarQuandoGrupoNaoEncontrado",
+        "segundos":  "0.011",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.GroupServiceTest",
+        "caso":  "naoDeveExcluirGrupoInexistente",
+        "segundos":  "0.006",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.GrpcOperationsServiceTest",
+        "caso":  "gerarAlertaDevePersistirQuandoPlacaExiste",
+        "segundos":  "0.14",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.GrpcOperationsServiceTest",
+        "caso":  "checarPlacaDeveFalharQuandoPlacaNaoExiste",
+        "segundos":  "0.007",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.GrpcOperationsServiceTest",
+        "caso":  "checarPlacaDeveRegistrarLeituraQuandoPlacaExiste",
+        "segundos":  "0.007",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.GrpcOperationsServiceTest",
+        "caso":  "dispararEmailDevePersistirAlertaQuandoPlacaExiste",
+        "segundos":  "0.024",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.GrpcOperationsServiceTest",
+        "caso":  "gerarAlertaDeveFalharQuandoPlacaNaoExiste",
+        "segundos":  "0.012",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.PanelServiceTest",
+        "caso":  "deveCriarPlaca",
+        "segundos":  "0.036",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.PanelServiceTest",
+        "caso":  "naoDeveExcluirPlacaInexistente",
+        "segundos":  "0.011",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.PanelServiceTest",
+        "caso":  "deveLancarQuandoPlacaNaoEncontrada",
+        "segundos":  "0.018",
+        "estado":  "aprovado"
+    },
+    {
+        "classe":  "br.com.solarvision.api.service.PanelServiceTest",
+        "caso":  "naoDeveCriarPlacaComGrupoInexistente",
+        "segundos":  "0.008",
+        "estado":  "aprovado"
+    }
+]

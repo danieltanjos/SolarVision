@@ -73,7 +73,21 @@ docker compose down -v
 3. O container `seed-data` usa `backend/data-seeder/`, aguarda o schema, importa o CSV e encerra automaticamente.
 4. O frontend React consome a API via Nginx reverse proxy em `/api`.
 
-## Documentação
+## Qualidade e testes
+
+Foi definida e aplicada uma estratégia baseada em riscos, com cenários positivos, negativos e de valores limite. Foram adicionados **42 testes automatizados** (21 no backend e 21 no frontend), preservando os 17 existentes: **59 testes executados e aprovados, sem falhas**. Os **6 roteiros funcionais integrados** também foram executados e aprovados com Java 25, PostgreSQL, navegador e ponte REST–gRPC. O build do frontend também foi concluído.
+
+- Backend: JUnit/Mockito para limpezas e dashboard; MockMvc para validação e contrato HTTP de limpezas.
+- Frontend: testes nativos do Node para escala de potência, formatação pt-BR e nomes com acentos.
+- Automação: workflow de qualidade em push/PR, com backend Java 25 e frontend Node 24; ainda não executado no GitHub.
+- Evidências e roteiro funcional: [estratégia e casos de teste](docs/QUALIDADE-E-TESTES.md) e [resultados](docs/evidencias/resultado.json).
+- Relatório no formato do exemplo fornecido: [PDF de qualidade e testes](SolarVision_Qualidade_e_Testes.pdf).
+
+Para reproduzir: em `frontend`, executar `npm ci`, `npm test` e `npm run build`; em `backend`, com Maven instalado e Java 25, executar `mvn -B verify`.
+
+**Ambiente de validação:** o backend foi testado no Java 25 em Docker. O Maven Wrapper está incompleto, por isso a suíte foi executada com Maven no container. Permanecem como evoluções testes de carga, auditoria completa de acessibilidade e envio real de e-mail.
+
+## Documentação técnica
 
 - Arquitetura (infra, camadas, fluxos): [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md)
 - Modelo de classes (domínio): [`docs/MODELO-DE-CLASSES.md`](docs/MODELO-DE-CLASSES.md)
