@@ -281,7 +281,8 @@
     padding-bottom: 6rem;
 }
 
-.sv-route-fallback {
+.sv-route-fallback,
+.sv-state-block {
     min-height: 280px;
     display: grid;
     place-items: center;

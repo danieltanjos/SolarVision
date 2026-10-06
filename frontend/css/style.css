@@ -12,11 +12,6 @@ body {
     flex-direction: column;
 }
 
-.main-content,
-.page-content {
-    flex: 1;
-}
-
 .navbar-logo {
     width: auto;
     height: 60px;

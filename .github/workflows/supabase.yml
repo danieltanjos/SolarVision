@@ -1,0 +1,42 @@
+name: Supabase
+on:
+  push:
+    branches: [qa, production]
+  schedule:
+    - cron: '0 12 * * *' # todo dia às 09h de Brasília
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  # Valores públicos (já vão no JavaScript do site); quem protege os dados é a RLS.
+  VITE_SUPABASE_URL: https://skfguameoeklepcjnqth.supabase.co
+  VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_NtwXiCRX5sBnSh62BvgaOQ_AEo9m-48
+jobs:
+  migrar-e-testar:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    concurrency: supabase-banco # QA e produção usam o mesmo banco
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Aplicar migrations pendentes
+        run: supabase db push --db-url "$SUPABASE_DB_URL" --yes
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+        working-directory: frontend
+      - name: Teste de ponta a ponta
+        run: node --test supabase/tests/e2e.mjs
+  manter-ativo:
+    # O plano free do Supabase pausa o projeto após 7 dias sem requisições.
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -fsS "$VITE_SUPABASE_URL/rest/v1/grupos_solares?select=id&limit=1" -H "apikey: $VITE_SUPABASE_PUBLISHABLE_KEY"

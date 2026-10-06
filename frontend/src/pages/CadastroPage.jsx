@@ -76,11 +76,14 @@ export default function CadastroPage() {
               <input
                 className="form-control"
                 placeholder="Nome do grupo"
+                aria-label="Nome do grupo"
+                maxLength={120}
                 value={groupForm.nome}
                 onChange={(event) => setGroupForm((current) => ({ ...current, nome: event.target.value }))}
                 required
               />
               <select
+                aria-label="Status do grupo"
                 className="form-select"
                 value={groupForm.status}
                 onChange={(event) => setGroupForm((current) => ({ ...current, status: event.target.value }))}
@@ -97,6 +100,7 @@ export default function CadastroPage() {
             <h2 className="h5 mb-3">Nova placa</h2>
             <form onSubmit={handlePanelSubmit} className="d-grid gap-3">
               <select
+                aria-label="Grupo da placa"
                 className="form-select"
                 value={panelForm.grupoId}
                 onChange={(event) => setPanelForm((current) => ({ ...current, grupoId: event.target.value }))}
@@ -110,11 +114,14 @@ export default function CadastroPage() {
               <input
                 className="form-control"
                 placeholder="Modelo da placa"
+                aria-label="Modelo da placa"
+                maxLength={120}
                 value={panelForm.modelo}
                 onChange={(event) => setPanelForm((current) => ({ ...current, modelo: event.target.value }))}
                 required
               />
               <select
+                aria-label="Status da placa"
                 className="form-select"
                 value={panelForm.status}
                 onChange={(event) => setPanelForm((current) => ({ ...current, status: event.target.value }))}
@@ -138,6 +145,7 @@ export default function CadastroPage() {
               <input
                 className="form-control sv-search"
                 placeholder="Filtrar por grupo, modelo ou status"
+                aria-label="Filtrar por grupo, modelo ou status"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />

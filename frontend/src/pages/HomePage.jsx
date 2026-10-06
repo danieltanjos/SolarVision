@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { extractErrorMessage, getDashboardSummary, listGroups } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import StatCard from "../components/StatCard";
-import { formatPower } from "../lib/power";
+import { formatEnergy } from "../lib/power";
 import { titleCase } from "../lib/text";
 
 export default function HomePage() {
@@ -39,8 +39,8 @@ export default function HomePage() {
       <section className="sv-home-stats">
         <StatCard
           title="Total Gerado Hoje"
-          value={formatPower(summary?.totalGeradoHoje)}
-          subtitle="Somatório desde o início do dia operacional"
+          value={formatEnergy(summary?.totalGeradoHoje)}
+          subtitle="Energia gerada desde o início do dia"
           icon="bi-sun-fill"
         />
         <StatCard

@@ -51,7 +51,7 @@ Tabela `limpezas`, histórico de limpeza das placas:
 Painel alimentado por duas funções SQL (RPC) e uma consulta:
 
 - **Métricas** (`rpc('dashboard_metricas', { granularidade, data_inicio, data_fim })`): **potência média** (AVG dos watts) por balde de tempo (`hora`, `dia`, `semana` ou `mes` via `date_trunc`) dentro do período. Granularidade inválida ou início depois do fim geram erro. Alimenta o gráfico de geração.
-- **Resumo** (`rpc('dashboard_resumo')`): total gerado no dia (exibido com auto-escala de unidade - W/kW/MW/GW), número de placas ativas e dados da última limpeza.
+- **Resumo** (`rpc('dashboard_resumo')`): energia gerada no dia em Wh (cada leitura é a potência média de 5 min: Wh = W × 5/60; exibida com auto-escala Wh/kWh/MWh), número de placas ativas e dados da última limpeza.
 - **Última leitura** (`select data_hora` em `leituras_energia`, mais recente): o gráfico ancora nessa data, que fica ~hoje por causa do deslocamento.
 - As agregações usam o fuso `America/Sao_Paulo`.
 

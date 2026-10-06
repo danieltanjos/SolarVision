@@ -55,8 +55,7 @@ Lista de funcionalidades que estão **referenciadas/parcialmente implementadas**
 
 ## Baixa prioridade (polimento)
 
-- **Cobertura de testes:** só há testes de utilitários do frontend (`power.js`, `text.js`). Faltam testes de `lib/api.js`, das telas e do banco (RLS e funções do dashboard, ex.: pgTAP).
-- **CSS `sv-state-block`:** usado em `MetricChart` e `CleaningPage`, mas não definido em nenhum CSS (spinner não centraliza).
+- **Cobertura de testes:** há testes de utilitários do frontend e um teste de ponta a ponta de `lib/api.js` contra o Supabase (`supabase/tests/e2e.mjs`). Faltam testes das telas (ex.: Playwright contra a URL de QA) e testes isolados do banco (ex.: pgTAP).
 - **Status do grupo exibido cru** ("ATIVO") na Home; `placaId` não reseta após salvar limpeza.
 
 ---

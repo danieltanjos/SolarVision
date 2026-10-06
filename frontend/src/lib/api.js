@@ -1,9 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 
-export const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-);
+// No navegador o Vite injeta import.meta.env; no Node (teste e2e) as variáveis vêm de process.env.
+const env = import.meta.env ?? process.env;
+
+export const supabase = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
 // Devolve os dados da consulta ou lança o erro do Supabase.
 async function unwrap(query) {

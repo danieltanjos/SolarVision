@@ -52,7 +52,7 @@ A Vercel só entrega os arquivos estáticos; depois de carregada, a SPA fala dir
 - Banco: PostgreSQL gerenciado pelo Supabase (região São Paulo)
 - Carga de dados: Python 3 + psycopg2
 - Hospedagem: Vercel (projeto `solarvision`, Root Directory `frontend`)
-- CI: GitHub Actions (testes + build do frontend)
+- CI: GitHub Actions (testes + build do frontend; migrations + teste de ponta a ponta ao publicar em `qa`/`production`; requisição diária para o Supabase free não pausar)
 
 ## Execução local
 
@@ -74,7 +74,7 @@ Variáveis (em Supabase > Project Settings > API Keys):
 
 ## Banco: migration e carga inicial
 
-1. **Schema:** aplicar `supabase/migrations/20261006120000_init.sql` (SQL Editor do Supabase ou `supabase db push` com a CLI vinculada ao projeto). A migration cria as tabelas, as políticas RLS, o trigger de perfil, as funções `dashboard_metricas`/`dashboard_resumo` e o job pg_cron.
+1. **Schema:** as migrations de `supabase/migrations/` são aplicadas automaticamente pelo workflow `.github/workflows/supabase.yml` a cada push em `qa`/`production` (`supabase db push`, segredo `SUPABASE_DB_URL` do repositório). Para aplicar à mão: `npx supabase db push --db-url "<connection string do Session pooler>"`. Elas criam as tabelas, as políticas RLS, o trigger de perfil, as funções `dashboard_metricas`/`dashboard_resumo` e o job pg_cron.
 2. **Leituras do CSV** (uma vez):
 
 ```bash
@@ -104,10 +104,11 @@ Os dois ambientes usam **o mesmo projeto Supabase** (`skfguameoeklepcjnqth`): QA
 
 ## Qualidade e testes
 
-- **Frontend:** 21 testes nativos do Node (`node --test`) para escala de potência, formatação pt-BR e nomes com acentos.
-- **CI:** `.github/workflows/quality.yml` roda em push/PR com Node 24: `npm ci`, testes (relatório JUnit como artefato) e `npm run build`.
+- **Frontend:** 27 testes nativos do Node (`node --test`) para escala de potência/energia, formatação pt-BR, nomes com acentos e janelas do gráfico no fuso de São Paulo.
+- **Ponta a ponta:** `supabase/tests/e2e.mjs` roda o `api.js` do frontend contra o Supabase real (RLS, perfil, cadastros, dashboard e mensagens de erro), com uma conta fixa de teste, e apaga o que cria.
+- **CI:** `.github/workflows/quality.yml` roda em push/PR com Node 24 (`npm ci`, testes com relatório JUnit e `npm run build`). `.github/workflows/supabase.yml` aplica as migrations e roda o teste de ponta a ponta a cada push em `qa`/`production`, e faz uma requisição diária ao Supabase, porque o plano free pausa projetos parados por 7 dias. O GitHub desliga workflows agendados após 60 dias sem commits no repositório.
 
-Para reproduzir, em `frontend`: `npm ci`, `npm test` e `npm run build`.
+Para reproduzir, em `frontend`: `npm ci`, `npm test` e `npm run build`. Ponta a ponta, na raiz: `node --env-file=frontend/.env.local --test supabase/tests/e2e.mjs`.
 
 **Histórico (versão Spring Boot/Docker):** a estratégia de qualidade, os 38 testes do backend (21 deles adicionados nessa etapa), os 6 roteiros funcionais integrados (`docs/testes-integrados.cjs`) e as evidências foram produzidos antes da migração e ficam como registro em [estratégia e casos de teste](docs/QUALIDADE-E-TESTES.md), [resultados](docs/evidencias/resultado.json) e no [PDF de qualidade e testes](SolarVision_Qualidade_e_Testes.pdf). Os testes Java saíram junto com o backend.
 
