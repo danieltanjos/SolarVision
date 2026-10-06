@@ -39,4 +39,5 @@ jobs:
     if: github.event_name != 'push'
     runs-on: ubuntu-latest
     steps:
-      - run: curl -fsS "$VITE_SUPABASE_URL/rest/v1/grupos_solares?select=id&limit=1" -H "apikey: $VITE_SUPABASE_PUBLISHABLE_KEY"
+      - run: |
+          curl -fsS "$VITE_SUPABASE_URL/rest/v1/grupos_solares?select=id&limit=1" -H "apikey: $VITE_SUPABASE_PUBLISHABLE_KEY"
