@@ -145,7 +145,7 @@ as $$
         'totalGeradoHoje', (
             select coalesce(sum(wats_gerados), 0)
             from public.leituras_energia
-            where data_hora between date_trunc('day', now() at time zone 'America/Sao_Paulo') at time zone 'America/Sao_Paulo'
+            where data_hora between (date_trunc('day', now() at time zone 'America/Sao_Paulo') at time zone 'America/Sao_Paulo')
                                 and now()
         ),
         'placasAtivas', (select count(*) from public.placas where status = 'ATIVA'),
