@@ -90,8 +90,8 @@ A Vercel publica o diretório `frontend` (`frontend/vercel.json` faz o rewrite d
 
 | Branch | Ambiente Vercel | URL |
 |---|---|---|
-| `production` | Production | https://solarvision-alpha.vercel.app |
-| `qa` | QA (domínio fixo) | https://solarvision-qa.vercel.app |
+| `production` | Production | https://solarvision-senai.vercel.app |
+| `qa` | QA (domínio fixo) | https://solarvision-senai-qa.vercel.app |
 | demais branches/PRs | Preview | URL gerada por deploy |
 
 Fluxo de entrega:
