@@ -1,9 +1,9 @@
 import { startTransition, useEffect, useMemo, useState } from "react";
 import Chart from "react-apexcharts";
-import api, { extractErrorMessage } from "../lib/api";
+import { extractErrorMessage, getDashboardMetrics, getLastReadingDate } from "../lib/api";
 import { formatPower, powerUnit } from "../lib/power";
 
-// Cada "view" e' a janela mostrada; o "bucket" (date_trunc no backend) e' escolhido
+// Cada "view" e' a janela mostrada; o "bucket" (date_trunc no Supabase) e' escolhido
 // automaticamente para dar uma quantidade de pontos adequada e alinhada ao calendario.
 const VIEWS = [
   { value: "dia", label: "Dia", bucket: "hora" },
@@ -86,8 +86,8 @@ export default function MetricChart() {
   useEffect(() => {
     async function fetchRange() {
       try {
-        const { data } = await api.get("/api/dashboard/range");
-        setReferenceDate(data?.ultimaLeitura ? new Date(data.ultimaLeitura) : new Date());
+        const ultimaLeitura = await getLastReadingDate();
+        setReferenceDate(ultimaLeitura ? new Date(ultimaLeitura) : new Date());
       } catch {
         setReferenceDate(new Date());
       }
@@ -103,11 +103,10 @@ export default function MetricChart() {
       setLoading(true);
       setError("");
       try {
-        const params = {
+        const data = await getDashboardMetrics({
           granularidade: viewConfig(granularity).bucket,
           ...rangeFor(granularity, referenceDate)
-        };
-        const { data } = await api.get("/api/dashboard/metrics", { params });
+        });
         setPoints(data);
       } catch (err) {
         setError(extractErrorMessage(err));

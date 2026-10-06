@@ -42,10 +42,10 @@ export default function SettingsPage() {
             <h2 className="h5 mb-3">Sistema</h2>
             <ul className="list-group list-group-flush">
               <li className="list-group-item bg-transparent px-0">
-                Endpoint da API: <code>/api</code>
+                Backend: <code>Supabase (PostgREST + RPC)</code>
               </li>
               <li className="list-group-item bg-transparent px-0">
-                Autenticação: <code>JWT Bearer</code>
+                Autenticação: <code>Supabase Auth (JWT)</code>
               </li>
               <li className="list-group-item bg-transparent px-0">
                 Frontend: <code>React + Vite + ApexCharts</code>

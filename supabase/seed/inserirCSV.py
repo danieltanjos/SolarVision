@@ -1,18 +1,13 @@
 import csv
 import os
-import time
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 import psycopg2
 from psycopg2.extras import execute_values
 
-DB_HOST = os.environ.get("DB_HOST", "127.0.0.1")
-DB_PORT = int(os.environ.get("DB_PORT", "5432"))
-DB_USER = os.environ.get("DB_USER", "solarvision_user")
-DB_PASSWORD = os.environ.get("DB_PASSWORD", "solarvision_password")
-DB_DATABASE = os.environ.get("DB_DATABASE", "solarvision_db")
-CSV_PATH = os.environ.get("CSV_PATH", "Dados_Tratados_CDTE-PSI.csv")
+DATABASE_URL = os.environ["DATABASE_URL"]
+CSV_PATH = os.environ.get("CSV_PATH", os.path.join(os.path.dirname(__file__), "Dados_Tratados_CDTE-PSI.csv"))
 SEED_GROUP_NAME = os.environ.get("SEED_GROUP_NAME", "Grupo Seeder SolarVision")
 SEED_PANEL_MODEL = os.environ.get("SEED_PANEL_MODEL", "Painel CSV CDTE-PSI")
 SEED_PANEL_STATUS = os.environ.get("SEED_PANEL_STATUS", "ATIVA")
@@ -20,53 +15,6 @@ BATCH_SIZE = int(os.environ.get("SEED_BATCH_SIZE", "5000"))
 # Desloca as datas do CSV para que a leitura mais recente caia em ~hoje (sensacao de tempo real).
 # Mantem hora do dia e espacamento; o deslocamento e' calculado a cada execucao (sempre relativo a hoje).
 SEED_SHIFT_TO_TODAY = os.environ.get("SEED_SHIFT_TO_TODAY", "true").lower() in ("1", "true", "yes")
-MAX_RETRIES = int(os.environ.get("DB_MAX_RETRIES", "15"))
-RETRY_DELAY_SECONDS = int(os.environ.get("DB_RETRY_DELAY_SECONDS", "2"))
-
-
-def connect_with_retry():
-    last_error = None
-    for attempt in range(1, MAX_RETRIES + 1):
-        try:
-            return psycopg2.connect(
-                host=DB_HOST,
-                port=DB_PORT,
-                database=DB_DATABASE,
-                user=DB_USER,
-                password=DB_PASSWORD,
-            )
-        except psycopg2.OperationalError as error:
-            last_error = error
-            print(
-                f"Banco indisponivel na tentativa {attempt}/{MAX_RETRIES}. "
-                f"Aguardando {RETRY_DELAY_SECONDS}s..."
-            )
-            time.sleep(RETRY_DELAY_SECONDS)
-
-    raise last_error
-
-
-def wait_for_schema(connection):
-    """Aguarda o schema ser criado (pelo Flyway no backend) antes de inserir."""
-    required_tables = ("grupos_solares", "placas", "leituras_energia")
-    for attempt in range(1, MAX_RETRIES + 1):
-        missing = []
-        with connection.cursor() as cursor:
-            for table in required_tables:
-                cursor.execute("SELECT to_regclass(%s)", (f"public.{table}",))
-                if cursor.fetchone()[0] is None:
-                    missing.append(table)
-        connection.rollback()
-        if not missing:
-            return
-        faltantes = ", ".join(missing)
-        print(
-            f"Schema ainda nao pronto (faltam: {faltantes}) "
-            f"tentativa {attempt}/{MAX_RETRIES}. Aguardando {RETRY_DELAY_SECONDS}s..."
-        )
-        time.sleep(RETRY_DELAY_SECONDS)
-
-    raise RuntimeError("Schema do banco nao ficou disponivel a tempo.")
 
 
 def ensure_seed_panel(cursor):
@@ -208,12 +156,12 @@ def insert_batches(cursor, rows):
 
 
 def main():
-    connection = connect_with_retry()
+    connection = psycopg2.connect(DATABASE_URL)
     try:
-        print("Aguardando schema do banco (Flyway)...")
-        wait_for_schema(connection)
         with connection:
             with connection.cursor() as cursor:
+                # O CSV esta em horario de Sao Paulo; o Supabase roda em UTC.
+                cursor.execute("SET TIME ZONE 'America/Sao_Paulo'")
                 print("Preparando grupo e placa padrao para importacao...")
                 panel_id = ensure_seed_panel(cursor)
                 print(f"Placa selecionada para importacao: {panel_id}")

@@ -1,80 +1,60 @@
-import {
-  createContext,
-  startTransition,
-  useContext,
-  useEffect,
-  useState
-} from "react";
-import api from "../lib/api";
-
-const TOKEN_KEY = "solarVisionToken";
-const USER_KEY = "solarVisionUser";
+import { createContext, useContext, useEffect, useState } from "react";
+import { getCurrentUser, supabase } from "../lib/api";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
-  const [user, setUser] = useState(() => {
-    const raw = localStorage.getItem(USER_KEY);
-    return raw ? JSON.parse(raw) : null;
-  });
+  // undefined = ainda lendo a sessão salva; null = deslogado.
+  const [session, setSession] = useState(undefined);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    if (token) {
-      localStorage.setItem(TOKEN_KEY, token);
-    } else {
-      localStorage.removeItem(TOKEN_KEY);
-    }
-  }, [token]);
+    // O Supabase persiste a sessão (JWT + refresh) no localStorage e emite INITIAL_SESSION ao assinar.
+    const { data } = supabase.auth.onAuthStateChange((_event, newSession) => setSession(newSession));
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  const userId = session?.user?.id;
 
   useEffect(() => {
-    if (user) {
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
-    } else {
-      localStorage.removeItem(USER_KEY);
+    if (!userId) {
+      setUser(null);
+      return;
     }
-  }, [user]);
+    getCurrentUser().then(setUser, () => setUser(null));
+  }, [userId]);
 
-  async function login(credentials) {
-    const { data } = await api.post("/api/auth/login", credentials);
-    startTransition(() => {
-      setToken(data.token);
-      setUser(data.user);
-    });
-    return data;
+  async function login({ email, senha }) {
+    const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
+    if (error) throw error;
   }
 
-  async function register(payload) {
-    const { data } = await api.post("/api/auth/register", payload);
-    startTransition(() => {
-      setToken(data.token);
-      setUser(data.user);
+  async function register({ nome, email, senha }) {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password: senha,
+      options: { data: { nome: nome.trim() } }
     });
-    return data;
-  }
-
-  async function refreshUser() {
-    const { data } = await api.get("/api/users/me");
-    setUser(data);
-    return data;
+    if (error) throw error;
+    // Sem sessão = "Confirm email" ligado no Supabase Auth.
+    if (!data.session) throw new Error("Conta criada. Confirme seu e-mail para entrar.");
   }
 
   function logout() {
-    startTransition(() => {
-      setToken(null);
-      setUser(null);
-    });
+    return supabase.auth.signOut();
+  }
+
+  if (session === undefined) {
+    return null;
   }
 
   return (
     <AuthContext.Provider
       value={{
-        isAuthenticated: Boolean(token),
-        token,
+        isAuthenticated: Boolean(session),
         user,
         login,
         register,
-        refreshUser,
         logout
       }}
     >

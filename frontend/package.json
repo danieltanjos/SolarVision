@@ -10,8 +10,8 @@
     "preview": "vite preview --host 0.0.0.0 --port 4173"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.117.2",
     "apexcharts": "^4.7.0",
-    "axios": "^1.9.0",
     "bootstrap": "^5.3.7",
     "bootstrap-icons": "^1.13.1",
     "react": "^19.1.0",

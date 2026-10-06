@@ -8,7 +8,7 @@ import Sidebar from "./Sidebar";
 import logo from "../../img/logo.png";
 
 export default function AppShell() {
-  const { logout, user, refreshUser } = useAuth();
+  const { logout, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isDark, setIsDark] = useState(getInitialTheme);
@@ -30,14 +30,8 @@ export default function AppShell() {
     }
   }, [isSidebarCollapsed]);
 
-  useEffect(() => {
-    if (!user?.criadoEm) {
-      refreshUser().catch(() => {});
-    }
-  }, [refreshUser, user]);
-
-  function handleLogout() {
-    logout();
+  async function handleLogout() {
+    await logout();
     navigate("/login", { replace: true });
   }
 

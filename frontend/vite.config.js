@@ -24,8 +24,8 @@ export default defineConfig({
             return "bootstrap";
           }
 
-          if (id.includes("axios")) {
-            return "network";
+          if (id.includes("@supabase")) {
+            return "supabase";
           }
 
           if (id.includes("/react/") || id.includes("\\react\\") || id.includes("scheduler")) {
@@ -34,14 +34,6 @@ export default defineConfig({
 
           return "vendor";
         }
-      }
-    }
-  },
-  server: {
-    proxy: {
-      "/api": {
-        target: "http://localhost:8081",
-        changeOrigin: true
       }
     }
   }
