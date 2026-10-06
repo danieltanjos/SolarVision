@@ -1,14 +1,18 @@
 # SolarVision
 
-Sistema full-stack para monitoramento de energia solar com microsserviços em Docker, backend em Spring Boot, banco PostgreSQL, carga inicial por CSV em Python e frontend SPA em React + Vite.
+Sistema web para monitoramento de energia solar: SPA em React + Vite hospedada na **Vercel** e **Supabase** como backend completo (Auth, API REST gerada pelo PostgREST, funções SQL/RPC, PostgreSQL e pg_cron). A carga inicial das leituras vem de um CSV, importado por um script Python.
+
+> Até a migração, o backend era uma API Spring Boot (Java 25, JWT, GraphQL, gRPC, Flyway, Swagger) orquestrada com Docker Compose. Esse código foi removido; o histórico está no Git e em [`docs/QUALIDADE-E-TESTES.md`](docs/QUALIDADE-E-TESTES.md).
 
 ## Estrutura
 
 ```text
 SolarVision/
-├── backend/          # API Spring Boot + JWT + GraphQL + schema + seeder
-├── frontend/         # SPA React + Vite + ApexCharts
-└── docker-compose.yml
+├── frontend/              # SPA React + Vite + ApexCharts (deploy na Vercel)
+├── supabase/
+│   ├── migrations/        # schema, RLS, trigger, funções RPC e job pg_cron
+│   └── seed/              # inserirCSV.py + CSV de leituras
+└── docs/                  # documentação técnica
 ```
 
 ## Arquitetura (visão geral)
@@ -17,81 +21,101 @@ SolarVision/
 flowchart LR
     browser["Navegador (usuário)"]
 
-    subgraph compose["Docker Compose - rede solarvision-net"]
-        frontend["frontend<br/>React + Vite + Nginx<br/>porta 8080"]
-        backend["backend<br/>Spring Boot<br/>REST/GraphQL 8081 · gRPC 9090"]
-        db[("postgres<br/>PostgreSQL 17<br/>porta 5432")]
-        seeder["seed-data<br/>carga inicial (Python)<br/>executa uma vez e encerra"]
+    subgraph vercel["Vercel"]
+        spa["SPA React + Vite<br/>(arquivos estáticos)"]
     end
 
-    browser -->|HTTP 8080| frontend
-    frontend -->|proxy reverso /api| backend
-    backend -->|JPA/Hibernate + pool HikariCP| db
-    seeder -->|INSERT em lote do CSV| db
-    backend -.->|Flyway aplica as migrations no startup| db
+    subgraph supa["Supabase (São Paulo)"]
+        auth["Auth<br/>cadastro, login, JWT"]
+        rest["PostgREST / RPC<br/>/rest/v1"]
+        db[("PostgreSQL<br/>tabelas + RLS")]
+        cron["pg_cron<br/>job diário 00:05"]
+    end
+
+    seeder["inserirCSV.py<br/>(carga única)"]
+
+    browser -->|HTTPS| spa
+    browser -->|supabase-js + JWT| auth
+    browser -->|supabase-js + JWT| rest
+    rest --> db
+    auth -.->|trigger cria o perfil| db
+    cron -->|desloca leituras para hoje| db
+    seeder -->|INSERT em lote| db
 ```
 
-Detalhes de arquitetura (camadas, fluxos, stack e decisões) em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) e o modelo de domínio em [`docs/MODELO-DE-CLASSES.md`](docs/MODELO-DE-CLASSES.md).
+A Vercel só entrega os arquivos estáticos; depois de carregada, a SPA fala direto com o Supabase pelo `@supabase/supabase-js`. Detalhes em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) e o modelo de dados em [`docs/MODELO-DE-CLASSES.md`](docs/MODELO-DE-CLASSES.md).
 
 ## Stack
 
-- Backend: Java 25, Spring Boot 3.5.12, Spring Security (JWT), Spring Data JPA, Flyway, GraphQL, gRPC (Spring gRPC), springdoc-openapi (Swagger)
-- Frontend: React, Vite, React Router, Axios, ApexCharts, Bootstrap
-- Banco: PostgreSQL 17
-- Seeder: Python 3.12 + psycopg2
-- Infra: Docker Compose + Nginx
+- Frontend: React 19, Vite 7, React Router, `@supabase/supabase-js`, ApexCharts, Bootstrap
+- Backend: Supabase (Auth, PostgREST, funções PL/pgSQL via RPC, pg_graphql, pg_cron)
+- Banco: PostgreSQL gerenciado pelo Supabase (região São Paulo)
+- Carga de dados: Python 3 + psycopg2
+- Hospedagem: Vercel (projeto `solarvision`, Root Directory `frontend`)
+- CI: GitHub Actions (testes + build do frontend)
 
-## Serviços
+## Execução local
 
-- `postgres`: banco principal
-- `backend`: API em `http://localhost:8081`
-- `frontend`: SPA em `http://localhost:8080`
-- `seed-data`: carga efêmera do CSV na tabela `leituras_energia`
-
-## Execução
+O frontend roda localmente apontando para o projeto Supabase.
 
 ```bash
-docker compose up --build -d
+cd frontend
+cp .env.example .env.local   # preencher VITE_SUPABASE_PUBLISHABLE_KEY
+npm install
+npm run dev                   # http://localhost:5173
 ```
 
-## Parar
+Variáveis (em Supabase > Project Settings > API Keys):
+
+| Variável | Valor |
+|---|---|
+| `VITE_SUPABASE_URL` | `https://skfguameoeklepcjnqth.supabase.co` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | chave publicável (pública; a proteção dos dados é feita pela RLS) |
+
+## Banco: migration e carga inicial
+
+1. **Schema:** aplicar `supabase/migrations/20261006120000_init.sql` (SQL Editor do Supabase ou `supabase db push` com a CLI vinculada ao projeto). A migration cria as tabelas, as políticas RLS, o trigger de perfil, as funções `dashboard_metricas`/`dashboard_resumo` e o job pg_cron.
+2. **Leituras do CSV** (uma vez):
 
 ```bash
-docker compose down
+pip install psycopg2-binary
+DATABASE_URL="<connection string do Session pooler>" python supabase/seed/inserirCSV.py
 ```
 
-Para remover também o volume do PostgreSQL:
+A connection string fica em Supabase > Connect > Session pooler. O script usa o fuso `America/Sao_Paulo` e desloca as datas do CSV para que a última leitura caia hoje; a partir daí, o job `deslocar-leituras-para-hoje` (pg_cron, todo dia às 00:05 de Brasília) mantém a série terminando no dia atual.
 
-```bash
-docker compose down -v
-```
+## Deploy e branches
 
-## Fluxo principal da aplicação
+A Vercel publica o diretório `frontend` (`frontend/vercel.json` faz o rewrite de SPA para `index.html`).
 
-1. O PostgreSQL sobe vazio; o backend aplica as **migrations Flyway** (`backend/src/main/resources/db/migration`) criando o schema.
-2. O backend conecta no banco e expõe REST + GraphQL em `/api/graphql`, Swagger em `/swagger-ui.html` e um servidor gRPC embarcado na porta `9090`.
-3. O container `seed-data` usa `backend/data-seeder/`, aguarda o schema, importa o CSV e encerra automaticamente.
-4. O frontend React consome a API via Nginx reverse proxy em `/api`.
+| Branch | Ambiente Vercel | URL |
+|---|---|---|
+| `production` | Production | {{URL_PRODUCAO}} |
+| `qa` | QA (domínio fixo) | {{URL_QA}} |
+| demais branches/PRs | Preview | URL gerada por deploy |
+
+Fluxo de entrega:
+
+1. Desenvolver em uma branch de feature e abrir PR para `main` (o CI roda testes e build).
+2. Fazer merge de `main` em `qa` e validar na URL de QA.
+3. Fazer merge de `qa` em `production`.
+
+Os dois ambientes usam **o mesmo projeto Supabase** (`skfguameoeklepcjnqth`): QA e produção compartilham banco e usuários. Ver [`docs/DECISOES-TECNICAS.md`](docs/DECISOES-TECNICAS.md).
 
 ## Qualidade e testes
 
-Foi definida e aplicada uma estratégia baseada em riscos, com cenários positivos, negativos e de valores limite. Foram adicionados **42 testes automatizados** (21 no backend e 21 no frontend), preservando os 17 existentes: **59 testes executados e aprovados, sem falhas**. Os **6 roteiros funcionais integrados** também foram executados e aprovados com Java 25, PostgreSQL, navegador e ponte REST–gRPC. O build do frontend também foi concluído.
+- **Frontend:** 21 testes nativos do Node (`node --test`) para escala de potência, formatação pt-BR e nomes com acentos.
+- **CI:** `.github/workflows/quality.yml` roda em push/PR com Node 24: `npm ci`, testes (relatório JUnit como artefato) e `npm run build`.
 
-- Backend: JUnit/Mockito para limpezas e dashboard; MockMvc para validação e contrato HTTP de limpezas.
-- Frontend: testes nativos do Node para escala de potência, formatação pt-BR e nomes com acentos.
-- Automação: workflow de qualidade em push/PR, com backend Java 25 e frontend Node 24; ainda não executado no GitHub.
-- Evidências e roteiro funcional: [estratégia e casos de teste](docs/QUALIDADE-E-TESTES.md) e [resultados](docs/evidencias/resultado.json).
-- Relatório no formato do exemplo fornecido: [PDF de qualidade e testes](SolarVision_Qualidade_e_Testes.pdf).
+Para reproduzir, em `frontend`: `npm ci`, `npm test` e `npm run build`.
 
-Para reproduzir: em `frontend`, executar `npm ci`, `npm test` e `npm run build`; em `backend`, com Maven instalado e Java 25, executar `mvn -B verify`.
-
-**Ambiente de validação:** o backend foi testado no Java 25 em Docker. O Maven Wrapper está incompleto, por isso a suíte foi executada com Maven no container. Permanecem como evoluções testes de carga, auditoria completa de acessibilidade e envio real de e-mail.
+**Histórico (versão Spring Boot/Docker):** a estratégia de qualidade, os 38 testes do backend (21 deles adicionados nessa etapa), os 6 roteiros funcionais integrados (`docs/testes-integrados.cjs`) e as evidências foram produzidos antes da migração e ficam como registro em [estratégia e casos de teste](docs/QUALIDADE-E-TESTES.md), [resultados](docs/evidencias/resultado.json) e no [PDF de qualidade e testes](SolarVision_Qualidade_e_Testes.pdf). Os testes Java saíram junto com o backend.
 
 ## Documentação técnica
 
-- Arquitetura (infra, camadas, fluxos): [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md)
-- Modelo de classes (domínio): [`docs/MODELO-DE-CLASSES.md`](docs/MODELO-DE-CLASSES.md)
-- Funcionalidades e endpoints: [`docs/FUNCIONALIDADES.md`](docs/FUNCIONALIDADES.md)
+- Índice: [`docs/README.md`](docs/README.md)
+- Arquitetura (implantação, segurança, fluxos): [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md)
+- Modelo de dados: [`docs/MODELO-DE-CLASSES.md`](docs/MODELO-DE-CLASSES.md)
+- Funcionalidades e tabelas/RPC por tela: [`docs/FUNCIONALIDADES.md`](docs/FUNCIONALIDADES.md)
 - Decisões técnicas: [`docs/DECISOES-TECNICAS.md`](docs/DECISOES-TECNICAS.md)
-- Guia do código (backend + APIs): [`docs/GUIA-DO-CODIGO.md`](docs/GUIA-DO-CODIGO.md)
 - Features incompletas (pendências): [`docs/FEATURES-INCOMPLETAS.md`](docs/FEATURES-INCOMPLETAS.md)

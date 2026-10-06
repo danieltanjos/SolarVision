@@ -1,6 +1,6 @@
 # Modelo de Classes - SolarVision
 
-Modelo de domínio do backend: entidades JPA, enums, relacionamentos e mapeamento para o banco.
+Modelo de domínio do SolarVision. Desde a migração para o Supabase, o domínio é representado diretamente pelas **tabelas do PostgreSQL** (`supabase/migrations/20261006120000_init.sql`); não há mais classes de entidade no backend. O diagrama abaixo mostra cada tabela como uma classe.
 
 > Arquitetura geral do sistema: [ARQUITETURA.md](ARQUITETURA.md).
 
@@ -12,198 +12,148 @@ Modelo de domínio do backend: entidades JPA, enums, relacionamentos e mapeament
 classDiagram
     direction LR
 
-    class AppUser {
-        +Long id
-        +String nome
-        +String email
-        +String senhaHash
-        +UserRole role
-        +OffsetDateTime criadoEm
+    class usuarios {
+        +uuid id
+        +varchar nome
+        +varchar email
+        +varchar role
+        +timestamptz criado_em
     }
-    class SolarGroup {
-        +Long id
-        +String nome
-        +GroupStatus status
-        +OffsetDateTime criadoEm
+    class grupos_solares {
+        +bigint id
+        +varchar nome
+        +varchar status
+        +timestamptz criado_em
     }
-    class Panel {
-        +Long id
-        +String model
-        +PanelStatus status
-        +OffsetDateTime criadoEm
+    class placas {
+        +bigint id
+        +bigint grupo_id
+        +varchar modelo
+        +varchar status
+        +timestamptz criado_em
     }
-    class Cleaning {
-        +Long id
-        +OffsetDateTime dataLimpeza
-        +String observacao
-        +OffsetDateTime criadoEm
+    class limpezas {
+        +bigint id
+        +bigint placa_id
+        +timestamptz data_limpeza
+        +text observacao
+        +timestamptz criado_em
     }
-    class PanelReading {
-        +Long id
-        +OffsetDateTime dataHora
-        +BigDecimal watsGerados
-        +OffsetDateTime criadoEm
+    class leituras_energia {
+        +bigint id
+        +bigint placa_id
+        +timestamptz data_hora
+        +numeric wats_gerados
+        +timestamptz criado_em
     }
-    class Alert {
-        +Long id
-        +String tipo
-        +String severidade
-        +String canal
-        +String detalhe
-        +OffsetDateTime criadoEm
-    }
-    class UserRole {
-        <<enumeration>>
-        ADMIN
-        USER
-    }
-    class GroupStatus {
-        <<enumeration>>
-        ATIVO
-        INATIVO
-        MANUTENCAO
-    }
-    class PanelStatus {
-        <<enumeration>>
-        ATIVA
-        INATIVA
-        MANUTENCAO
+    class auth_users {
+        <<Supabase Auth>>
+        +uuid id
+        +email
+        +senha (hash)
     }
 
     %% Composições (losango cheio) refletem ON DELETE CASCADE:
     %% remover o pai remove os filhos.
-    SolarGroup "1" *-- "0..*" Panel : placas
-    Panel "1" *-- "0..*" Cleaning : limpezas
-    Panel "1" *-- "0..*" PanelReading : leituras
-    Panel "1" *-- "0..*" Alert : alertas
+    auth_users "1" *-- "1" usuarios : perfil
+    grupos_solares "1" *-- "0..*" placas : placas
+    placas "1" *-- "0..*" limpezas : limpezas
+    placas "1" *-- "0..*" leituras_energia : leituras
 
-    %% Enums de domínio (papel / status) usados como atributos
-    AppUser ..> UserRole : role
-    SolarGroup ..> GroupStatus : status
-    Panel ..> PanelStatus : status
-
-    note for AppUser "Entidade de autenticação (JWT); não se relaciona ao domínio solar."
-    note for Panel "Núcleo do domínio: pertence a um SolarGroup e agrega limpezas, leituras e alertas."
+    note for usuarios "Perfil criado pelo trigger criar_perfil_usuario; não se relaciona ao domínio solar."
+    note for placas "Núcleo do domínio: pertence a um grupo e agrega limpezas e leituras."
 ```
 
 ---
 
-## Entidades
+## Tabelas
 
-### AppUser - `usuarios`
-Usuário do sistema (autenticação/autorização).
+### `usuarios`
+Perfil do usuário. A senha e o login ficam no Supabase Auth (`auth.users`); a linha é criada pelo trigger `criar_perfil_usuario` no cadastro.
 
-| Campo | Tipo Java | Coluna | Observações |
-|---|---|---|---|
-| id | Long | id (PK) | gerado pelo banco |
-| nome | String | nome | obrigatório |
-| email | String | email | único |
-| senhaHash | String | senha_hash | hash BCrypt |
-| role | UserRole | role | enum (texto) |
-| criadoEm | OffsetDateTime | criado_em | preenchido na criação |
+| Coluna | Tipo | Observações |
+|---|---|---|
+| id | uuid (PK) | FK para `auth.users(id)`, `on delete cascade` |
+| nome | varchar(100) | obrigatório; vem de `options.data.nome` no cadastro (ou da parte local do e-mail) |
+| email | varchar(255) | único |
+| role | varchar(30) | `ADMIN` ou `USER`, padrão `USER` |
+| criado_em | timestamptz | padrão `now()` |
 
-### SolarGroup - `grupos_solares`
+### `grupos_solares`
 Agrupamento de placas (ex.: uma usina/instalação).
 
-| Campo | Tipo Java | Coluna | Observações |
-|---|---|---|---|
-| id | Long | id (PK) | |
-| nome | String | nome | obrigatório |
-| status | GroupStatus | status | enum |
-| criadoEm | OffsetDateTime | criado_em | |
-| placas | List&lt;Panel&gt; | - | relacionamento 1:N |
+| Coluna | Tipo | Observações |
+|---|---|---|
+| id | bigint (PK) | identity |
+| nome | varchar(120) | obrigatório, não pode ser só espaços |
+| status | varchar(30) | `ATIVO`, `INATIVO` ou `MANUTENCAO`, padrão `ATIVO` |
+| criado_em | timestamptz | padrão `now()` |
 
-### Panel - `placas`
+### `placas`
 Placa/painel solar, pertencente a um grupo.
 
-| Campo | Tipo Java | Coluna | Observações |
-|---|---|---|---|
-| id | Long | id (PK) | |
-| grupo | SolarGroup | grupo_id (FK) | obrigatório |
-| model | String | modelo | obrigatório |
-| status | PanelStatus | status | enum |
-| criadoEm | OffsetDateTime | criado_em | |
-| limpezas | List&lt;Cleaning&gt; | - | relacionamento 1:N |
-| leituras | List&lt;PanelReading&gt; | - | relacionamento 1:N |
-| alertas | List&lt;Alert&gt; | - | relacionamento 1:N |
+| Coluna | Tipo | Observações |
+|---|---|---|
+| id | bigint (PK) | identity |
+| grupo_id | bigint (FK) | `grupos_solares(id)`, obrigatório |
+| modelo | varchar(120) | obrigatório, não pode ser só espaços |
+| status | varchar(30) | `ATIVA`, `INATIVA` ou `MANUTENCAO`, padrão `ATIVA` |
+| criado_em | timestamptz | padrão `now()` |
 
-### Cleaning - `limpezas`
+### `limpezas`
 Registro de limpeza de uma placa.
 
-| Campo | Tipo Java | Coluna | Observações |
-|---|---|---|---|
-| id | Long | id (PK) | |
-| placa | Panel | placa_id (FK) | obrigatório |
-| dataLimpeza | OffsetDateTime | data_limpeza | obrigatório |
-| observacao | String | observacao | opcional (texto) |
-| criadoEm | OffsetDateTime | criado_em | |
+| Coluna | Tipo | Observações |
+|---|---|---|
+| id | bigint (PK) | identity |
+| placa_id | bigint (FK) | `placas(id)`, obrigatório |
+| data_limpeza | timestamptz | obrigatório |
+| observacao | text | opcional, até 1000 caracteres |
+| criado_em | timestamptz | padrão `now()` |
 
-### PanelReading - `leituras_energia`
-Leitura de geração de energia de uma placa (série temporal; carregada via seeder do CSV).
+### `leituras_energia`
+Leitura de geração de energia de uma placa (série temporal; carregada pelo seeder do CSV).
 
-| Campo | Tipo Java | Coluna | Observações |
-|---|---|---|---|
-| id | Long | id (PK) | |
-| placa | Panel | placa_id (FK) | obrigatório |
-| dataHora | OffsetDateTime | data_hora | obrigatório |
-| watsGerados | BigDecimal | wats_gerados | numeric(14,4) |
-| criadoEm | OffsetDateTime | criado_em | |
+| Coluna | Tipo | Observações |
+|---|---|---|
+| id | bigint (PK) | identity |
+| placa_id | bigint (FK) | `placas(id)`, obrigatório |
+| data_hora | timestamptz | obrigatório; deslocada diariamente pelo pg_cron |
+| wats_gerados | numeric(14,4) | obrigatório |
+| criado_em | timestamptz | padrão `now()` |
 
-### Alert - `alertas`
-Alerta associado a uma placa (gerado pelos serviços gRPC).
-
-| Campo | Tipo Java | Coluna | Observações |
-|---|---|---|---|
-| id | Long | id (PK) | |
-| placa | Panel | placa_id (FK) | obrigatório |
-| tipo | String | tipo | ex.: SOILING, EMAIL |
-| severidade | String | severidade | ex.: BAIXA, ALTA |
-| canal | String | canal | GRPC / EMAIL |
-| detalhe | String | detalhe | descrição (texto) |
-| criadoEm | OffsetDateTime | criado_em | |
+> A tabela `alertas` da versão Spring Boot foi removida: só era usada pelos serviços gRPC.
 
 ---
 
-## Enums
+## Domínios de valores (status e papel)
 
-| Enum | Valores | Usado em |
-|---|---|---|
-| UserRole | ADMIN, USER | AppUser.role |
-| GroupStatus | ATIVO, INATIVO, MANUTENCAO | SolarGroup.status |
-| PanelStatus | ATIVA, INATIVA, MANUTENCAO | Panel.status |
+Os antigos enums Java viraram constraints `CHECK` no banco:
+
+| Coluna | Valores |
+|---|---|
+| `usuarios.role` | ADMIN, USER |
+| `grupos_solares.status` | ATIVO, INATIVO, MANUTENCAO |
+| `placas.status` | ATIVA, INATIVA, MANUTENCAO |
 
 ---
 
 ## Relacionamentos
 
-| Origem | Cardinalidade | Destino | Mapeamento JPA |
+| Origem | Cardinalidade | Destino | Chave estrangeira |
 |---|---|---|---|
-| SolarGroup | 1 : N | Panel | `@OneToMany(mappedBy="grupo")` / `@ManyToOne` em Panel |
-| Panel | 1 : N | Cleaning | `@OneToMany(mappedBy="placa")` / `@ManyToOne` em Cleaning |
-| Panel | 1 : N | PanelReading | `@OneToMany(mappedBy="placa")` / `@ManyToOne` em PanelReading |
-| Panel | 1 : N | Alert | `@OneToMany(mappedBy="placa")` / `@ManyToOne` em Alert |
+| auth.users | 1 : 1 | usuarios | `usuarios.id` |
+| grupos_solares | 1 : N | placas | `placas.grupo_id` |
+| placas | 1 : N | limpezas | `limpezas.placa_id` |
+| placas | 1 : N | leituras_energia | `leituras_energia.placa_id` |
 
-A exclusão é em cascata: remover um grupo remove suas placas e, por consequência, limpezas, leituras e alertas (cascade no JPA + `ON DELETE CASCADE` no banco).
-
----
-
-## Mapeamento entidade → repository
-
-Cada entidade é acessada por um repositório Spring Data JPA (`JpaRepository`):
-
-| Entidade | Repository | Consultas notáveis |
-|---|---|---|
-| AppUser | AppUserRepository | `findByEmailIgnoreCase`, `existsByEmailIgnoreCase` |
-| SolarGroup | SolarGroupRepository | `findAllByOrderByIdAsc` |
-| Panel | PanelRepository | `findByGrupoIdOrderByIdAsc`, `countByStatus`, `countByGrupoId` |
-| Cleaning | CleaningRepository | `buscar(...)` (@Query JPQL com filtros), `findFirstByOrderByDataLimpezaDescIdDesc` |
-| PanelReading | PanelReadingRepository | `agruparMetricas(...)` (@Query nativa), `somarPorPeriodo` |
-| Alert | AlertRepository | CRUD padrão |
+A exclusão é em cascata (`on delete cascade`): remover um grupo remove suas placas e, por consequência, limpezas e leituras.
 
 ---
 
-## Notas de mapeamento JPA
+## Índices, funções e políticas
 
-- Chaves primárias: `@Id @GeneratedValue(strategy = IDENTITY)` (sequência do PostgreSQL).
-- Enums persistidos como texto: `@Enumerated(EnumType.STRING)`.
-- `criadoEm` preenchido automaticamente na inserção: `@CreationTimestamp` (co
+- **Índices**: `placas.grupo_id`, `limpezas.placa_id`, `limpezas.data_limpeza desc`, `leituras_energia.placa_id`, `leituras_energia.data_hora`.
+- **Funções (RPC)**: `dashboard_metricas(granularidade, data_inicio, data_fim)` e `dashboard_resumo()` - ver [FUNCIONALIDADES.md](FUNCIONALIDADES.md).
+- **RLS**: habilitada em todas as tabelas - ver [ARQUITETURA.md](ARQUITETURA.md#4-segurança).
+- **Nomes no JSON**: `frontend/src/lib/api.js` usa aliases (`criadoEm:criado_em`, `grupoId:grupo_id`...) para entregar às telas os mesmos campos camelCase da API antiga.

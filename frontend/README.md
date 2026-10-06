@@ -1,13 +1,13 @@
 # SolarVision Frontend
 
-Frontend SPA do SolarVision, construído em React + Vite e servido por Nginx.
+Frontend SPA do SolarVision, construído em React + Vite, publicado na Vercel e conectado diretamente ao Supabase.
 
 ## Stack
 
 - React
 - Vite
 - React Router
-- Axios
+- `@supabase/supabase-js`
 - ApexCharts
 - Bootstrap
 
@@ -17,45 +17,48 @@ Frontend SPA do SolarVision, construído em React + Vite e servido por Nginx.
 frontend/
 ├── src/
 │   ├── components
-│   ├── context
-│   ├── lib
+│   ├── context        # AuthContext (Supabase Auth)
+│   ├── lib            # api.js (cliente Supabase e funções de dados), power.js, text.js
 │   ├── pages
 │   ├── styles
 │   ├── App.jsx
 │   └── main.jsx
+├── test/              # testes nativos do Node
 ├── css/style.css
 ├── img/
-├── nginx/default.conf
-├── Dockerfile
+├── .env.example
+├── vercel.json        # rewrite de SPA para index.html
 ├── package.json
 └── vite.config.js
 ```
 
 ## Funcionalidades
 
-- Login e registro com JWT
+- Cadastro e login com Supabase Auth (sessão e refresh do JWT persistidos pelo `supabase-js`)
 - Rotas privadas com `react-router-dom`
-- Interceptor Axios para `Authorization: Bearer <token>`
+- Dados lidos/gravados nas tabelas do Supabase (PostgREST) e no dashboard via RPC (`lib/api.js`)
 - Dashboard com gráfico em `react-apexcharts`
 - Telas de grupos, placas, limpezas e configurações
 - Tema escuro preservado da identidade anterior
 
 ## Desenvolvimento local
 
-Se quiser rodar o frontend fora do Docker:
-
 ```bash
 cd frontend
+cp .env.example .env.local   # preencher VITE_SUPABASE_PUBLISHABLE_KEY
 npm install
-npm run dev
+npm run dev                   # http://localhost:5173
 ```
 
-Por padrão, o `vite.config.js` faz proxy de `/api` para `http://localhost:8081`.
+`VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` ficam em Supabase > Project Settings > API Keys. Não há mais proxy de `/api`: o navegador chama o Supabase diretamente.
 
-## Publicação no projeto
-
-No fluxo padrão, o frontend é publicado pelo serviço:
+## Testes e build
 
 ```bash
-docker compose up --build -d frontend
+npm test        # 21 testes (node --test)
+npm run build   # gera dist/
 ```
+
+## Publicação
+
+A Vercel publica este diretório (Root Directory `frontend`) com as mesmas variáveis `VITE_SUPABASE_*`. A branch `production` vai para Production e a branch `qa` para o ambiente de QA; ver o [README da raiz](../readme.md#deploy-e-branches).
