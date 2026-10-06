@@ -1,6 +1,7 @@
 import { startTransition, useEffect, useMemo, useState } from "react";
 import Chart from "react-apexcharts";
 import { extractErrorMessage, getDashboardMetrics, getLastReadingDate } from "../lib/api";
+import { formatRangeLabel, rangeFor, shiftDate, toSaoPaulo } from "../lib/periodo";
 import { formatPower, powerUnit } from "../lib/power";
 
 // Cada "view" e' a janela mostrada; o "bucket" (date_trunc no Supabase) e' escolhido
@@ -16,64 +17,6 @@ function viewConfig(view) {
   return VIEWS.find((item) => item.value === view) ?? VIEWS[0];
 }
 
-// Move a data de referencia em uma unidade da view (dia/semana/mes/ano).
-function shiftDate(date, view, direction) {
-  const next = new Date(date);
-  if (view === "dia") next.setDate(next.getDate() + direction);
-  else if (view === "semana") next.setDate(next.getDate() + direction * 7);
-  else if (view === "mes") next.setMonth(next.getMonth() + direction);
-  else if (view === "ano") next.setFullYear(next.getFullYear() + direction);
-  return next;
-}
-
-// Janela alinhada ao calendario a partir da data de referencia.
-function rangeFor(view, referenceDate) {
-  const start = new Date(referenceDate);
-  let end;
-
-  if (view === "dia") {
-    start.setHours(0, 0, 0, 0);
-    end = new Date(start);
-    end.setHours(23, 59, 59, 999);
-  } else if (view === "semana") {
-    start.setDate(start.getDate() - start.getDay()); // domingo
-    start.setHours(0, 0, 0, 0);
-    end = new Date(start);
-    end.setDate(start.getDate() + 6); // sabado
-    end.setHours(23, 59, 59, 999);
-  } else if (view === "mes") {
-    start.setDate(1);
-    start.setHours(0, 0, 0, 0);
-    end = new Date(start.getFullYear(), start.getMonth() + 1, 0, 23, 59, 59, 999);
-  } else {
-    start.setMonth(0, 1);
-    start.setHours(0, 0, 0, 0);
-    end = new Date(start.getFullYear(), 11, 31, 23, 59, 59, 999);
-  }
-
-  return { dataInicio: start.toISOString(), dataFim: end.toISOString() };
-}
-
-function formatRangeLabel(view, referenceDate) {
-  const { dataInicio, dataFim } = rangeFor(view, referenceDate);
-  const start = new Date(dataInicio);
-  const end = new Date(dataFim);
-
-  if (view === "dia") {
-    return start.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
-  }
-  if (view === "semana") {
-    const s = start.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-    const e = end.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
-    return `${s} - ${e}`;
-  }
-  if (view === "mes") {
-    const label = start.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
-    return label.charAt(0).toUpperCase() + label.slice(1);
-  }
-  return String(start.getFullYear());
-}
-
 export default function MetricChart() {
   const [granularity, setGranularity] = useState("dia");
   const [referenceDate, setReferenceDate] = useState(null);
@@ -87,9 +30,9 @@ export default function MetricChart() {
     async function fetchRange() {
       try {
         const ultimaLeitura = await getLastReadingDate();
-        setReferenceDate(ultimaLeitura ? new Date(ultimaLeitura) : new Date());
+        setReferenceDate(toSaoPaulo(ultimaLeitura ?? new Date()));
       } catch {
-        setReferenceDate(new Date());
+        setReferenceDate(toSaoPaulo(new Date()));
       }
     }
 
@@ -119,7 +62,8 @@ export default function MetricChart() {
   }, [granularity, referenceDate]);
 
   const seriesData = useMemo(
-    () => points.map((point) => [new Date(point.x).getTime(), Number(point.y)]),
+    // Eixo no relógio de SP: os pontos vão "como UTC" e o ApexCharts formata em UTC.
+    () => points.map((point) => [toSaoPaulo(point.x).getTime(), Number(point.y)]),
     [points]
   );
 
@@ -149,7 +93,7 @@ export default function MetricChart() {
     legend: { show: true, position: "top", horizontalAlign: "left" },
     xaxis: {
       type: "datetime",
-      labels: { datetimeUTC: false }
+      labels: { datetimeUTC: true }
     },
     yaxis: {
       labels: { formatter: (value) => formatPower(value, unit) }

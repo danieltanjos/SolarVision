@@ -21,7 +21,17 @@ export function AuthProvider({ children }) {
       setUser(null);
       return;
     }
-    getCurrentUser().then(setUser, () => setUser(null));
+    let ativo = true; // ignora a resposta se o usuário mudar (logout/login) antes dela chegar
+    getCurrentUser().then(
+      (perfil) => ativo && setUser(perfil),
+      (error) => {
+        console.error("Não foi possível carregar o perfil do usuário.", error);
+        if (ativo) setUser(null);
+      }
+    );
+    return () => {
+      ativo = false;
+    };
   }, [userId]);
 
   async function login({ email, senha }) {

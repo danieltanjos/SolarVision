@@ -41,6 +41,7 @@ export default function LoginPage() {
               type="email"
               className="form-control"
               placeholder="E-mail"
+              aria-label="E-mail"
               value={form.email}
               onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
               required
@@ -51,6 +52,7 @@ export default function LoginPage() {
               type="password"
               className="form-control"
               placeholder="Senha"
+              aria-label="Senha"
               value={form.senha}
               onChange={(event) => setForm((current) => ({ ...current, senha: event.target.value }))}
               required

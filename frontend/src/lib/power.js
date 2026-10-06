@@ -21,3 +21,8 @@ export function formatPower(value, unit) {
     maximumFractionDigits: decimals
   })} ${u.suffix}`;
 }
+
+// Energia em Wh com a mesma auto-escala (Wh, kWh, MWh, GWh).
+export function formatEnergy(wattHours) {
+  return `${formatPower(wattHours)}h`;
+}

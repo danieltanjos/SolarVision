@@ -52,7 +52,7 @@ flowchart LR
 
 ### Preparação do ambiente
 
-1. Aplicar `supabase/migrations/20261006120000_init.sql` (schema, RLS, trigger, funções e job).
+1. Aplicar as migrations de `supabase/migrations/` (schema, RLS, trigger, funções e job). O workflow `supabase.yml` faz isso a cada push em `qa`/`production`.
 2. Rodar `inserirCSV.py` com `DATABASE_URL` para carregar `leituras_energia`.
 3. Configurar `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` na Vercel (ou em `frontend/.env.local`).
 
@@ -165,7 +165,7 @@ Todas as agregações usam o fuso `America/Sao_Paulo` (o Supabase roda em UTC).
 | Agendamento | pg_cron | Deslocamento diário das leituras |
 | Carga de dados | Python + psycopg2 | Importação do CSV |
 | Hospedagem | Vercel | Build do Vite e CDN dos estáticos |
-| CI | GitHub Actions | Testes e build do frontend |
+| CI | GitHub Actions | Testes e build do frontend; migrations + teste de ponta a ponta em `qa`/`production`; requisição diária contra a pausa do plano free |
 
 ---
 

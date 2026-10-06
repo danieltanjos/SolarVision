@@ -60,6 +60,8 @@ export default function RegisterPage() {
               type="text"
               className="form-control"
               placeholder="Nome"
+              aria-label="Nome"
+              maxLength={100}
               value={form.nome}
               onChange={(event) => setForm((current) => ({ ...current, nome: event.target.value }))}
               required
@@ -70,6 +72,7 @@ export default function RegisterPage() {
               type="email"
               className="form-control"
               placeholder="E-mail"
+              aria-label="E-mail"
               value={form.email}
               onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
               required
@@ -80,6 +83,7 @@ export default function RegisterPage() {
               type="password"
               className="form-control"
               placeholder="Senha"
+              aria-label="Senha"
               value={form.senha}
               onChange={(event) => setForm((current) => ({ ...current, senha: event.target.value }))}
               minLength={8}
@@ -92,6 +96,7 @@ export default function RegisterPage() {
               type="password"
               className="form-control"
               placeholder="Confirmar senha"
+              aria-label="Confirmar senha"
               value={form.confirmarSenha}
               onChange={(event) =>
                 setForm((current) => ({ ...current, confirmarSenha: event.target.value }))

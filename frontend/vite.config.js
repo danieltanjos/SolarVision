@@ -4,35 +4,13 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   build: {
+    // O chunk da ApexCharts (~580 kB) só carrega na página de Monitoramento.
     chunkSizeWarningLimit: 650,
     rollupOptions: {
       output: {
+        // Bibliotecas num chunk próprio: continuam em cache quando só o código do app muda.
         manualChunks(id) {
-          if (!id.includes("node_modules")) {
-            return undefined;
-          }
-
-          if (id.includes("apexcharts") || id.includes("react-apexcharts")) {
-            return "charts";
-          }
-
-          if (id.includes("react-router")) {
-            return "router";
-          }
-
-          if (id.includes("bootstrap")) {
-            return "bootstrap";
-          }
-
-          if (id.includes("@supabase")) {
-            return "supabase";
-          }
-
-          if (id.includes("/react/") || id.includes("\\react\\") || id.includes("scheduler")) {
-            return "react-vendor";
-          }
-
-          return "vendor";
+          if (id.includes("node_modules") && !id.includes("apexcharts")) return "vendor";
         }
       }
     }

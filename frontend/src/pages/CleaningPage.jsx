@@ -15,7 +15,7 @@ export default function CleaningPage() {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
     placaId: "",
-    dataLimpeza: new Date().toISOString().slice(0, 16),
+    dataLimpeza: toDatetimeLocal(new Date()),
     observacao: ""
   });
 
@@ -48,7 +48,7 @@ export default function CleaningPage() {
       setForm((current) => ({
         ...current,
         observacao: "",
-        dataLimpeza: new Date().toISOString().slice(0, 16)
+        dataLimpeza: toDatetimeLocal(new Date())
       }));
       await loadData();
     } catch (err) {
@@ -71,6 +71,7 @@ export default function CleaningPage() {
             <h2 className="h5 mb-3">Registrar limpeza</h2>
             <form onSubmit={handleSubmit} className="d-grid gap-3">
               <select
+                aria-label="Placa"
                 className="form-select"
                 value={form.placaId}
                 onChange={(event) => setForm((current) => ({ ...current, placaId: event.target.value }))}
@@ -85,6 +86,7 @@ export default function CleaningPage() {
               </select>
 
               <input
+                aria-label="Data da limpeza"
                 type="datetime-local"
                 className="form-control"
                 value={form.dataLimpeza}
@@ -98,6 +100,8 @@ export default function CleaningPage() {
                 className="form-control"
                 rows="4"
                 placeholder="Observação"
+                aria-label="Observação"
+                maxLength={1000}
                 value={form.observacao}
                 onChange={(event) => setForm((current) => ({ ...current, observacao: event.target.value }))}
               />
