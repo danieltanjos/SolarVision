@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import api, { extractErrorMessage } from "../lib/api";
+import { createGroup, createPanel, extractErrorMessage, listGroups, listPanels } from "../lib/api";
 
 export default function CadastroPage() {
   const [groups, setGroups] = useState([]);
@@ -12,12 +12,9 @@ export default function CadastroPage() {
 
   async function loadData() {
     try {
-      const [groupsResponse, panelsResponse] = await Promise.all([
-        api.get("/api/groups"),
-        api.get("/api/panels")
-      ]);
-      setGroups(groupsResponse.data);
-      setPanels(panelsResponse.data);
+      const [groupsData, panelsData] = await Promise.all([listGroups(), listPanels()]);
+      setGroups(groupsData);
+      setPanels(panelsData);
       setError("");
     } catch (err) {
       setError(extractErrorMessage(err));
@@ -31,7 +28,7 @@ export default function CadastroPage() {
   async function handleGroupSubmit(event) {
     event.preventDefault();
     try {
-      await api.post("/api/groups", groupForm);
+      await createGroup(groupForm);
       setGroupForm({ nome: "", status: "ATIVO" });
       await loadData();
     } catch (err) {
@@ -42,7 +39,7 @@ export default function CadastroPage() {
   async function handlePanelSubmit(event) {
     event.preventDefault();
     try {
-      await api.post("/api/panels", {
+      await createPanel({
         grupoId: Number(panelForm.grupoId),
         modelo: panelForm.modelo,
         status: panelForm.status

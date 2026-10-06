@@ -1,9 +1,5 @@
 # Arquivo .gitignore para o projeto SolarVision
 
-# --- Pastas de Dados dos Bancos de Dados ---
-# Ignora completamente as pastas de dados gerados.
-postgres-data/
-
 # --- Arquivos de Ambiente ---
 # Nunca salve senhas ou chaves de API no Git!
 .env
@@ -14,7 +10,8 @@ postgres-data/
 .DS_Store
 Thumbs.db
 .vscode/
-backend/target/
 frontend/node_modules/
 frontend/dist/
 .qa-tools/
+.vercel
+__pycache__/

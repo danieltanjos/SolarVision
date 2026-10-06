@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api, { extractErrorMessage } from "../lib/api";
+import { createCleaning, extractErrorMessage, listCleanings, listPanels } from "../lib/api";
 
 function toDatetimeLocal(value) {
   const date = new Date(value);
@@ -22,12 +22,9 @@ export default function CleaningPage() {
   async function loadData() {
     setLoading(true);
     try {
-      const [cleaningsResponse, panelsResponse] = await Promise.all([
-        api.get("/api/cleanings"),
-        api.get("/api/panels")
-      ]);
-      setCleanings(cleaningsResponse.data);
-      setPanels(panelsResponse.data);
+      const [cleaningsData, panelsData] = await Promise.all([listCleanings(), listPanels()]);
+      setCleanings(cleaningsData);
+      setPanels(panelsData);
       setError("");
     } catch (err) {
       setError(extractErrorMessage(err));
@@ -43,7 +40,7 @@ export default function CleaningPage() {
   async function handleSubmit(event) {
     event.preventDefault();
     try {
-      await api.post("/api/cleanings", {
+      await createCleaning({
         placaId: Number(form.placaId),
         dataLimpeza: new Date(form.dataLimpeza).toISOString(),
         observacao: form.observacao

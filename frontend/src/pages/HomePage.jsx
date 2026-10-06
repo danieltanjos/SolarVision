@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api, { extractErrorMessage } from "../lib/api";
+import { extractErrorMessage, getDashboardSummary, listGroups } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import StatCard from "../components/StatCard";
 import { formatPower } from "../lib/power";
@@ -14,12 +14,9 @@ export default function HomePage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [summaryResponse, groupsResponse] = await Promise.all([
-          api.get("/api/dashboard/summary"),
-          api.get("/api/groups")
-        ]);
-        setSummary(summaryResponse.data);
-        setGroups(groupsResponse.data);
+        const [summaryData, groupsData] = await Promise.all([getDashboardSummary(), listGroups()]);
+        setSummary(summaryData);
+        setGroups(groupsData);
       } catch (err) {
         setError(extractErrorMessage(err));
       }

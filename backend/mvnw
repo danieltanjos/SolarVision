@@ -1,3 +1,0 @@
-#!/bin/sh
-echo "Maven wrapper não incluído neste ambiente. Instale Maven ou gere o wrapper com mvn -N wrapper."
-exit 1
