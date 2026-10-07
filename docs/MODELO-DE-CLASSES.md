@@ -136,6 +136,12 @@ Perfil do usuário. A senha e o login ficam no Supabase Auth (`auth.users`); a l
 | email | varchar(255) | único |
 | role | varchar(30) | `ADMIN` ou `USER`, padrão `USER`. `ADMIN` vê e altera os grupos de todos os usuários; a promoção é só por SQL (`update usuarios set role = 'ADMIN' where email = '...'`) |
 | criado_em | timestamptz | padrão `now()` |
+| alerta_limpeza, alerta_previsao, alerta_desempenho | boolean | padrão true; tipos de alerta que o `gerar_alertas` grava para os grupos do usuário |
+| limiar_limpeza | numeric(3,2) | padrão 0,10 (entre 0,01 e 0,20): perda a partir da qual `recomendacoes_limpeza` recomenda limpar |
+| limiar_previsao | numeric(3,2) | padrão 0,60 (entre 0,10 e 0,95): previsão baixa abaixo desta fração da média de 5 anos |
+| tarifa_padrao, custo_limpeza_padrao | numeric | opcionais; pré-preenchem tarifa e custo de limpeza do "Novo grupo" |
+
+O usuário altera só `nome` e as preferências da própria linha (grant por coluna); `role` e `email`, nunca.
 
 ### `grupos_solares`
 Agrupamento de placas (ex.: uma usina/instalação). Cada grupo tem um dono; placas, limpezas, leituras, clima, chuvas e previsões herdam o acesso pelo grupo.

@@ -139,7 +139,7 @@ Sem JWT a requisição usa o papel `anon`, que não tem nenhuma política RLS: l
 | Segredos | `VITE_SUPABASE_*` em `.env.local` (fora do Git) e nas variáveis da Vercel; a connection string do banco só no segredo `SUPABASE_DB_URL` do CI. O Open-Meteo não usa chave |
 
 ### Observações
-- `role = 'ADMIN'` em `usuarios` vê e altera os grupos (e tudo que pende deles) de todos os usuários; a promoção é só por SQL (`update usuarios set role = 'ADMIN' ...`). O perfil (`usuarios`) continua visível só para o próprio usuário, inclusive para o ADMIN; ver [FEATURES-INCOMPLETAS.md](FEATURES-INCOMPLETAS.md).
+- `role = 'ADMIN'` em `usuarios` vê e altera os grupos (e tudo que pende deles) de todos os usuários; a promoção é só por SQL (`update usuarios set role = 'ADMIN' ...`). O perfil (`usuarios`) continua visível só para o próprio usuário, inclusive para o ADMIN; o usuário altera só o próprio `nome` e as preferências (política de update na própria linha + grant por coluna: `role` e `email` nunca); ver [FEATURES-INCOMPLETAS.md](FEATURES-INCOMPLETAS.md).
 - Os grupos que existiam antes do dono por grupo (migration `20261008090000`) ficaram com o **primeiro usuário cadastrado**; para passá-los a outro, `update grupos_solares set dono_id = ...` por SQL.
 - Se "Confirm email" estiver ligado no Supabase Auth, o cadastro não abre sessão e a tela pede a confirmação do e-mail.
 
@@ -192,12 +192,12 @@ Todas sobre `geracao_horaria`, executáveis só por `authenticated` e filtradas 
 | Função | O que devolve |
 |---|---|
 | `dashboard_financeiro(data_inicio, data_fim, grupo, placa)` | Energia real, economia em R$ (real × `tarifa_kwh`, só grupos com tarifa), perda por sujeira em kWh e R$ (estimado − real nas horas com real), CO₂ evitado (real × 0,0385 kgCO₂/kWh, fator médio do SIN de 2023, MCTI) e quantas placas estão sem tarifa |
-| `recomendacoes_limpeza()` | Por placa: perda atual, kWh e R$ perdidos na próxima semana sem limpar (estimado da previsão × perda atual), chuva que lava prevista, em quantos dias a limpeza (`custo_limpeza`) se paga e a decisão: limpar se perda ≥ 10 %, sem chuva que lava nos próximos 3 dias e sem custo informado ou pagando-se em até 30 dias; `motivo` em texto |
+| `recomendacoes_limpeza()` | Por placa: perda atual, kWh e R$ perdidos na próxima semana sem limpar (estimado da previsão × perda atual), chuva que lava prevista, em quantos dias a limpeza (`custo_limpeza`) se paga e a decisão: limpar se perda ≥ o `limiar_limpeza` do dono (padrão 10 %), sem chuva que lava nos próximos 3 dias e sem custo informado ou pagando-se em até 30 dias; `motivo` em texto |
 | `dashboard_historico(granularidade, data_inicio, data_fim, grupo, placa)` | Média, mínimo e máximo do **estimado** (só o clima) da mesma janela nos 5 anos anteriores, com os mesmos `x` do `dashboard_metricas`; um ano só entra se todas as placas têm clima na janela inteira (o 5º costuma ser parcial) |
 | `acerto_previsao(dias, grupo, placa)` | Por dia encerrado: a previsão guardada na véspera em `previsoes_diarias` (job `guardar-previsao`, 21:00 de São Paulo) x o estimado com o clima que aconteceu |
 | `ranking_placas(data_inicio, data_fim, grupo)` | Por placa: real, estimado das horas com real, kWh/kWp, desempenho (real ÷ estimado), mediana do desempenho no grupo e `anomalia` (mais de 10 p.p. abaixo da mediana, em grupo com 2+ placas) |
 
-**Alertas.** `gerar_alertas()` (security definer, só o pg_cron executa) grava em `alertas` três situações que as funções acima já detectam: limpeza recomendada (`recomendacoes_limpeza` com `limpar`), desempenho abaixo do grupo (`ranking_placas` dos últimos 7 dias com `anomalia`) e previsão baixa (amanhã abaixo de 60 % da média de 5 anos do grupo para o dia, por `dashboard_historico`). O unique `(grupo_id, placa_id, tipo, referencia)` evita repetição: previsão baixa no máximo uma por dia; limpeza e desempenho no máximo uma por semana enquanto a situação durar. O dono só lê e marca como lido (grant de update só em `lido_em`).
+**Alertas.** `gerar_alertas()` (security definer, só o pg_cron executa) grava em `alertas` três situações que as funções acima já detectam: limpeza recomendada (`recomendacoes_limpeza` com `limpar`), desempenho abaixo do grupo (`ranking_placas` dos últimos 7 dias com `anomalia`) e previsão baixa (amanhã abaixo do `limiar_previsao` do dono, padrão 60 %, da média de 5 anos do grupo para o dia, por `dashboard_historico`), respeitando os tipos que cada dono desligou. O unique `(grupo_id, placa_id, tipo, referencia)` evita repetição: previsão baixa no máximo uma por dia; limpeza e desempenho no máximo uma por semana enquanto a situação durar. O dono só lê e marca como lido (grant de update só em `lido_em`).
 
 ---
 

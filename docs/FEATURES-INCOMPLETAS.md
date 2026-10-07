@@ -9,10 +9,9 @@ Lista de funcionalidades que estão **referenciadas/parcialmente implementadas**
 
 ## Alta prioridade
 
-### 1. Edição de perfil e senha do usuário
-- **Estado atual:** a tela de Configurações é somente leitura (nome, e-mail, papel, data de criação). `usuarios` só tem política de `select`.
-- **Falta:** política de `update` em `usuarios` (só a própria linha, sem permitir alterar `role`), troca de senha/e-mail via `supabase.auth.updateUser` e o formulário no `SettingsPage`.
-- **Onde:** `frontend/src/pages/SettingsPage.jsx`, `frontend/src/lib/api.js`, nova migration em `supabase/migrations/`.
+### 1. Edição de perfil e senha do usuário - resolvido
+- **Estado atual:** Configurações edita o nome e as preferências (migration `20261009090000`: política de update na própria linha + grant por coluna, `role`/`email` nunca) e troca a senha confirmando a atual.
+- **Falta:** trocar o e-mail (exige o fluxo de confirmação do Supabase Auth).
 
 ### 2. Autorização: dono por grupo e ADMIN (parcial)
 - **Estado atual:** cada grupo tem um dono (`grupos_solares.dono_id`, preenchido com quem o cria) e cada usuário só vê e altera os próprios grupos; placas, limpezas, leituras, clima, chuvas e previsões herdam pelo grupo. `role = 'ADMIN'` (função `e_admin()`) vê e altera tudo. Os grupos que já existiam ficaram com o primeiro usuário cadastrado (migration `20261008090000`).
@@ -64,20 +63,16 @@ Lista de funcionalidades que estão **referenciadas/parcialmente implementadas**
 - **Estado atual:** não existe (na versão Spring Boot era apenas simulado por `log`).
 - **Falta:** Edge Function do Supabase integrada a um provedor de e-mail, disparada pelos alertas do item 7 (hoje só aparecem no sino do app).
 
-### 9. Dropdown "Meu perfil" x "Configurações"
-- **Estado atual:** os dois itens do menu do usuário navegam para `/app/configuracoes`.
-- **Falta:** ou uma tela de perfil separada (ver item 1), ou unificar os itens.
-- **Onde:** `frontend/src/components/AppShell.jsx`.
+### 9. Dropdown "Meu perfil" x "Configurações" - resolvido
+- "Meu perfil" leva à seção Perfil de Configurações (`/app/configuracoes#perfil`).
 
-### 10. Estados de carregamento e feedback de sucesso (parcial)
-- **Estado atual:** Cadastro, Limpeza e a importação de leituras mostram mensagem de sucesso depois de salvar ou excluir; Home, Monitoramento e Limpeza têm indicador de carregamento.
-- **Falta:** indicador de carregamento no `CadastroPage` (as listas aparecem vazias enquanto carregam).
-- **Onde:** `frontend/src/pages/CadastroPage.jsx`.
+### 10. Estados de carregamento e feedback de sucesso - resolvido
+- Cadastro, Limpeza, Configurações e a importação de leituras mostram mensagem de sucesso; todas as telas têm indicador de carregamento.
 
 ### 12. Limitações das análises
 - **Fator de CO₂ fixo:** 0,0385 kgCO₂/kWh (fator médio anual do SIN de 2023, MCTI) dentro de `dashboard_financeiro`; conferir e trocar pelo do ano mais recente publicado pelo MCTI (ou pelo fator mensal).
 - **Limpeza pela chuva:** dia com ≥ 5 mm (limiar fixo) lava a placa por completo; vira limpeza parcial, proporcional à chuva, quando houver dado para calibrar. A sujeira continua com taxa (0,2 %/dia) e limite (20 %) fixos.
-- **Recomendação de limpeza:** supõe a perda constante na semana (na verdade cresce 0,2 %/dia) e usa limiares fixos (perda ≥ 10 %, chuva em até 3 dias, retorno em até 30 dias).
+- **Recomendação de limpeza:** supõe a perda constante na semana (na verdade cresce 0,2 %/dia) e a chuva em até 3 dias e o retorno em até 30 dias são fixos; o limiar de perda (padrão 10 %) e o da previsão baixa (padrão 60 %) são preferências do dono. Um ADMIN vendo o grupo de outro dono recebe a recomendação com 10 % (a RLS de `usuarios` não mostra a linha do outro dono); o alerta usa o limiar do dono certo.
 - **Média de 5 anos recalculada a cada chamada:** `dashboard_historico` refaz até 5 anos × placas (~1,2 s na visão Ano com 4 placas; cresce com o número de placas). Pré-agregar o estimado por placa e dia numa tabela se a visão Ano ficar lenta.
 - **Acerto da previsão começa vazio:** a primeira previsão é guardada às 21:00 do dia do deploy e só é comparada depois que o dia seguinte termina; até lá o rodapé mostra "acumulando dados". Placa criada depois das 21:00 entra no ciclo seguinte.
 - **Ranking:** a anomalia só existe em grupo com 2+ placas e usa limiar fixo (10 p.p. abaixo da mediana); sem leituras, o desempenho reflete só a sujeira simulada.
@@ -88,7 +83,7 @@ Lista de funcionalidades que estão **referenciadas/parcialmente implementadas**
 ## Baixa prioridade (polimento)
 
 ### 11. Testes ausentes
-- **Estado atual:** 53 testes de utilitários do frontend (`node --test`) e 9 testes de ponta a ponta de `lib/api.js` contra o Supabase (`supabase/tests/e2e.mjs`: RLS por dono, cadastros, edição/exclusão, recarga do clima, carga pelo pg_cron, valores do período, recomendação, leituras importadas, ranking, média de 5 anos, acerto da previsão e alertas).
+- **Estado atual:** 54 testes de utilitários do frontend (`node --test`) e 10 testes de ponta a ponta de `lib/api.js` contra o Supabase (`supabase/tests/e2e.mjs`: RLS por dono, cadastros, edição/exclusão, recarga do clima, carga pelo pg_cron, valores do período, recomendação, leituras importadas, ranking, média de 5 anos, acerto da previsão, alertas e preferências do usuário).
 - **Falta:** testes das telas (ex.: Playwright contra a URL de QA) e testes isolados do banco (ex.: pgTAP).
 
 Polimentos resolvidos: o status do grupo na Home usa o selo (`StatusBadge`, desde o redesign) e a placa do formulário de limpeza volta ao vazio depois de salvar (rodada de análises).
@@ -99,7 +94,7 @@ Polimentos resolvidos: o status do grupo na Home usa o selo (`StatusBadge`, desd
 
 | # | Item | Prioridade | Camada | Situação |
 |---|---|---|---|---|
-| 1 | Edição de perfil/senha | Alta | Front + Banco | Pendente |
+| 1 | Edição de perfil/senha | Alta | Front + Banco | Resolvido (falta trocar e-mail) |
 | 2 | Autorização: tela de ADMIN, transferir/compartilhar grupos | Alta | Front + Banco | Parcial (dono por grupo e ADMIN prontos) |
 | 3 | Editar/excluir na UI (Cadastro/Limpeza) | Alta | Front | Resolvido |
 | 4 | QA e produção no mesmo Supabase | Alta | Infra | Pendente |
@@ -107,8 +102,8 @@ Polimentos resolvidos: o status do grupo na Home usa o selo (`StatusBadge`, desd
 | 6 | Limitações da geração estimada (PR fixo etc.) | Média | Banco | Pendente (recarga do clima resolvida) |
 | 7 | Alertas | Média | Banco + Front | Resolvido (sem e-mail: item 8) |
 | 8 | Envio real de e-mail | Média | Supabase (Edge Function) | Pendente |
-| 9 | "Meu perfil" x "Configurações" | Média | Front | Pendente |
-| 10 | Loading + feedback de sucesso | Média | Front | Parcial (falta loading no Cadastro) |
+| 9 | "Meu perfil" x "Configurações" | Média | Front | Resolvido |
+| 10 | Loading + feedback de sucesso | Média | Front | Resolvido |
 | 12 | Limitações das análises (CO₂, chuva, histórico, acerto) | Média | Banco | Pendente |
 | 11 | Testes ausentes | Baixa | Front + Banco | Pendente |
 
