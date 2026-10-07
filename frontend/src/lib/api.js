@@ -17,7 +17,9 @@ export async function listGroups() {
   const groups = await unwrap(
     supabase
       .from("grupos_solares")
-      .select("id, nome, status, latitude, longitude, criadoEm:criado_em, placas(count)")
+      .select(
+        "id, nome, status, latitude, longitude, criadoEm:criado_em, tarifaKwh:tarifa_kwh, custoLimpeza:custo_limpeza, placas(count)"
+      )
       .order("id")
   );
   return groups.map(({ placas, ...group }) => ({ ...group, totalPlacas: placas[0]?.count ?? 0 }));
@@ -29,7 +31,8 @@ export function listPanels() {
       .from("placas")
       .select(
         "id, modelo, status, grupoId:grupo_id, criadoEm:criado_em, potenciaWp:potencia_wp, inclinacao, azimute, " +
-          "climaHistoricoEm:clima_historico_em, perdaSujeira:perda_sujeira, ...grupos_solares(grupoNome:nome, latitude, longitude)"
+          "instaladaEm:instalada_em, climaHistoricoEm:clima_historico_em, perdaSujeira:perda_sujeira, " +
+          "...grupos_solares(grupoNome:nome, latitude, longitude, tarifaKwh:tarifa_kwh, custoLimpeza:custo_limpeza)"
       )
       .order("id")
   );
