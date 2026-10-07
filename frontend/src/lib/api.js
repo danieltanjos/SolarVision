@@ -48,28 +48,70 @@ export function listCleanings() {
   );
 }
 
-export function createGroup({ nome, status, latitude, longitude }) {
-  return unwrap(supabase.from("grupos_solares").insert({ nome: nome.trim(), status, latitude, longitude }));
+// Campos da tela -> colunas. Campo undefined some do JSON, então o update altera só o que foi informado.
+const colunasGrupo = ({ nome, status, latitude, longitude, tarifaKwh, custoLimpeza }) => ({
+  nome: nome?.trim(),
+  status,
+  latitude,
+  longitude,
+  tarifa_kwh: tarifaKwh,
+  custo_limpeza: custoLimpeza
+});
+
+const colunasPlaca = ({ grupoId, modelo, status, potenciaWp, inclinacao, azimute, instaladaEm }) => ({
+  grupo_id: grupoId,
+  modelo: modelo?.trim(),
+  status,
+  potencia_wp: potenciaWp,
+  inclinacao,
+  azimute,
+  instalada_em: instaladaEm
+});
+
+const colunasLimpeza = ({ placaId, dataLimpeza, observacao }) => ({
+  placa_id: placaId,
+  data_limpeza: dataLimpeza,
+  observacao: observacao?.trim()
+});
+
+export function createGroup(grupo) {
+  return unwrap(supabase.from("grupos_solares").insert(colunasGrupo(grupo)));
+}
+
+// Mudar latitude/longitude faz o pg_cron recarregar o clima das placas do grupo (trigger no banco).
+export function updateGroup(id, grupo) {
+  return unwrap(supabase.from("grupos_solares").update(colunasGrupo(grupo)).eq("id", id));
+}
+
+// Cascata: placas, limpezas e clima do grupo.
+export function deleteGroup(id) {
+  return unwrap(supabase.from("grupos_solares").delete().eq("id", id));
 }
 
 // Com local (no grupo), potência, inclinação e azimute, o pg_cron carrega 5 anos de clima em ~1 min.
-export function createPanel({ grupoId, modelo, status, potenciaWp, inclinacao, azimute }) {
-  return unwrap(
-    supabase.from("placas").insert({
-      grupo_id: grupoId,
-      modelo: modelo.trim(),
-      status,
-      potencia_wp: potenciaWp,
-      inclinacao,
-      azimute
-    })
-  );
+export function createPanel(placa) {
+  return unwrap(supabase.from("placas").insert(colunasPlaca(placa)));
 }
 
-export function createCleaning({ placaId, dataLimpeza, observacao }) {
-  return unwrap(
-    supabase.from("limpezas").insert({ placa_id: placaId, data_limpeza: dataLimpeza, observacao: observacao.trim() })
-  );
+// Mudar inclinação, azimute ou grupo faz o pg_cron recarregar o clima da placa (trigger no banco).
+export function updatePanel(id, placa) {
+  return unwrap(supabase.from("placas").update(colunasPlaca(placa)).eq("id", id));
+}
+
+export function deletePanel(id) {
+  return unwrap(supabase.from("placas").delete().eq("id", id));
+}
+
+export function createCleaning(limpeza) {
+  return unwrap(supabase.from("limpezas").insert(colunasLimpeza(limpeza)));
+}
+
+export function updateCleaning(id, limpeza) {
+  return unwrap(supabase.from("limpezas").update(colunasLimpeza(limpeza)).eq("id", id));
+}
+
+export function deleteCleaning(id) {
+  return unwrap(supabase.from("limpezas").delete().eq("id", id));
 }
 
 // A RLS só devolve a linha do próprio usuário logado.

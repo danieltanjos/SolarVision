@@ -1,19 +1,46 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import ConfirmarExclusao, { AcoesLinha } from "../components/ConfirmarExclusao";
 import StatusBadge from "../components/StatusBadge";
-import { createGroup, createPanel, extractErrorMessage, listGroups, listPanels } from "../lib/api";
+import {
+  createGroup,
+  createPanel,
+  deleteGroup,
+  deletePanel,
+  extractErrorMessage,
+  listGroups,
+  listPanels,
+  updateGroup,
+  updatePanel
+} from "../lib/api";
 import { parseCoordenadas } from "../lib/coordenadas";
 import { ORIENTACOES, climaStatus, orientacao } from "../lib/placas";
 
-const EMPTY_GROUP = { nome: "", status: "ATIVO", coordenadas: "" };
-const EMPTY_PANEL = { grupoId: "", modelo: "", status: "ATIVA", potenciaWp: "", inclinacao: "", azimute: "0" };
+const EMPTY_GROUP = { id: null, nome: "", status: "ATIVO", coordenadas: "", tarifaKwh: "", custoLimpeza: "" };
+const EMPTY_PANEL = {
+  id: null,
+  grupoId: "",
+  modelo: "",
+  status: "ATIVA",
+  potenciaWp: "",
+  inclinacao: "",
+  azimute: "0",
+  instaladaEm: ""
+};
 
 const numOrNull = (value) => (value === "" ? null : Number(value));
+const campo = (value) => (value == null ? "" : String(value)); // null do banco -> input vazio
+const reais = (value) => Number(value).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 4 });
+
+// Leva o formulário de edição para a tela (a lista pode estar bem abaixo dele).
+const mostrar = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "center" });
 
 export default function CadastroPage() {
   const [groups, setGroups] = useState([]);
   const [panels, setPanels] = useState([]);
   const [error, setError] = useState("");
+  const [sucesso, setSucesso] = useState("");
+  const [excluir, setExcluir] = useState(null); // { texto, acao, mensagem } do modal de confirmação
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
   const [groupForm, setGroupForm] = useState(EMPTY_GROUP);
@@ -42,44 +69,107 @@ export default function CadastroPage() {
     return () => clearInterval(id);
   }, [sincronizando]);
 
-  const coordenadas = groupForm.coordenadas.trim() ? parseCoordenadas(groupForm.coordenadas) : null;
-
-  async function handleGroupSubmit(event) {
-    event.preventDefault();
-    if (groupForm.coordenadas.trim() && !coordenadas) {
-      setError("Coordenadas não reconhecidas. Use, por exemplo, -27.548, -48.4988.");
-      return;
-    }
+  // Salva/exclui, recarrega as listas e mostra o resultado.
+  async function executar(acao, mensagem) {
+    setSucesso("");
     try {
-      await createGroup({
-        nome: groupForm.nome,
-        status: groupForm.status,
-        latitude: coordenadas?.latitude ?? null,
-        longitude: coordenadas?.longitude ?? null
-      });
-      setGroupForm(EMPTY_GROUP);
+      await acao();
       await loadData();
+      setSucesso(mensagem);
     } catch (err) {
       setError(extractErrorMessage(err));
     }
   }
 
+  const coordenadas = groupForm.coordenadas.trim() ? parseCoordenadas(groupForm.coordenadas) : null;
+
+  async function handleGroupSubmit(event) {
+    event.preventDefault();
+    if (groupForm.coordenadas.trim() && !coordenadas) {
+      setSucesso("");
+      setError("Coordenadas não reconhecidas. Use, por exemplo, -27.548, -48.4988.");
+      return;
+    }
+    const dados = {
+      nome: groupForm.nome,
+      status: groupForm.status,
+      latitude: coordenadas?.latitude ?? null,
+      longitude: coordenadas?.longitude ?? null,
+      tarifaKwh: numOrNull(groupForm.tarifaKwh),
+      custoLimpeza: numOrNull(groupForm.custoLimpeza)
+    };
+    await executar(async () => {
+      await (groupForm.id ? updateGroup(groupForm.id, dados) : createGroup(dados));
+      setGroupForm(EMPTY_GROUP);
+    }, `Grupo "${dados.nome.trim()}" ${groupForm.id ? "atualizado" : "criado"}.`);
+  }
+
   async function handlePanelSubmit(event) {
     event.preventDefault();
-    try {
-      await createPanel({
-        grupoId: Number(panelForm.grupoId),
-        modelo: panelForm.modelo,
-        status: panelForm.status,
-        potenciaWp: numOrNull(panelForm.potenciaWp),
-        inclinacao: numOrNull(panelForm.inclinacao),
-        azimute: numOrNull(panelForm.azimute)
-      });
+    const dados = {
+      grupoId: Number(panelForm.grupoId),
+      modelo: panelForm.modelo,
+      status: panelForm.status,
+      potenciaWp: numOrNull(panelForm.potenciaWp),
+      inclinacao: numOrNull(panelForm.inclinacao),
+      azimute: numOrNull(panelForm.azimute),
+      instaladaEm: panelForm.instaladaEm || null
+    };
+    await executar(async () => {
+      await (panelForm.id ? updatePanel(panelForm.id, dados) : createPanel(dados));
       setPanelForm(EMPTY_PANEL);
-      await loadData();
-    } catch (err) {
-      setError(extractErrorMessage(err));
-    }
+    }, `Placa "${dados.modelo.trim()}" ${panelForm.id ? "atualizada" : "criada"}.`);
+  }
+
+  function editGroup(group) {
+    setGroupForm({
+      id: group.id,
+      nome: group.nome,
+      status: group.status,
+      coordenadas: group.latitude != null ? `${group.latitude}, ${group.longitude}` : "",
+      tarifaKwh: campo(group.tarifaKwh),
+      custoLimpeza: campo(group.custoLimpeza)
+    });
+    mostrar("form-grupo");
+  }
+
+  function editPanel(panel) {
+    setPanelForm({
+      id: panel.id,
+      grupoId: String(panel.grupoId),
+      modelo: panel.modelo,
+      status: panel.status,
+      potenciaWp: campo(panel.potenciaWp),
+      inclinacao: campo(panel.inclinacao),
+      azimute: campo(panel.azimute ?? 0),
+      instaladaEm: campo(panel.instaladaEm)
+    });
+    mostrar("form-placa");
+  }
+
+  function excluirGrupo(group) {
+    setExcluir({
+      texto: `Excluir o grupo "${group.nome}"?${
+        group.totalPlacas ? ` Isso também exclui as placas dele (${group.totalPlacas}), as limpezas e o clima carregado.` : ""
+      }`,
+      acao: async () => {
+        await deleteGroup(group.id);
+        setGroupForm((form) => (form.id === group.id ? EMPTY_GROUP : form));
+        setPanelForm((form) => (Number(form.grupoId) === group.id ? EMPTY_PANEL : form));
+      },
+      mensagem: `Grupo "${group.nome}" excluído.`
+    });
+  }
+
+  function excluirPlaca(panel) {
+    setExcluir({
+      texto: `Excluir a placa "${panel.modelo}" (${panel.grupoNome})? Isso também exclui as limpezas e o clima carregado dela.`,
+      acao: async () => {
+        await deletePanel(panel.id);
+        setPanelForm((form) => (form.id === panel.id ? EMPTY_PANEL : form));
+      },
+      mensagem: `Placa "${panel.modelo}" excluída.`
+    });
   }
 
   const filteredPanels = useMemo(() => {
@@ -103,12 +193,24 @@ export default function CadastroPage() {
       </header>
 
       {error ? <div className="alert alert-danger mb-0">{error}</div> : null}
+      {sucesso ? <div className="alert alert-success mb-0" role="status">{sucesso}</div> : null}
+
+      {excluir ? (
+        <ConfirmarExclusao
+          texto={excluir.texto}
+          onCancelar={() => setExcluir(null)}
+          onConfirmar={() => {
+            setExcluir(null);
+            executar(excluir.acao, excluir.mensagem);
+          }}
+        />
+      ) : null}
 
       <div className="sv-split">
         <div className="sv-stack">
-          <section className="card">
+          <section className="card" id="form-grupo">
             <div className="sv-card-head">
-              <h2><i className="bi bi-collection me-2" />Novo grupo</h2>
+              <h2><i className="bi bi-collection me-2" />{groupForm.id ? "Editar grupo" : "Novo grupo"}</h2>
             </div>
             <form onSubmit={handleGroupSubmit} className="sv-form">
               <div>
@@ -146,13 +248,54 @@ export default function CadastroPage() {
                     : "No Google Maps, clique com o botão direito no local e copie as coordenadas (aceita também 27°32'52.8\"S 48°29'55.6\"W). Necessário para a geração estimada."}
                 </div>
               </div>
-              <button type="submit" className="btn btn-primary">Criar grupo</button>
+              <div className="sv-form-row">
+                <div>
+                  <label className="form-label" htmlFor="grupo-tarifa">Tarifa (R$/kWh)</label>
+                  <input
+                    id="grupo-tarifa"
+                    type="number"
+                    step="any"
+                    min="0.0001"
+                    className="form-control"
+                    placeholder="0.95"
+                    value={groupForm.tarifaKwh}
+                    onChange={setGroupField("tarifaKwh")}
+                  />
+                </div>
+                <div>
+                  <label className="form-label" htmlFor="grupo-custo">Limpeza (R$/placa)</label>
+                  <input
+                    id="grupo-custo"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="form-control"
+                    placeholder="30"
+                    value={groupForm.custoLimpeza}
+                    onChange={setGroupField("custoLimpeza")}
+                  />
+                </div>
+              </div>
+              <div className="form-text mt-0">
+                A tarifa da conta de luz converte a energia gerada em economia (R$); o custo de limpar uma placa entra na
+                recomendação de limpeza.
+              </div>
+              <div className="d-flex gap-2">
+                <button type="submit" className="btn btn-primary flex-grow-1">
+                  {groupForm.id ? "Salvar grupo" : "Criar grupo"}
+                </button>
+                {groupForm.id ? (
+                  <button type="button" className="btn btn-outline-secondary" onClick={() => setGroupForm(EMPTY_GROUP)}>
+                    Cancelar
+                  </button>
+                ) : null}
+              </div>
             </form>
           </section>
 
-          <section className="card">
+          <section className="card" id="form-placa">
             <div className="sv-card-head">
-              <h2><i className="bi bi-grid-3x2 me-2" />Nova placa</h2>
+              <h2><i className="bi bi-grid-3x2 me-2" />{panelForm.id ? "Editar placa" : "Nova placa"}</h2>
             </div>
             <form onSubmit={handlePanelSubmit} className="sv-form">
               <div>
@@ -223,10 +366,31 @@ export default function CadastroPage() {
                   </select>
                 </div>
               </div>
-              <div className="form-text mt-0">
-                Com o local no grupo, a potência e a inclinação, o sistema carrega 5 anos de clima e a previsão em ~1 min.
+              <div>
+                <label className="form-label" htmlFor="placa-instalada">Instalada em</label>
+                <input
+                  id="placa-instalada"
+                  type="date"
+                  className="form-control"
+                  value={panelForm.instaladaEm}
+                  onChange={setPanelField("instaladaEm")}
+                />
+                <div className="form-text">Sem limpeza registrada, a sujeira da placa passa a contar a partir desta data.</div>
               </div>
-              <button type="submit" className="btn btn-primary">Criar placa</button>
+              <div className="form-text mt-0">
+                Com o local no grupo, a potência e a inclinação, o sistema carrega 5 anos de clima e a previsão em ~1 min
+                (e recarrega se o local, a inclinação ou a orientação mudarem).
+              </div>
+              <div className="d-flex gap-2">
+                <button type="submit" className="btn btn-primary flex-grow-1">
+                  {panelForm.id ? "Salvar placa" : "Criar placa"}
+                </button>
+                {panelForm.id ? (
+                  <button type="button" className="btn btn-outline-secondary" onClick={() => setPanelForm(EMPTY_PANEL)}>
+                    Cancelar
+                  </button>
+                ) : null}
+              </div>
             </form>
           </section>
         </div>
@@ -245,20 +409,28 @@ export default function CadastroPage() {
                     <th>Local</th>
                     <th>Placas</th>
                     <th>Status</th>
+                    <th><span className="visually-hidden">Ações</span></th>
                   </tr>
                 </thead>
                 <tbody>
                   {groups.map((group) => (
                     <tr key={group.id}>
-                      <td><Link to={`/app/monitoramento?grupo=${group.id}`} className="fw-semibold">{group.nome}</Link></td>
+                      <td>
+                        <Link to={`/app/monitoramento?grupo=${group.id}`} className="fw-semibold">{group.nome}</Link>
+                        <div className="sv-muted small">
+                          {group.tarifaKwh != null ? `${reais(group.tarifaKwh)}/kWh` : "Sem tarifa"}
+                          {group.custoLimpeza != null ? ` · limpeza ${reais(group.custoLimpeza)}` : ""}
+                        </div>
+                      </td>
                       <td className="sv-muted">{group.latitude != null ? `${group.latitude}, ${group.longitude}` : "Sem local"}</td>
                       <td>{group.totalPlacas}</td>
                       <td><StatusBadge status={group.status} /></td>
+                      <AcoesLinha nome={group.nome} onEditar={() => editGroup(group)} onExcluir={() => excluirGrupo(group)} />
                     </tr>
                   ))}
                   {groups.length === 0 ? (
                     <tr>
-                      <td colSpan="4" className="sv-muted">Nenhum grupo cadastrado.</td>
+                      <td colSpan="5" className="sv-muted">Nenhum grupo cadastrado.</td>
                     </tr>
                   ) : null}
                 </tbody>
@@ -289,6 +461,7 @@ export default function CadastroPage() {
                     <th>Especificações</th>
                     <th>Clima</th>
                     <th>Status</th>
+                    <th><span className="visually-hidden">Ações</span></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -306,18 +479,22 @@ export default function CadastroPage() {
                           {panel.potenciaWp != null
                             ? `${panel.potenciaWp} Wp · ${panel.inclinacao}° · ${orientacao(panel.azimute)}`
                             : "—"}
+                          {panel.instaladaEm ? (
+                            <div className="small">Instalada em {panel.instaladaEm.split("-").reverse().join("/")}</div>
+                          ) : null}
                         </td>
                         <td>
                           <span className={`sv-dot ${clima.ok ? "is-ok" : clima.sincronizando ? "is-wait" : ""}`} />
                           <span className="sv-muted small">{clima.texto}</span>
                         </td>
                         <td><StatusBadge status={panel.status} /></td>
+                        <AcoesLinha nome={panel.modelo} onEditar={() => editPanel(panel)} onExcluir={() => excluirPlaca(panel)} />
                       </tr>
                     );
                   })}
                   {filteredPanels.length === 0 ? (
                     <tr>
-                      <td colSpan="4" className="sv-muted">Nenhuma placa encontrada.</td>
+                      <td colSpan="5" className="sv-muted">Nenhuma placa encontrada.</td>
                     </tr>
                   ) : null}
                 </tbody>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { createCleaning, extractErrorMessage, listCleanings, listPanels } from "../lib/api";
+import ConfirmarExclusao, { AcoesLinha } from "../components/ConfirmarExclusao";
+import { createCleaning, deleteCleaning, extractErrorMessage, listCleanings, listPanels, updateCleaning } from "../lib/api";
 import { formatPerda } from "../lib/placas";
 
 function toDatetimeLocal(value) {
@@ -10,18 +11,20 @@ function toDatetimeLocal(value) {
   return localDate.toISOString().slice(0, 16);
 }
 
+const formatarData = (value) => new Date(value).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+const novaLimpeza = () => ({ id: null, placaId: "", dataLimpeza: toDatetimeLocal(new Date()), observacao: "" });
+
 export default function CleaningPage() {
   const [params] = useSearchParams();
   const [cleanings, setCleanings] = useState([]);
   const [panels, setPanels] = useState([]);
   const [error, setError] = useState("");
+  const [sucesso, setSucesso] = useState("");
+  const [excluir, setExcluir] = useState(null); // limpeza a confirmar no modal
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    placaId: params.get("placa") ?? "", // vindo de "Registrar limpeza" no Monitoramento
-    dataLimpeza: toDatetimeLocal(new Date()),
-    observacao: ""
-  });
+  // placa vinda de "Registrar limpeza" no Monitoramento
+  const [form, setForm] = useState(() => ({ ...novaLimpeza(), placaId: params.get("placa") ?? "" }));
 
   async function loadData() {
     setLoading(true);
@@ -41,26 +44,51 @@ export default function CleaningPage() {
     loadData();
   }, []);
 
-  async function handleSubmit(event) {
-    event.preventDefault();
+  // Salva/exclui, recarrega e mostra o resultado.
+  async function executar(acao, mensagem) {
     setSaving(true);
+    setSucesso("");
     try {
-      await createCleaning({
-        placaId: Number(form.placaId),
-        dataLimpeza: new Date(form.dataLimpeza).toISOString(),
-        observacao: form.observacao
-      });
-      setForm((current) => ({
-        ...current,
-        observacao: "",
-        dataLimpeza: toDatetimeLocal(new Date())
-      }));
+      await acao();
       await loadData();
+      setSucesso(mensagem);
     } catch (err) {
       setError(extractErrorMessage(err));
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    const dados = {
+      placaId: Number(form.placaId),
+      dataLimpeza: new Date(form.dataLimpeza).toISOString(),
+      observacao: form.observacao
+    };
+    await executar(async () => {
+      await (form.id ? updateCleaning(form.id, dados) : createCleaning(dados));
+      setForm(novaLimpeza());
+    }, form.id ? "Limpeza atualizada." : "Limpeza registrada.");
+  }
+
+  function editar(cleaning) {
+    setForm({
+      id: cleaning.id,
+      placaId: String(cleaning.placaId),
+      dataLimpeza: toDatetimeLocal(cleaning.dataLimpeza),
+      observacao: cleaning.observacao ?? ""
+    });
+    document.getElementById("form-limpeza")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function confirmarExclusao() {
+    const cleaning = excluir;
+    setExcluir(null);
+    executar(async () => {
+      await deleteCleaning(cleaning.id);
+      setForm((current) => (current.id === cleaning.id ? novaLimpeza() : current));
+    }, "Limpeza excluída.");
   }
 
   // Placas agrupadas por grupo no select (<optgroup>).
@@ -77,11 +105,20 @@ export default function CleaningPage() {
       </header>
 
       {error ? <div className="alert alert-danger mb-0">{error}</div> : null}
+      {sucesso ? <div className="alert alert-success mb-0" role="status">{sucesso}</div> : null}
+
+      {excluir ? (
+        <ConfirmarExclusao
+          texto={`Excluir a limpeza de ${formatarData(excluir.dataLimpeza)} da placa "${excluir.placaModelo}"? A perda por sujeira volta a contar a partir da limpeza anterior.`}
+          onCancelar={() => setExcluir(null)}
+          onConfirmar={confirmarExclusao}
+        />
+      ) : null}
 
       <div className="sv-split">
-        <section className="card">
+        <section className="card" id="form-limpeza">
           <div className="sv-card-head">
-            <h2>Registrar limpeza</h2>
+            <h2>{form.id ? "Editar limpeza" : "Registrar limpeza"}</h2>
           </div>
           <form onSubmit={handleSubmit} className="sv-form">
             <div>
@@ -131,9 +168,16 @@ export default function CleaningPage() {
               />
             </div>
 
-            <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? "Salvando..." : "Salvar limpeza"}
-            </button>
+            <div className="d-flex gap-2">
+              <button type="submit" className="btn btn-primary flex-grow-1" disabled={saving}>
+                {saving ? "Salvando..." : "Salvar limpeza"}
+              </button>
+              {form.id ? (
+                <button type="button" className="btn btn-outline-secondary" onClick={() => setForm(novaLimpeza())}>
+                  Cancelar
+                </button>
+              ) : null}
+            </div>
           </form>
         </section>
 
@@ -155,6 +199,7 @@ export default function CleaningPage() {
                     <th>Placa</th>
                     <th>Data</th>
                     <th>Observação</th>
+                    <th><span className="visually-hidden">Ações</span></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -164,13 +209,18 @@ export default function CleaningPage() {
                         <div className="fw-semibold">{cleaning.placaModelo}</div>
                         <div className="sv-muted small">{grupoDaPlaca[cleaning.placaId]}</div>
                       </td>
-                      <td className="text-nowrap">{new Date(cleaning.dataLimpeza).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</td>
+                      <td className="text-nowrap">{formatarData(cleaning.dataLimpeza)}</td>
                       <td className="sv-muted">{cleaning.observacao || "Sem observação"}</td>
+                      <AcoesLinha
+                        nome={`limpeza de ${cleaning.placaModelo}`}
+                        onEditar={() => editar(cleaning)}
+                        onExcluir={() => setExcluir(cleaning)}
+                      />
                     </tr>
                   ))}
                   {cleanings.length === 0 ? (
                     <tr>
-                      <td colSpan="3" className="sv-muted">Nenhuma limpeza registrada.</td>
+                      <td colSpan="4" className="sv-muted">Nenhuma limpeza registrada.</td>
                     </tr>
                   ) : null}
                 </tbody>
