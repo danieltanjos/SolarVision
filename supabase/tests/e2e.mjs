@@ -145,3 +145,34 @@ test("erros chegam traduzidos", async () => {
   const leitura = await supabase.from("leituras_energia").insert({ placa_id: placa.id, data_hora: new Date().toISOString(), wats_gerados: 1 });
   assert.ok(leitura.error, "usuário comum não deve inserir leituras");
 });
+
+test("edita e exclui grupo, placa e limpeza", async () => {
+  // Update parcial: só os campos informados mudam (o local continua).
+  await api.updateGroup(grupo.id, { nome: ` Grupo E2E ${sufixo} editado `, tarifaKwh: 0.95, custoLimpeza: 30 });
+  const editado = (await api.listGroups()).find((g) => g.id === grupo.id);
+  assert.equal(editado.nome, `Grupo E2E ${sufixo} editado`);
+  assert.deepEqual([editado.tarifaKwh, editado.custoLimpeza, editado.latitude], [0.95, 30, -27.59]);
+
+  // Mudar a inclinação devolve a placa à fila do pg_cron para recarregar o clima (trigger da migration 20261008100000).
+  await api.updatePanel(placa.id, { modelo: " Placa E2E editada ", inclinacao: 30, instaladaEm: "2024-01-15" });
+  placa = (await api.listPanels()).find((p) => p.id === placa.id);
+  assert.deepEqual([placa.modelo, placa.inclinacao, placa.instaladaEm, placa.potenciaWp], ["Placa E2E editada", 30, "2024-01-15", 3000]);
+  assert.equal(placa.climaHistoricoEm, null, "mudar a inclinação deveria recarregar o clima");
+
+  await api.createPanel({ grupoId: grupo.id, modelo: "Placa E2E 2", status: "ATIVA", instaladaEm: "2025-03-01" });
+  const segunda = (await api.listPanels()).find((p) => p.grupoId === grupo.id && p.id !== placa.id);
+  assert.equal(segunda.instaladaEm, "2025-03-01");
+  await api.deletePanel(segunda.id);
+  assert.equal((await api.listGroups()).find((g) => g.id === grupo.id).totalPlacas, 1);
+
+  const limpeza = (await api.listCleanings()).find((l) => l.placaId === placa.id);
+  await api.updateCleaning(limpeza.id, { observacao: " editada " });
+  assert.equal((await api.listCleanings()).find((l) => l.id === limpeza.id).observacao, "editada");
+  await api.deleteCleaning(limpeza.id);
+  assert.ok(!(await api.listCleanings()).some((l) => l.id === limpeza.id));
+
+  await api.deleteGroup(grupo.id); // cascata: placa e clima
+  assert.ok(!(await api.listGroups()).some((g) => g.id === grupo.id));
+  assert.ok(!(await api.listPanels()).some((p) => p.id === placa.id));
+  grupo = null; // nada para o after() apagar
+});
