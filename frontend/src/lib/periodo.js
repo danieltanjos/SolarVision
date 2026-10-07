@@ -47,6 +47,20 @@ export function mesRelatorio(mes, agora = new Date()) {
   return new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() - 1, 1)).toISOString().slice(0, 7);
 }
 
+// O que o relatório compara: o mês x o mês anterior; se o mês ainda não acabou, até agora x o mesmo trecho do anterior.
+export function janelasRelatorio(mes, agora = new Date()) {
+  const [ano, m] = mes.split("-").map(Number);
+  const atual = rangeFor("mes", new Date(Date.UTC(ano, m - 1, 1)));
+  const anterior = rangeFor("mes", new Date(Date.UTC(ano, m - 2, 1)));
+  const [inicio, fim] = [Date.parse(atual.dataInicio), Date.parse(atual.dataFim)];
+  const ate = Math.max(inicio, Math.min(fim, agora.getTime()));
+  const fimAnterior = ate < fim ? Math.min(Date.parse(anterior.dataFim), Date.parse(anterior.dataInicio) + ate - inicio) : Date.parse(anterior.dataFim);
+  return {
+    atual: { dataInicio: atual.dataInicio, dataFim: new Date(ate).toISOString() },
+    anterior: { dataInicio: anterior.dataInicio, dataFim: new Date(fimAnterior).toISOString() }
+  };
+}
+
 export function formatRangeLabel(view, referenceDate) {
   const { dataInicio, dataFim } = rangeFor(view, referenceDate);
   const format = (iso, options) => new Date(iso).toLocaleDateString("pt-BR", { timeZone: TIME_ZONE, ...options });
