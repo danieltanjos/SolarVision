@@ -23,7 +23,7 @@ Tabela `grupos_solares` (uma instalação/usina que agrupa placas):
 
 - Criar e listar grupos pela interface; a RLS também permite atualizar e excluir.
 - Cada grupo tem um **status**: ATIVO, INATIVO ou MANUTENCAO (constraint `CHECK`).
-- Cada grupo tem um **local** (latitude/longitude, opcional), usado para buscar o clima das suas placas.
+- Cada grupo tem um **local** (latitude/longitude, opcional), usado para buscar o clima das suas placas. O campo único de coordenadas aceita os formatos do Google Maps: `-27.548, -48.4988` (clique direito no mapa) ou `27°32'52.8"S 48°29'55.6"W` (painel do lugar), e mostra a latitude/longitude reconhecida (`lib/coordenadas.js`).
 - A listagem traz a **contagem de placas** (`placas(count)` na mesma consulta).
 
 ## 3. Placas / painéis
