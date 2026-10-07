@@ -74,8 +74,9 @@ const colunasLimpeza = ({ placaId, dataLimpeza, observacao }) => ({
   observacao: observacao?.trim()
 });
 
+// Devolve { id } do grupo criado.
 export function createGroup(grupo) {
-  return unwrap(supabase.from("grupos_solares").insert(colunasGrupo(grupo)));
+  return unwrap(supabase.from("grupos_solares").insert(colunasGrupo(grupo)).select("id").single());
 }
 
 // Mudar latitude/longitude faz o pg_cron recarregar o clima das placas do grupo (trigger no banco).

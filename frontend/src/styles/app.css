@@ -723,6 +723,11 @@ h1, h2, h3 {
     color: var(--sv-muted);
 }
 
+/* O .visually-hidden (absoluto) dos cabeçalhos fica dentro da rolagem da tabela, sem alargar a página no celular. */
+.table-responsive {
+    position: relative;
+}
+
 .sv-table tbody tr:last-child > * {
     border-bottom: 0;
 }
@@ -874,6 +879,11 @@ h1, h2, h3 {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.75rem;
+}
+
+/* Três campos; o último (select) fica na largura da opção mais longa. */
+.sv-form-row-3 {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
 }
 
 .sv-search,
