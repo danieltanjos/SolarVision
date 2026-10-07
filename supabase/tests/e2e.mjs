@@ -39,6 +39,7 @@ test("anônimo não lê dados (RLS)", async () => {
     });
   assert.deepEqual(await (await rest("grupos_solares?select=id")).json(), []);
   assert.ok(!(await rest("rpc/dashboard_resumo", { method: "POST" })).ok);
+  assert.ok(!(await rest("alertas?select=id")).ok);
 });
 
 test("perfil criado pelo trigger", async () => {
@@ -160,6 +161,15 @@ test("média de 5 anos alinhada ao gráfico e acerto da previsão", async () => 
   assert.deepEqual(historico.map((h) => h.x), metricas.map((m) => m.x));
   assert.ok(historico.every((h) => h.anos >= 4 && h.minWh <= h.mediaWh && h.mediaWh <= h.maxWh), "média fora do mínimo/máximo");
   assert.deepEqual(await api.getAcertoPrevisao({ placaId: placa.id }), []); // a previsão só é guardada às 21:00
+});
+
+test("alertas: lista e marca como lido; só lido_em é alterável", async () => {
+  // O pg_cron gera às 07:00; a conta de teste costuma não ter alertas, e marcar todos funciona mesmo assim.
+  assert.ok(Array.isArray(await api.listAlertas()));
+  await api.marcarAlertasLidos();
+  assert.ok((await api.listAlertas()).every((a) => a.lidoEm));
+  const { error } = await supabase.from("alertas").update({ mensagem: "x" }).eq("id", 0);
+  assert.ok(error, "o dono não pode alterar a mensagem");
 });
 
 test("erros chegam traduzidos", async () => {
