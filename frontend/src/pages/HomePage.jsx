@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import StatCard from "../components/StatCard";
 import PrevisaoSemana from "../components/PrevisaoSemana";
+import RecomendacoesLimpeza from "../components/RecomendacoesLimpeza";
 import StatusBadge from "../components/StatusBadge";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -145,6 +146,8 @@ export default function HomePage() {
           ) : null}
         </section>
       </div>
+
+      <RecomendacoesLimpeza panels={panels} />
 
       <PrevisaoSemana />
 

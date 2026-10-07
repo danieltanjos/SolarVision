@@ -3,6 +3,7 @@ import { Link, NavLink } from "react-router-dom";
 export const NAV_ITEMS = [
   { to: "/app/home", label: "Início", short: "Início", icon: "bi-house" },
   { to: "/app/monitoramento", label: "Monitoramento", short: "Monitor", icon: "bi-graph-up" },
+  { to: "/app/relatorio", label: "Relatório", short: "Relatório", icon: "bi-file-earmark-text" },
   { to: "/app/limpeza", label: "Limpeza", short: "Limpeza", icon: "bi-droplet" },
   { to: "/app/cadastro", label: "Cadastro", short: "Cadastro", icon: "bi-grid-3x2" },
   { to: "/app/configuracoes", label: "Configurações", short: "Config", icon: "bi-gear" }

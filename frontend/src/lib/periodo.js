@@ -39,6 +39,14 @@ export function rangeFor(view, referenceDate) {
   return { dataInicio: toIso(start), dataFim: toIso(end) };
 }
 
+// Mês do relatório ("AAAA-MM"): o da URL se for válido, senão o mês passado no relógio de SP.
+// (shiftDate não serve: em 31/03, voltar um mês dá 31/02 = 03/03.)
+export function mesRelatorio(mes, agora = new Date()) {
+  if (/^\d{4}-(0[1-9]|1[0-2])$/.test(mes ?? "")) return mes;
+  const hoje = toSaoPaulo(agora);
+  return new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() - 1, 1)).toISOString().slice(0, 7);
+}
+
 export function formatRangeLabel(view, referenceDate) {
   const { dataInicio, dataFim } = rangeFor(view, referenceDate);
   const format = (iso, options) => new Date(iso).toLocaleDateString("pt-BR", { timeZone: TIME_ZONE, ...options });

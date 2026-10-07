@@ -1,6 +1,6 @@
 # SolarVision
 
-Sistema web para monitoramento de energia solar: SPA em React + Vite hospedada na **Vercel** e **Supabase** como backend completo (Auth, API REST gerada pelo PostgREST, funções SQL/RPC, PostgreSQL e pg_cron). A geração é **estimada a partir do clima real** ([Open-Meteo](https://open-meteo.com/)): ao cadastrar uma placa com local e especificações, o próprio banco carrega 5 anos de clima horário e a previsão dos próximos 7 dias. A geração **real** é simulada (o estimado menos a perda por sujeira desde a última limpeza) até haver sensores integrados.
+Sistema web para monitoramento de energia solar: SPA em React + Vite hospedada na **Vercel** e **Supabase** como backend completo (Auth, API REST gerada pelo PostgREST, funções SQL/RPC, PostgreSQL e pg_cron). A geração é **estimada a partir do clima real** ([Open-Meteo](https://open-meteo.com/)): ao cadastrar uma placa com local e especificações, o próprio banco carrega 5 anos de clima horário e a previsão dos próximos 7 dias. A geração **real** vem das leituras importadas por CSV nas horas que as têm e, nas demais, é simulada (o estimado menos a perda por sujeira desde a última limpeza, chuva que lavou a placa ou instalação). Sobre isso o app mostra economia em R$, CO₂ evitado, recomendação de limpeza, a média de 5 anos do clima, o acerto da previsão e o ranking das placas. Cada usuário só vê as próprias usinas.
 
 > Até a migração, o backend era uma API Spring Boot (Java 25, JWT, GraphQL, gRPC, Flyway, Swagger) orquestrada com Docker Compose. Esse código foi removido; o histórico está no Git e em [`docs/QUALIDADE-E-TESTES.md`](docs/QUALIDADE-E-TESTES.md).
 
@@ -10,10 +10,11 @@ Sistema web para monitoramento de energia solar: SPA em React + Vite hospedada n
 SolarVision/
 ├── frontend/              # SPA React + Vite + ApexCharts (deploy na Vercel)
 ├── supabase/
-│   ├── migrations/        # schema, RLS, trigger, funções RPC, clima (Open-Meteo) e job pg_cron
-│   ├── seed/              # CSV antigo de leituras (só referência, não é mais carregado)
+│   ├── migrations/        # schema, RLS, triggers, view e funções RPC, clima (Open-Meteo) e jobs pg_cron
+│   ├── seed/              # CSV de leituras do Fotovoltaica-UFSC (não é carregado; usado na validação do modelo)
 │   └── tests/             # teste de ponta a ponta (e2e.mjs)
 └── docs/                  # documentação técnica
+    └── validacao/         # validação do modelo de geração contra leituras reais
 ```
 
 ## Arquitetura (visão geral)
@@ -29,8 +30,8 @@ flowchart LR
     subgraph supa["Supabase (São Paulo)"]
         auth["Auth<br/>cadastro, login, JWT"]
         rest["PostgREST / RPC<br/>/rest/v1"]
-        db[("PostgreSQL<br/>tabelas + RLS")]
-        cron["pg_cron<br/>a cada minuto"]
+        db[("PostgreSQL<br/>tabelas + RLS por dono")]
+        cron["pg_cron<br/>clima a cada minuto<br/>previsão às 21:00"]
     end
 
     meteo["Open-Meteo<br/>histórico + previsão"]
@@ -40,7 +41,7 @@ flowchart LR
     browser -->|supabase-js + JWT| rest
     rest --> db
     auth -.->|trigger cria o perfil| db
-    cron -->|sincronizar_clima| db
+    cron -->|sincronizar_clima · guardar_previsao| db
     db -->|extensão http| meteo
 ```
 
@@ -75,10 +76,11 @@ Variáveis (em Supabase > Project Settings > API Keys):
 
 ## Banco: migrations e clima
 
-1. **Schema:** as migrations de `supabase/migrations/` são aplicadas automaticamente pelo workflow `.github/workflows/supabase.yml` a cada push em `qa`/`production` (`supabase db push`, segredo `SUPABASE_DB_URL` do repositório). Para aplicar à mão: `npx supabase db push --db-url "<connection string do Session pooler>"`. Elas criam as tabelas, as políticas RLS, o trigger de perfil, as funções do dashboard e do clima e o job pg_cron.
-2. **Dados:** não há carga manual. Ao cadastrar um grupo com latitude/longitude e uma placa com potência (Wp), inclinação e orientação, o job `sincronizar-clima` (pg_cron, a cada minuto) baixa do Open-Meteo, em ~1 min, 5 anos de clima horário e a previsão; depois a previsão é atualizada de hora em hora. Detalhes em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md#5-geração-estimada-pelo-clima-open-meteo).
+1. **Schema:** as migrations de `supabase/migrations/` são aplicadas automaticamente pelo workflow `.github/workflows/supabase.yml` a cada push em `qa`/`production` (`supabase db push`, segredo `SUPABASE_DB_URL` do repositório). Para aplicar à mão: `npx supabase db push --db-url "<connection string do Session pooler>"`. Elas criam as tabelas, as políticas RLS (cada usuário só vê os grupos de que é dono; ADMIN vê todos), os triggers, a view `geracao_horaria`, as funções do dashboard, das análises e do clima e os jobs pg_cron (`sincronizar-clima`, `guardar-previsao` e `gerar-alertas`).
+2. **Dados:** não há carga manual. Ao cadastrar um grupo com latitude/longitude e uma placa com potência (Wp), inclinação e orientação, o job `sincronizar-clima` (pg_cron, a cada minuto) baixa do Open-Meteo, em ~1 min, 5 anos de clima horário e a previsão; depois a previsão é atualizada de hora em hora. Mudar o local do grupo ou a inclinação/orientação da placa recarrega o clima. Leituras reais entram pelo Monitoramento (placa selecionada > **Importar leituras (CSV)**). Detalhes em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md#5-geração-estimada-pelo-clima-open-meteo).
+3. **Administrador:** não há tela; para um usuário ver as usinas de todos, no SQL Editor: `update public.usuarios set role = 'ADMIN' where email = '...';`. Os grupos criados antes do dono por grupo ficaram com o primeiro usuário cadastrado.
 
-Os dados mocados do CSV (grupo "Grupo Seeder SolarVision", o job que os deslocava para hoje e o `inserirCSV.py`) foram removidos; `supabase/seed/Dados_Tratados_CDTE-PSI.csv` fica só como referência histórica.
+Os dados mocados do CSV (grupo "Grupo Seeder SolarVision", o job que os deslocava para hoje e o `inserirCSV.py`) foram removidos. `supabase/seed/Dados_Tratados_CDTE-PSI.csv` não é carregado no banco: serve de referência e de base para a [validação do modelo](docs/validacao/RESULTADO.md).
 
 ## Deploy e branches
 
@@ -100,8 +102,9 @@ Os dois ambientes usam **o mesmo projeto Supabase** (`skfguameoeklepcjnqth`): QA
 
 ## Qualidade e testes
 
-- **Frontend:** 40 testes nativos do Node (`node --test`) para escala de potência/energia, formatação pt-BR, nomes com acentos, janelas do gráfico no fuso de São Paulo e leitura de coordenadas do Google Maps.
-- **Ponta a ponta:** `supabase/tests/e2e.mjs` roda o `api.js` do frontend contra o Supabase real (RLS, perfil, cadastros, carga dos 5 anos de clima pelo pg_cron, estimativa/previsão do dashboard e mensagens de erro), com uma conta fixa de teste, e apaga o que cria. Espera o pg_cron carregar o clima (~30 s observados, limite de 3 min).
+- **Frontend:** 53 testes nativos do Node (`node --test`) para escala de potência/energia, formatação pt-BR (inclusive R$ e CO₂), nomes com acentos, janelas do gráfico no fuso de São Paulo, leitura de coordenadas do Google Maps, sujeira, comparação com a média histórica, erro da previsão, calendário, leitura do CSV de leituras, mês do relatório e datas dos alertas.
+- **Ponta a ponta:** `supabase/tests/e2e.mjs` (9 testes) roda o `api.js` do frontend contra o Supabase (RLS, inclusive um segundo usuário que não vê nem altera o grupo do primeiro, perfil, cadastros, edição/exclusão, recarga do clima ao editar, carga dos 5 anos de clima pelo pg_cron, estimativa/previsão do dashboard, valores do período, recomendação de limpeza, leituras importadas, ranking, média de 5 anos, acerto da previsão, alertas e mensagens de erro), com contas fixas de teste, e apaga o que cria. Espera o pg_cron carregar o clima (~30 s observados, limite de 3 min). Na rodada de análises os 9 passaram contra um Supabase local recriado do zero com todas as migrations.
+- **Validação do modelo:** [`docs/validacao/`](docs/validacao/RESULTADO.md) compara a geração estimada com 5 anos de leituras reais (Fotovoltaica-UFSC): r diário ≈ 0,89 e erro mensal ≈ 6 %, com PR real provavelmente abaixo do 0,82 fixo.
 - **CI:** `.github/workflows/quality.yml` roda em push/PR com Node 24 (`npm ci`, testes com relatório JUnit e `npm run build`). `.github/workflows/supabase.yml` aplica as migrations e roda o teste de ponta a ponta a cada push em `qa`/`production`, e faz uma requisição diária ao Supabase, porque o plano free pausa projetos parados por 7 dias. O GitHub desliga workflows agendados após 60 dias sem commits no repositório.
 
 Para reproduzir, em `frontend`: `npm ci`, `npm test` e `npm run build`. Ponta a ponta, na raiz: `node --env-file=frontend/.env.local --test supabase/tests/e2e.mjs`.
@@ -116,3 +119,4 @@ Para reproduzir, em `frontend`: `npm ci`, `npm test` e `npm run build`. Ponta a 
 - Funcionalidades e tabelas/RPC por tela: [`docs/FUNCIONALIDADES.md`](docs/FUNCIONALIDADES.md)
 - Decisões técnicas: [`docs/DECISOES-TECNICAS.md`](docs/DECISOES-TECNICAS.md)
 - Features incompletas (pendências): [`docs/FEATURES-INCOMPLETAS.md`](docs/FEATURES-INCOMPLETAS.md)
+- Validação do modelo de geração: [`docs/validacao/RESULTADO.md`](docs/validacao/RESULTADO.md)

@@ -1,6 +1,6 @@
 # Qualidade e testes — SolarVision
 
-> **Documento histórico.** Descreve a versão anterior à migração para Supabase + Vercel (backend Spring Boot, Docker Compose e Nginx). O backend, o `compose.qa.yml` e os testes Java foram removidos; hoje o CI roda apenas os 21 testes e o build do frontend. Situação atual em [README](../readme.md#qualidade-e-testes).
+> **Documento histórico.** Descreve a versão anterior à migração para Supabase + Vercel (backend Spring Boot, Docker Compose e Nginx). O backend, o `compose.qa.yml` e os testes Java foram removidos; hoje o CI roda os 53 testes e o build do frontend, e o teste de ponta a ponta contra o Supabase ao publicar em `qa`/`production`. Situação atual em [README](../readme.md#qualidade-e-testes).
 
 Data: 19/09/2026. Revisão: 01. Escopo: versão do repositório nesta entrega.
 

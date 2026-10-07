@@ -4,6 +4,10 @@
 // O teste do clima espera o pg_cron (até ~3 min).
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
+import { createRequire } from "node:module";
+
+// O supabase-js está instalado só no frontend.
+const { createClient } = createRequire(new URL("../../frontend/package.json", import.meta.url))("@supabase/supabase-js");
 import * as api from "../../frontend/src/lib/api.js";
 
 const { supabase } = api;
@@ -35,6 +39,7 @@ test("anônimo não lê dados (RLS)", async () => {
     });
   assert.deepEqual(await (await rest("grupos_solares?select=id")).json(), []);
   assert.ok(!(await rest("rpc/dashboard_resumo", { method: "POST" })).ok);
+  assert.ok(!(await rest("alertas?select=id")).ok);
 });
 
 test("perfil criado pelo trigger", async () => {
@@ -61,6 +66,24 @@ test("cadastra grupo, placa e limpeza no formato da API antiga", async () => {
   assert.equal(limpeza.observacao, "e2e");
 });
 
+test("outro usuário não vê nem apaga o grupo (RLS por dono)", async () => {
+  const outro = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_PUBLISHABLE_KEY, {
+    auth: { persistSession: false }
+  });
+  const conta = { email: email.replace("@", "-2@"), password: senha };
+  if ((await outro.auth.signInWithPassword(conta)).error) {
+    const cadastro = await outro.auth.signUp({ ...conta, options: { data: { nome: "E2E SolarVision 2" } } });
+    if (cadastro.error) throw cadastro.error;
+  }
+  const { data: visiveis } = await outro.from("grupos_solares").select("id").eq("id", grupo.id);
+  assert.deepEqual(visiveis, []);
+  await outro.from("grupos_solares").delete().eq("id", grupo.id);
+  assert.ok((await api.listGroups()).some((g) => g.id === grupo.id), "o grupo foi apagado por outro usuário");
+  const leitura = await outro.from("leituras_energia").insert({ placa_id: placa.id, data_hora: new Date().toISOString(), wats_gerados: 1 });
+  assert.ok(leitura.error, "outro usuário não deve gravar leituras na placa");
+  await outro.auth.signOut();
+});
+
 test("pg_cron carrega 5 anos de clima da placa nova e o dashboard estima a geração", { timeout: 240000 }, async () => {
   // o job roda a cada minuto; espera até ~3 min
   for (let tentativa = 0; tentativa < 18 && !placa.climaHistoricoEm; tentativa += 1) {
@@ -83,11 +106,23 @@ test("pg_cron carrega 5 anos de clima da placa nova e o dashboard estima a gera�
   assert.deepEqual(await api.getDashboardMetrics({ ...mes, grupoId: grupo.id }), daPlaca);
   assert.deepEqual(await api.getDashboardMetrics({ ...mes, placaId: -1 }), []);
 
-  // Real simulado = estimado menos a sujeira: antes da limpeza (registrada agora há pouco) a perda está no limite de 20%.
+  // Real simulado = estimado menos a sujeira (até 20%; a chuva também limpa), antes da limpeza registrada agora há pouco.
   const antesDaLimpeza = daPlaca.filter((p) => new Date(p.x) < Date.now() - 2 * 864e5 && p.estimadaWh > 0);
-  assert.ok(antesDaLimpeza.length > 0 && antesDaLimpeza.every((p) => Math.abs(p.medidaWh - 0.8 * p.estimadaWh) < 0.05), "real deveria ser 80% do estimado");
+  assert.ok(
+    antesDaLimpeza.length > 0 && antesDaLimpeza.every((p) => p.medidaWh <= p.estimadaWh + 0.05 && p.medidaWh >= 0.8 * p.estimadaWh - 0.05),
+    "real deveria ficar entre 80% e 100% do estimado"
+  );
   placa = (await api.listPanels()).find((p) => p.id === placa.id);
   assert.ok(placa.perdaSujeira < 0.001, "placa recém-limpa deveria estar sem perda");
+
+  // Valores do mês: grupo sem tarifa (R$ 0, conta a placa sem tarifa), CO₂ pela energia real.
+  const financeiro = await api.getFinanceiro({ dataInicio: mes.dataInicio, dataFim: mes.dataFim, placaId: placa.id });
+  assert.equal(financeiro.placasSemTarifa, 1);
+  assert.equal(financeiro.economia, 0);
+  assert.ok(financeiro.realWh > 0 && financeiro.co2EvitadoKg > 0 && financeiro.perdaSujeiraWh >= 0);
+  const recomendacao = (await api.getRecomendacoesLimpeza()).find((r) => r.placaId === placa.id);
+  assert.equal(recomendacao.limpar, false, "placa recém-limpa não precisa de limpeza");
+  assert.match(recomendacao.motivo, /ainda não precisa limpar/);
 
   // Estimado com a previsão do tempo (7 dias); real nunca no futuro.
   const proximos = await api.getDashboardMetrics({
@@ -103,6 +138,38 @@ test("pg_cron carrega 5 anos de clima da placa nova e o dashboard estima a gera�
   assert.ok(resumo.placasAtivas >= 1);
   assert.ok(resumo.previsaoAmanha > 0, "sem previsão para amanhã");
   assert.ok(resumo.totalGeradoHoje >= 0);
+
+  // Leituras importadas viram o real medido da hora: 2 leituras de 1200 W espaçadas de 30 min = 1200 Wh.
+  // Importar de novo (upsert) não duplica.
+  const hora = new Date(Date.now() - 2 * 864e5);
+  hora.setUTCHours(15, 0, 0, 0); // 12h em São Paulo
+  const leituras = [0, 30].map((min) => ({ dataHora: new Date(hora.getTime() + min * 6e4).toISOString(), watts: 1200 }));
+  await api.salvarLeituras(placa.id, leituras);
+  await api.salvarLeituras(placa.id, leituras);
+  const intervalo = { granularidade: "hora", dataInicio: hora.toISOString(), dataFim: hora.toISOString(), placaId: placa.id };
+  const [medida] = await api.getDashboardMetrics(intervalo);
+  assert.equal(medida.medidaWh, 1200);
+  assert.equal(medida.medidaSensorWh, 1200);
+  const [ranking] = await api.getRankingPlacas({ ...intervalo, grupoId: grupo.id });
+  assert.equal(ranking.kwhKwp, 0.4); // 1200 Wh ÷ 3000 Wp
+  assert.equal(ranking.anomalia, false); // grupo de uma placa só
+});
+
+test("média de 5 anos alinhada ao gráfico e acerto da previsão", async () => {
+  const semana = { granularidade: "dia", dataInicio: new Date(Date.now() - 7 * 864e5).toISOString(), dataFim: new Date().toISOString(), placaId: placa.id };
+  const [metricas, historico] = await Promise.all([api.getDashboardMetrics(semana), api.getDashboardHistorico(semana)]);
+  assert.deepEqual(historico.map((h) => h.x), metricas.map((m) => m.x));
+  assert.ok(historico.every((h) => h.anos >= 4 && h.minWh <= h.mediaWh && h.mediaWh <= h.maxWh), "média fora do mínimo/máximo");
+  assert.deepEqual(await api.getAcertoPrevisao({ placaId: placa.id }), []); // a previsão só é guardada às 21:00
+});
+
+test("alertas: lista e marca como lido; só lido_em é alterável", async () => {
+  // O pg_cron gera às 07:00; a conta de teste costuma não ter alertas, e marcar todos funciona mesmo assim.
+  assert.ok(Array.isArray(await api.listAlertas()));
+  await api.marcarAlertasLidos();
+  assert.ok((await api.listAlertas()).every((a) => a.lidoEm));
+  const { error } = await supabase.from("alertas").update({ mensagem: "x" }).eq("id", 0);
+  assert.ok(error, "o dono não pode alterar a mensagem");
 });
 
 test("erros chegam traduzidos", async () => {
@@ -110,6 +177,35 @@ test("erros chegam traduzidos", async () => {
   assert.match(granularidade, /Granularidade inválida/);
   const nomeEmBranco = await api.createGroup({ nome: "   ", status: "ATIVO" }).catch(api.extractErrorMessage);
   assert.equal(nomeEmBranco, "Dados inválidos.");
-  const leitura = await supabase.from("leituras_energia").insert({ placa_id: placa.id, data_hora: new Date().toISOString(), wats_gerados: 1 });
-  assert.ok(leitura.error, "usuário comum não deve inserir leituras");
+});
+
+test("edita e exclui grupo, placa e limpeza", async () => {
+  // Update parcial: só os campos informados mudam (o local continua).
+  await api.updateGroup(grupo.id, { nome: ` Grupo E2E ${sufixo} editado `, tarifaKwh: 0.95, custoLimpeza: 30 });
+  const editado = (await api.listGroups()).find((g) => g.id === grupo.id);
+  assert.equal(editado.nome, `Grupo E2E ${sufixo} editado`);
+  assert.deepEqual([editado.tarifaKwh, editado.custoLimpeza, editado.latitude], [0.95, 30, -27.59]);
+
+  // Mudar a inclinação devolve a placa à fila do pg_cron para recarregar o clima (trigger da migration 20261008100000).
+  await api.updatePanel(placa.id, { modelo: " Placa E2E editada ", inclinacao: 30, instaladaEm: "2024-01-15" });
+  placa = (await api.listPanels()).find((p) => p.id === placa.id);
+  assert.deepEqual([placa.modelo, placa.inclinacao, placa.instaladaEm, placa.potenciaWp], ["Placa E2E editada", 30, "2024-01-15", 3000]);
+  assert.equal(placa.climaHistoricoEm, null, "mudar a inclinação deveria recarregar o clima");
+
+  await api.createPanel({ grupoId: grupo.id, modelo: "Placa E2E 2", status: "ATIVA", instaladaEm: "2025-03-01" });
+  const segunda = (await api.listPanels()).find((p) => p.grupoId === grupo.id && p.id !== placa.id);
+  assert.equal(segunda.instaladaEm, "2025-03-01");
+  await api.deletePanel(segunda.id);
+  assert.equal((await api.listGroups()).find((g) => g.id === grupo.id).totalPlacas, 1);
+
+  const limpeza = (await api.listCleanings()).find((l) => l.placaId === placa.id);
+  await api.updateCleaning(limpeza.id, { observacao: " editada " });
+  assert.equal((await api.listCleanings()).find((l) => l.id === limpeza.id).observacao, "editada");
+  await api.deleteCleaning(limpeza.id);
+  assert.ok(!(await api.listCleanings()).some((l) => l.id === limpeza.id));
+
+  await api.deleteGroup(grupo.id); // cascata: placa e clima
+  assert.ok(!(await api.listGroups()).some((g) => g.id === grupo.id));
+  assert.ok(!(await api.listPanels()).some((p) => p.id === placa.id));
+  grupo = null; // nada para o after() apagar
 });

@@ -1,16 +1,31 @@
 import { useEffect, useState } from "react";
-import { getDashboardMetrics } from "../lib/api";
+import { getAcertoPrevisao, getDashboardMetrics } from "../lib/api";
+import { erroPrevisao } from "../lib/historico";
 import { TIME_ZONE, rangeFor, shiftDate, toSaoPaulo } from "../lib/periodo";
+import { formatPerda } from "../lib/placas";
 import { formatEnergy } from "../lib/power";
 
 const ROTULO = ["Hoje", "Amanhã"];
 
+// "Previsão de ontem: 9,6 kWh · aconteceu 8,1 kWh (erro 18%) · erro médio em 7 dias: 12%".
+function textoAcerto(acerto) {
+  const ultimo = acerto.at(-1);
+  if (!ultimo) return "Acerto da previsão: acumulando dados.";
+  const ontem = shiftDate(toSaoPaulo(new Date()), "dia", -1).toISOString().slice(0, 10);
+  const dia = ultimo.dia === ontem ? "ontem" : ultimo.dia.split("-").reverse().slice(0, 2).join("/");
+  const media = acerto.length > 1 ? ` · erro médio em ${acerto.length} dias: ${formatPerda(erroPrevisao(acerto))}` : "";
+  return `Previsão de ${dia}: ${formatEnergy(ultimo.previstoWh)} · aconteceu ${formatEnergy(ultimo.ocorridoWh)} (erro ${formatPerda(erroPrevisao([ultimo]))})${media}`;
+}
+
 // Energia estimada por dia, de hoje até a última hora da previsão do tempo (7 dias).
 export default function PrevisaoSemana({ grupoId = null, placaId = null }) {
   const [dias, setDias] = useState(null);
+  const [acerto, setAcerto] = useState(null);
 
   useEffect(() => {
     let ativo = true;
+    // a previsão de cada dia é guardada às 21:00 da véspera; a tabela começa vazia
+    getAcertoPrevisao({ grupoId, placaId }).then((data) => ativo && setAcerto(data), () => ativo && setAcerto(null));
     const hoje = toSaoPaulo(new Date());
     getDashboardMetrics({
       granularidade: "dia",
@@ -65,6 +80,8 @@ export default function PrevisaoSemana({ grupoId = null, placaId = null }) {
           })}
         </div>
       )}
+
+      {acerto ? <p className="sv-muted small mt-3 mb-0">{textoAcerto(acerto)}</p> : null}
     </section>
   );
 }
