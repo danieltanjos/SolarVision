@@ -129,7 +129,7 @@ Distinção conceitual usada no projeto:
 
 ## 8. Análises: dono por grupo, chuva, valores, histórico e leituras reais
 
-Rodada da branch `feat/analises` (migrations `20261008090000` a `20261008130000`).
+Rodada da branch `feat/analises` (migrations `20261008090000` a `20261008140000`).
 
 | Decisão | Alternativa | Por que escolhemos |
 |---|---|---|
@@ -145,5 +145,8 @@ Rodada da branch `feat/analises` (migrations `20261008090000` a `20261008130000`
 | `previsoes_diarias` + job `guardar-previsao` | Comparar com `clima_horario` | O clima da previsão é sobrescrito de hora em hora pelo observado; a previsão precisa ser guardada antes |
 | Importação de CSV lida no navegador e gravada por upsert | Edge Function ou upload de arquivo | Sem deploy à parte; a RLS já garante que só o dono grava; reimportar não duplica |
 | Ranking contra a **mediana do grupo** | Alarmar por desempenho absoluto | No mesmo grupo o clima é o mesmo e o erro da reanálise (~15 % ao dia, ver a validação) se cancela |
+| Alertas gerados uma vez por dia pelo pg_cron, com `referencia` no unique | Trigger a cada mudança ou alerta a cada execução | Reaproveita as funções das análises; um unique só evita spam (1 por dia na previsão, 1 por semana em limpeza/desempenho) |
+| Alertas só no sino do app | E-mail/push | Não há provedor configurado; fica como pendência (item 8 de FEATURES-INCOMPLETAS) |
+| Relatório mensal pela impressão do navegador (`window.print()` + `@media print`) | Biblioteca de PDF | Zero dependência; o "Salvar como PDF" do navegador basta e o relatório reaproveita os componentes da tela |
 
 Os atalhos conscientes ficam marcados com `ponytail:` nas migrations e listados em [FEATURES-INCOMPLETAS.md](FEATURES-INCOMPLETAS.md).

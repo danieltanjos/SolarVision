@@ -46,7 +46,7 @@ flowchart LR
 | Supabase Auth | Cadastro, login, emissão e renovação do JWT; guarda a senha (hash) em `auth.users` |
 | PostgREST (`/rest/v1`) | API REST gerada a partir das tabelas e funções do schema `public` |
 | PostgreSQL | Tabelas do domínio, políticas RLS (cada usuário só vê as próprias usinas), triggers, view `geracao_horaria` e funções do dashboard e do clima |
-| pg_cron + extensão `http` | Job `sincronizar-clima`, a cada minuto: busca o clima e a chuva das placas no Open-Meteo (seção 5); job `guardar-previsao`, às 21:00 de São Paulo: guarda a previsão de amanhã para medir o acerto |
+| pg_cron + extensão `http` | Job `sincronizar-clima`, a cada minuto: busca o clima e a chuva das placas no Open-Meteo (seção 5); job `guardar-previsao`, às 21:00 de São Paulo: guarda a previsão de amanhã para medir o acerto; job `gerar-alertas`, às 07:00 de São Paulo: grava os alertas do dia (`gerar_alertas()`) |
 | pg_graphql (`/graphql/v1`) | GraphQL nativo do Supabase sobre as mesmas tabelas (substitui o Spring GraphQL) |
 | Open-Meteo | API externa de clima, gratuita e sem chave: histórico (reanálise) e previsão por hora |
 
@@ -196,6 +196,8 @@ Todas sobre `geracao_horaria`, executáveis só por `authenticated` e filtradas 
 | `dashboard_historico(granularidade, data_inicio, data_fim, grupo, placa)` | Média, mínimo e máximo do **estimado** (só o clima) da mesma janela nos 5 anos anteriores, com os mesmos `x` do `dashboard_metricas`; um ano só entra se todas as placas têm clima na janela inteira (o 5º costuma ser parcial) |
 | `acerto_previsao(dias, grupo, placa)` | Por dia encerrado: a previsão guardada na véspera em `previsoes_diarias` (job `guardar-previsao`, 21:00 de São Paulo) x o estimado com o clima que aconteceu |
 | `ranking_placas(data_inicio, data_fim, grupo)` | Por placa: real, estimado das horas com real, kWh/kWp, desempenho (real ÷ estimado), mediana do desempenho no grupo e `anomalia` (mais de 10 p.p. abaixo da mediana, em grupo com 2+ placas) |
+
+**Alertas.** `gerar_alertas()` (security definer, só o pg_cron executa) grava em `alertas` três situações que as funções acima já detectam: limpeza recomendada (`recomendacoes_limpeza` com `limpar`), desempenho abaixo do grupo (`ranking_placas` dos últimos 7 dias com `anomalia`) e previsão baixa (amanhã abaixo de 60 % da média de 5 anos do grupo para o dia, por `dashboard_historico`). O unique `(grupo_id, placa_id, tipo, referencia)` evita repetição: previsão baixa no máximo uma por dia; limpeza e desempenho no máximo uma por semana enquanto a situação durar. O dono só lê e marca como lido (grant de update só em `lido_em`).
 
 ---
 

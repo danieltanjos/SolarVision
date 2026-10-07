@@ -62,6 +62,16 @@ classDiagram
         +numeric estimada_wh
         +timestamptz feita_em
     }
+    class alertas {
+        +bigint id
+        +bigint grupo_id
+        +bigint placa_id
+        +varchar tipo
+        +text mensagem
+        +date referencia
+        +timestamptz criado_em
+        +timestamptz lido_em
+    }
     class limpezas {
         +bigint id
         +bigint placa_id
@@ -103,6 +113,8 @@ classDiagram
     placas "1" *-- "0..*" clima_horario : clima
     placas "1" *-- "0..*" chuvas_que_lavam : chuvas
     placas "1" *-- "0..*" previsoes_diarias : previsões
+    grupos_solares "1" *-- "0..*" alertas : alertas
+    placas "1" *-- "0..*" alertas : alertas da placa
     clima_horario ..> geracao_horaria : estimado
     leituras_energia ..> geracao_horaria : real medido
 
@@ -210,7 +222,19 @@ Energia estimada de amanhã, guardada às 21:00 (São Paulo) pelo job `guardar-p
 | estimada_wh | numeric | energia estimada do dia (Wh) |
 | feita_em | timestamptz | quando a previsão foi guardada |
 
-> A tabela `alertas` da versão Spring Boot foi removida: só era usada pelos serviços gRPC.
+### `alertas`
+Gravados pelo job `gerar-alertas` (07:00 de São Paulo, função `gerar_alertas()`); o dono só lê e marca como lido. Ver [FUNCIONALIDADES.md](FUNCIONALIDADES.md#alertas).
+
+| Coluna | Tipo | Observações |
+|---|---|---|
+| id | bigint (PK) | identity |
+| grupo_id | bigint (FK, NOT NULL) | `grupos_solares(id)`, `on delete cascade`; a RLS vem por ele |
+| placa_id | bigint (FK) | `placas(id)`, `on delete cascade`; null = alerta do grupo (previsão baixa) |
+| tipo | varchar(30) | LIMPEZA, PREVISAO_BAIXA, DESEMPENHO (`CHECK`) |
+| mensagem | text | texto pronto para a tela |
+| referencia | date | dia previsto (previsão baixa) ou segunda-feira da semana (limpeza, desempenho); unique `nulls not distinct (grupo_id, placa_id, tipo, referencia)` evita repetição |
+| criado_em | timestamptz | `default now()` |
+| lido_em | timestamptz | null = não lido; única coluna que o dono pode alterar (grant de coluna) |
 
 ### View `geracao_horaria`
 Fonte única da geração por hora e por placa, usada por todas as funções do dashboard. `security_invoker`: respeita a RLS de quem consulta. Só placas com `potencia_wp`.
@@ -236,6 +260,7 @@ Os antigos enums Java viraram constraints `CHECK` no banco:
 | `usuarios.role` | ADMIN, USER |
 | `grupos_solares.status` | ATIVO, INATIVO, MANUTENCAO |
 | `placas.status` | ATIVA, INATIVA, MANUTENCAO |
+| `alertas.tipo` | LIMPEZA, PREVISAO_BAIXA, DESEMPENHO |
 
 ---
 
@@ -251,8 +276,10 @@ Os antigos enums Java viraram constraints `CHECK` no banco:
 | placas | 1 : N | clima_horario | `clima_horario.placa_id` |
 | placas | 1 : N | chuvas_que_lavam | `chuvas_que_lavam.placa_id` |
 | placas | 1 : N | previsoes_diarias | `previsoes_diarias.placa_id` |
+| grupos_solares | 1 : N | alertas | `alertas.grupo_id` |
+| placas | 1 : N | alertas | `alertas.placa_id` (opcional) |
 
-A exclusão é em cascata (`on delete cascade`): remover um usuário do Auth remove seus grupos; remover um grupo remove suas placas e, por consequência, limpezas, leituras, clima, chuvas e previsões.
+A exclusão é em cascata (`on delete cascade`): remover um usuário do Auth remove seus grupos; remover um grupo remove suas placas e, por consequência, limpezas, leituras, clima, chuvas, previsões e alertas.
 
 ---
 

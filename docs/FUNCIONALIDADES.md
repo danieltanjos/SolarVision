@@ -77,6 +77,18 @@ Painel alimentado por funções SQL (RPC), todas sobre `geracao_horaria` e filtr
 - **Ranking das placas** (`rpc('ranking_placas', { data_inicio, data_fim, grupo })`): por placa, real, kWh/kWp (real ÷ potência instalada), desempenho (real ÷ estimado), mediana do desempenho no grupo e `anomalia` (mais de 10 p.p. abaixo da mediana, em grupo com 2+ placas: sombra, defeito ou sujeira).
 - As agregações usam o fuso `America/Sao_Paulo`.
 
+### Alertas
+
+O job `gerar-alertas` (pg_cron, 07:00 de São Paulo) grava em `alertas` três tipos, só para placas `ATIVA` e grupos `ATIVO`:
+
+| Tipo | Quando | Mensagem (exemplo) | Repetição |
+|---|---|---|---|
+| `LIMPEZA` | `recomendacoes_limpeza` com `limpar` | o `motivo`: "Limpar recupera ~3,7 kWh/semana (R$ 3,49); paga-se em 21 dias" | no máximo 1 por placa por semana |
+| `DESEMPENHO` | `ranking_placas` dos últimos 7 dias com `anomalia` | "Placa Leste 550 rendeu 40% do estimado nos últimos 7 dias; o grupo, 100%" | no máximo 1 por placa por semana |
+| `PREVISAO_BAIXA` | amanhã < 60 % da média de 5 anos do grupo para o dia (`dashboard_historico`) | "Amanhã (08/10) a previsão é de 2,1 kWh: 45% da média de 5 anos para o dia (4,6 kWh)" | no máximo 1 por grupo por dia |
+
+O sino no cabeçalho mostra a contagem de não lidos e os últimos alertas, com link para o Monitoramento (e para registrar limpeza); abrir pelo link ou "marcar todos" marca como lido. Só `lido_em` é alterável pelo dono; e-mail/push ainda não existem (ver [FEATURES-INCOMPLETAS.md](FEATURES-INCOMPLETAS.md)).
+
 ### Gráfico de geração (Monitoramento)
 
 A tela tem um **seletor** à esquerda (busca + *Todas as usinas* → grupos → placas); a seleção fica na URL (`?grupo=17&placa=10`), então dá para compartilhar o link e chegar direto da Home ou do Cadastro. Acima do gráfico, cards com a energia real (diz se foi medida, simulada ou quanto % veio de leituras) e a estimada do período (com o texto "Clima X% abaixo/acima da média de N anos" quando há média histórica), a perda por sujeira (média ponderada pela potência) e a capacidade instalada. Abaixo do gráfico:
@@ -110,7 +122,8 @@ Aplicação de página única, com rotas protegidas pela sessão do Supabase e t
 | Login | `/login` | Autenticação | Supabase Auth (`signInWithPassword`) |
 | Registro | `/register` | Criação de conta | Supabase Auth (`signUp`) + trigger em `usuarios` |
 | Home | `/app/home` | Cards (real hoje x estimado até agora, estimado hoje/agora, perda por sujeira, placas ativas), gráfico de hoje, limpezas recentes, **limpezas recomendadas** (placas para limpar agora e as sujas em que a chuva prevista adia a limpeza), previsão de 7 dias com o acerto da previsão e grupos (link para o Monitoramento) | `rpc dashboard_resumo`, `rpc dashboard_metricas`, `rpc recomendacoes_limpeza`, `rpc acerto_previsao`, `grupos_solares`, `placas`, `limpezas` |
-| Monitoramento | `/app/monitoramento` | Seletor de grupo/placa, cards de energia e sujeira, gráfico real x estimado (com previsão e média de 5 anos), valores do período (R$/CO₂), previsão de 7 dias com acerto, calendário de geração, ranking das placas (kWh/kWp, desempenho), detalhes da placa com recomendação de limpeza e importação de leituras (CSV) | `rpc dashboard_metricas`, `rpc dashboard_historico`, `rpc dashboard_financeiro`, `rpc ranking_placas`, `rpc recomendacoes_limpeza`, `rpc acerto_previsao`, `grupos_solares`, `placas`, `limpezas`, `leituras_energia` (upsert) |
+| Monitoramento | `/app/monitoramento` | Seletor de grupo/placa, cards de energia e sujeira, gráfico real x estimado (com previsão e média de 5 anos), valores do período (R$/CO₂), previsão de 7 dias com acerto, calendário de geração, ranking das placas (kWh/kWp, desempenho), detalhes da placa com recomendação de limpeza e importação de leituras (CSV); botão "Relatório do mês" com a seleção atual | `rpc dashboard_metricas`, `rpc dashboard_historico`, `rpc dashboard_financeiro`, `rpc ranking_placas`, `rpc recomendacoes_limpeza`, `rpc acerto_previsao`, `grupos_solares`, `placas`, `limpezas`, `leituras_energia` (upsert) |
+| Relatório | `/app/relatorio` | Relatório mensal de uma seleção (`?mes=AAAA-MM&grupo=G&placa=P`; padrão: mês passado, todas as usinas): energia real, estimada e desempenho, clima vs. média de 5 anos, valores (R$/CO₂), gráfico diário, tabela por placa (kWh/kWp, desempenho, anomalia, sujeira), limpezas do mês e recomendações atuais. "Imprimir / PDF" usa a impressão do navegador (`window.print()`, A4 retrato, sempre no tema claro; sem biblioteca de PDF) | `rpc dashboard_metricas`, `rpc dashboard_historico`, `rpc dashboard_financeiro`, `rpc ranking_placas`, `rpc recomendacoes_limpeza`, `grupos_solares`, `placas`, `limpezas` |
 | Cadastro | `/app/cadastro` | Grupos (com local, tarifa e custo de limpeza) e placas (com potência, inclinação, orientação e data de instalação): criar, editar e excluir, status do clima e mensagem de sucesso. **(parcial)** - sem indicador de carregamento | `grupos_solares`, `placas` |
 | Limpeza | `/app/limpeza` | Registro, edição, exclusão e histórico de limpezas | `limpezas`, `placas` |
 | Configurações | `/app/configuracoes` | Dados do usuário e do sistema (somente leitura). **(parcial)** - sem edição de perfil/senha | `usuarios` |

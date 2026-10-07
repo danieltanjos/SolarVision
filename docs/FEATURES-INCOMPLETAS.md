@@ -56,13 +56,13 @@ Lista de funcionalidades que estão **referenciadas/parcialmente implementadas**
 - **Uso não comercial:** a API gratuita do Open-Meteo não cobre uso comercial.
 - **Onde:** `supabase/migrations/20261007120000_clima_open_meteo.sql`, `20261008100000_cadastro_edicao.sql`.
 
-### 7. Alertas
-- **Estado atual:** a tabela `alertas` e os serviços gRPC que a preenchiam foram removidos na migração.
-- **Falta (se desejado):** tabela `alertas` com RLS, geração por função SQL/trigger ou Edge Function e tela de listagem.
+### 7. Alertas - resolvido
+- **Estado atual:** tabela `alertas` com RLS, `gerar_alertas()` no job `gerar-alertas` (07:00 de São Paulo) e sino no cabeçalho (ver [FUNCIONALIDADES.md](FUNCIONALIDADES.md#alertas)).
+- **Limitações:** alerta não lido não some sozinho quando a situação se resolve (some ao ser lido; abrir pelo link já marca); placa há mais de ~6 dias sem previsão reduz a soma do grupo e pode gerar falso "previsão baixa"; a sujeira simulada pode disparar limpeza e desempenho da mesma placa ao mesmo tempo; `gerar_alertas` cresce linear com as placas (~16 ms por placa, quase tudo no `ranking_placas`).
 
 ### 8. Envio real de e-mail de alerta
 - **Estado atual:** não existe (na versão Spring Boot era apenas simulado por `log`).
-- **Falta:** Edge Function do Supabase integrada a um provedor de e-mail, disparada pelos alertas do item 7.
+- **Falta:** Edge Function do Supabase integrada a um provedor de e-mail, disparada pelos alertas do item 7 (hoje só aparecem no sino do app).
 
 ### 9. Dropdown "Meu perfil" x "Configurações"
 - **Estado atual:** os dois itens do menu do usuário navegam para `/app/configuracoes`.
@@ -88,7 +88,7 @@ Lista de funcionalidades que estão **referenciadas/parcialmente implementadas**
 ## Baixa prioridade (polimento)
 
 ### 11. Testes ausentes
-- **Estado atual:** 51 testes de utilitários do frontend (`node --test`) e 8 testes de ponta a ponta de `lib/api.js` contra o Supabase (`supabase/tests/e2e.mjs`: RLS por dono, cadastros, edição/exclusão, recarga do clima, carga pelo pg_cron, valores do período, recomendação, leituras importadas, ranking, média de 5 anos e acerto da previsão).
+- **Estado atual:** 53 testes de utilitários do frontend (`node --test`) e 9 testes de ponta a ponta de `lib/api.js` contra o Supabase (`supabase/tests/e2e.mjs`: RLS por dono, cadastros, edição/exclusão, recarga do clima, carga pelo pg_cron, valores do período, recomendação, leituras importadas, ranking, média de 5 anos, acerto da previsão e alertas).
 - **Falta:** testes das telas (ex.: Playwright contra a URL de QA) e testes isolados do banco (ex.: pgTAP).
 
 Polimentos resolvidos: o status do grupo na Home usa o selo (`StatusBadge`, desde o redesign) e a placa do formulário de limpeza volta ao vazio depois de salvar (rodada de análises).
@@ -105,7 +105,7 @@ Polimentos resolvidos: o status do grupo na Home usa o selo (`StatusBadge`, desd
 | 4 | QA e produção no mesmo Supabase | Alta | Infra | Pendente |
 | 5 | Geração medida (sensor ESP32 ou inversor) | Alta | Hardware/integração + Banco + Front | Parcial (importação de CSV pronta) |
 | 6 | Limitações da geração estimada (PR fixo etc.) | Média | Banco | Pendente (recarga do clima resolvida) |
-| 7 | Alertas | Média | Banco + Front | Pendente |
+| 7 | Alertas | Média | Banco + Front | Resolvido (sem e-mail: item 8) |
 | 8 | Envio real de e-mail | Média | Supabase (Edge Function) | Pendente |
 | 9 | "Meu perfil" x "Configurações" | Média | Front | Pendente |
 | 10 | Loading + feedback de sucesso | Média | Front | Parcial (falta loading no Cadastro) |
@@ -122,3 +122,5 @@ Polimentos resolvidos: o status do grupo na Home usa o selo (`StatusBadge`, desd
 | 6 (recarga) | Mudar local, inclinação, azimute ou grupo recarrega o clima |
 | 10 (parcial) | Mensagem de sucesso no Cadastro, na Limpeza e na importação |
 | Polimento | Placa do formulário de limpeza volta ao vazio após salvar |
+| 7 | Alertas (limpeza, previsão baixa, desempenho) no sino do cabeçalho |
+| Novo | Relatório mensal imprimível (`/app/relatorio`); sujeira e recomendações são as do dia da emissão, não as do mês |
