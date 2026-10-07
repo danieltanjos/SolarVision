@@ -1,14 +1,46 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { createGroup, createPanel, extractErrorMessage, listGroups, listPanels } from "../lib/api";
 
+const EMPTY_GROUP = { nome: "", status: "ATIVO", latitude: "", longitude: "" };
+const EMPTY_PANEL = { grupoId: "", modelo: "", status: "ATIVA", potenciaWp: "", inclinacao: "", azimute: "0" };
+
+// Azimute em graus a partir do Norte, no sentido horário (no Brasil, placas costumam olhar para o Norte).
+const ORIENTACOES = [
+  ["0", "Norte"],
+  ["45", "Nordeste"],
+  ["90", "Leste"],
+  ["135", "Sudeste"],
+  ["180", "Sul"],
+  ["225", "Sudoeste"],
+  ["270", "Oeste"],
+  ["315", "Noroeste"]
+];
+
+const numOrNull = (value) => (value === "" ? null : Number(value));
+
+function climaStatus(panel) {
+  if (panel.latitude == null || panel.potenciaWp == null || panel.inclinacao == null || panel.azimute == null) {
+    return { texto: "Sem local/especificações: sem estimativa", sincronizando: false };
+  }
+  return panel.climaHistoricoEm
+    ? { texto: "Clima: 5 anos + previsão", sincronizando: false }
+    : { texto: "Clima: sincronizando (~1 min)", sincronizando: true };
+}
+
+function especificacoes(panel) {
+  if (panel.potenciaWp == null) return panel.grupoNome;
+  const orientacao = ORIENTACOES.find(([graus]) => Number(graus) === panel.azimute)?.[1] ?? `${panel.azimute}°`;
+  return `${panel.grupoNome} · ${panel.potenciaWp} Wp · ${panel.inclinacao}° · ${orientacao}`;
+}
+
 export default function CadastroPage() {
   const [groups, setGroups] = useState([]);
   const [panels, setPanels] = useState([]);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
-  const [groupForm, setGroupForm] = useState({ nome: "", status: "ATIVO" });
-  const [panelForm, setPanelForm] = useState({ grupoId: "", modelo: "", status: "ATIVA" });
+  const [groupForm, setGroupForm] = useState(EMPTY_GROUP);
+  const [panelForm, setPanelForm] = useState(EMPTY_PANEL);
 
   async function loadData() {
     try {
@@ -25,11 +57,23 @@ export default function CadastroPage() {
     loadData();
   }, []);
 
+  // Enquanto alguma placa carrega o clima (pg_cron, ~1 min), recarrega a lista a cada 15 s.
+  const sincronizando = panels.some((panel) => climaStatus(panel).sincronizando);
+  useEffect(() => {
+    if (!sincronizando) return undefined;
+    const id = setInterval(loadData, 15000);
+    return () => clearInterval(id);
+  }, [sincronizando]);
+
   async function handleGroupSubmit(event) {
     event.preventDefault();
     try {
-      await createGroup(groupForm);
-      setGroupForm({ nome: "", status: "ATIVO" });
+      await createGroup({
+        ...groupForm,
+        latitude: numOrNull(groupForm.latitude),
+        longitude: numOrNull(groupForm.longitude)
+      });
+      setGroupForm(EMPTY_GROUP);
       await loadData();
     } catch (err) {
       setError(extractErrorMessage(err));
@@ -42,9 +86,12 @@ export default function CadastroPage() {
       await createPanel({
         grupoId: Number(panelForm.grupoId),
         modelo: panelForm.modelo,
-        status: panelForm.status
+        status: panelForm.status,
+        potenciaWp: numOrNull(panelForm.potenciaWp),
+        inclinacao: numOrNull(panelForm.inclinacao),
+        azimute: numOrNull(panelForm.azimute)
       });
-      setPanelForm({ grupoId: "", modelo: "", status: "ATIVA" });
+      setPanelForm(EMPTY_PANEL);
       await loadData();
     } catch (err) {
       setError(extractErrorMessage(err));
@@ -92,6 +139,34 @@ export default function CadastroPage() {
                 <option value="INATIVO">Inativo</option>
                 <option value="MANUTENCAO">Manutenção</option>
               </select>
+              <div className="d-flex gap-2">
+                <input
+                  type="number"
+                  step="any"
+                  min="-90"
+                  max="90"
+                  className="form-control"
+                  placeholder="Latitude"
+                  aria-label="Latitude"
+                  value={groupForm.latitude}
+                  onChange={(event) => setGroupForm((current) => ({ ...current, latitude: event.target.value }))}
+                />
+                <input
+                  type="number"
+                  step="any"
+                  min="-180"
+                  max="180"
+                  className="form-control"
+                  placeholder="Longitude"
+                  aria-label="Longitude"
+                  value={groupForm.longitude}
+                  onChange={(event) => setGroupForm((current) => ({ ...current, longitude: event.target.value }))}
+                />
+              </div>
+              <div className="form-text mt-n2">
+                Local da usina (no Google Maps, clique com o botão direito no ponto para copiar). Necessário para a
+                geração estimada pelo clima.
+              </div>
               <button type="submit" className="btn btn-primary">Criar grupo</button>
             </form>
           </div>
@@ -130,6 +205,42 @@ export default function CadastroPage() {
                 <option value="INATIVA">Inativa</option>
                 <option value="MANUTENCAO">Manutenção</option>
               </select>
+              <div className="d-flex gap-2">
+                <input
+                  type="number"
+                  step="any"
+                  min="1"
+                  className="form-control"
+                  placeholder="Potência (Wp)"
+                  aria-label="Potência em Wp"
+                  value={panelForm.potenciaWp}
+                  onChange={(event) => setPanelForm((current) => ({ ...current, potenciaWp: event.target.value }))}
+                />
+                <input
+                  type="number"
+                  step="any"
+                  min="0"
+                  max="90"
+                  className="form-control"
+                  placeholder="Inclinação (°)"
+                  aria-label="Inclinação em graus"
+                  value={panelForm.inclinacao}
+                  onChange={(event) => setPanelForm((current) => ({ ...current, inclinacao: event.target.value }))}
+                />
+              </div>
+              <select
+                aria-label="Orientação da placa"
+                className="form-select"
+                value={panelForm.azimute}
+                onChange={(event) => setPanelForm((current) => ({ ...current, azimute: event.target.value }))}
+              >
+                {ORIENTACOES.map(([graus, nome]) => (
+                  <option key={graus} value={graus}>Voltada para o {nome} ({graus}°)</option>
+                ))}
+              </select>
+              <div className="form-text mt-n2">
+                Com o local no grupo, a potência e a inclinação, o sistema carrega 5 anos de clima e a previsão em ~1 min.
+              </div>
               <button type="submit" className="btn btn-primary">Criar placa</button>
             </form>
           </div>
@@ -156,7 +267,8 @@ export default function CadastroPage() {
                 <div className="placa-item" key={panel.id}>
                   <div>
                     <strong>{panel.modelo}</strong>
-                    <div className="text-muted small">{panel.grupoNome}</div>
+                    <div className="text-muted small">{especificacoes(panel)}</div>
+                    <div className="text-muted small">{climaStatus(panel).texto}</div>
                   </div>
                   <span className="badge text-bg-light">{panel.status}</span>
                 </div>

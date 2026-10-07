@@ -1,6 +1,6 @@
 # Funcionalidades - SolarVision
 
-Compilado do que o sistema faz, organizado por módulo. SolarVision é uma plataforma de **monitoramento de energia solar**: cadastra grupos de placas, acompanha a geração de energia ao longo do tempo e registra limpezas.
+Compilado do que o sistema faz, organizado por módulo. SolarVision é uma plataforma de **monitoramento de energia solar**: cadastra grupos de placas, acompanha a geração de energia ao longo do tempo (estimada pelo clima real e, quando houver sensores, medida) e registra limpezas.
 
 > Arquitetura: [ARQUITETURA.md](ARQUITETURA.md) · Modelo de dados: [MODELO-DE-CLASSES.md](MODELO-DE-CLASSES.md)
 >
@@ -23,6 +23,7 @@ Tabela `grupos_solares` (uma instalação/usina que agrupa placas):
 
 - Criar e listar grupos pela interface; a RLS também permite atualizar e excluir.
 - Cada grupo tem um **status**: ATIVO, INATIVO ou MANUTENCAO (constraint `CHECK`).
+- Cada grupo tem um **local** (latitude/longitude, opcional), usado para buscar o clima das suas placas.
 - A listagem traz a **contagem de placas** (`placas(count)` na mesma consulta).
 
 ## 3. Placas / painéis
@@ -31,6 +32,8 @@ Tabela `placas`, sempre vinculada a um grupo:
 
 - Criar e listar placas pela interface; a RLS também permite atualizar e excluir.
 - Cada placa tem **modelo** e **status** (ATIVA, INATIVA, MANUTENCAO).
+- Especificações opcionais para a estimativa: **potência** (Wp), **inclinação** (0-90°) e **orientação** (azimute: 0 = Norte, 90 = Leste, 180 = Sul, 270 = Oeste; a tela oferece as 8 direções). O coeficiente de temperatura usa o padrão −0,40 %/°C (sem campo na tela).
+- A lista mostra as especificações e o **status do clima**: sem local/especificações, sincronizando (~1 min) ou "5 anos + previsão". Enquanto alguma placa sincroniza, a lista se recarrega a cada 15 s.
 - Excluir um grupo remove suas placas em cascata (`on delete cascade`).
 
 ## 4. Limpezas
@@ -40,19 +43,18 @@ Tabela `limpezas`, histórico de limpeza das placas:
 - Criar e listar limpezas pela interface; a RLS também permite atualizar e excluir.
 - Cada limpeza tem **data** e uma **observação** opcional (até 1000 caracteres), associada a uma placa.
 
-## 5. Leituras de energia e carga inicial
+## 5. Geração medida e estimada
 
-- A geração de energia fica em **leituras** (`leituras_energia`): data/hora e watts gerados por placa. Usuários autenticados só leem.
-- A carga inicial é feita por `supabase/seed/inserirCSV.py`, que importa o CSV histórico (`Dados_Tratados_CDTE-PSI.csv`) em lote, executado uma vez com `DATABASE_URL`.
-- O job pg_cron `deslocar-leituras-para-hoje` (todo dia às 00:05 de Brasília) desloca as leituras para que a última caia no dia atual.
+- **Medida** - `leituras_energia`: data/hora e watts por placa, vindos de sensores. Usuários autenticados só leem. Ainda **vazia**: falta integrar o sensor (ESP32) ou a API do inversor (ver [FEATURES-INCOMPLETAS.md](FEATURES-INCOMPLETAS.md)). Os dados mocados do CSV foram removidos do banco; o CSV fica no repo só como referência.
+- **Estimada** - a partir do clima real ([Open-Meteo](https://open-meteo.com/)). Com o local no grupo e potência/inclinação/orientação na placa, o job pg_cron `sincronizar-clima` (a cada minuto) carrega em ~1 min **5 anos de clima horário** + os últimos 3 dias e a **previsão** (3 dias) em `clima_horario`, e renova a previsão de hora em hora. A potência de cada hora vem de `potencia_estimada()` (Wp, irradiância no plano da placa, temperatura e PR 0,82). Detalhes em [ARQUITETURA.md](ARQUITETURA.md#5-geração-estimada-pelo-clima-open-meteo).
+- A atribuição exigida pela licença dos dados (CC BY 4.0) fica no rodapé do app.
 
 ## 6. Dashboard
 
-Painel alimentado por duas funções SQL (RPC) e uma consulta:
+Painel alimentado por duas funções SQL (RPC):
 
-- **Métricas** (`rpc('dashboard_metricas', { granularidade, data_inicio, data_fim })`): **potência média** (AVG dos watts) por balde de tempo (`hora`, `dia`, `semana` ou `mes` via `date_trunc`) dentro do período. Granularidade inválida ou início depois do fim geram erro. Alimenta o gráfico de geração.
-- **Resumo** (`rpc('dashboard_resumo')`): energia gerada no dia em Wh (cada leitura é a potência média de 5 min: Wh = W × 5/60; exibida com auto-escala Wh/kWh/MWh), número de placas ativas e dados da última limpeza.
-- **Última leitura** (`select data_hora` em `leituras_energia`, mais recente): o gráfico ancora nessa data, que fica ~hoje por causa do deslocamento.
+- **Métricas** (`rpc('dashboard_metricas', { granularidade, data_inicio, data_fim })`): devolve `x`, `medida` e `estimada` - a **potência média** do conjunto (soma da média de cada placa) por balde de tempo (`hora`, `dia`, `semana` ou `mes` via `date_trunc`) dentro do período. Granularidade inválida ou início depois do fim geram erro. Alimenta o gráfico de geração.
+- **Resumo** (`rpc('dashboard_resumo')`): `estimadoHoje` e `previsaoAmanha` (Wh, soma das horas estimadas), `potenciaAgora` (W estimados na hora atual), `totalGeradoHoje` (medido; cada leitura é a potência média de 5 min: Wh = W × 5/60), número de placas ativas e dados da última limpeza. Energia exibida com auto-escala Wh/kWh/MWh.
 - As agregações usam o fuso `America/Sao_Paulo`.
 
 ### Gráfico de geração (Monitoramento)
@@ -66,7 +68,7 @@ O gráfico de área usa quatro **visões de calendário** - **Dia, Semana, Mês 
 | Mês | dia 1 ao último | por dia |
 | Ano | janeiro a dezembro | por mês |
 
-As setas navegam uma unidade por vez (um dia, uma semana, um mês ou um ano). O eixo Y mostra **potência média** com **auto-escala de unidade** (W, kW, MW ou GW) conforme a magnitude dos valores, e o gráfico tem legenda.
+As setas navegam uma unidade por vez (um dia, uma semana, um mês ou um ano). O gráfico abre ancorado em **agora** e inclui as horas de previsão. Há duas séries, **Medida (sensores)** e **Estimada (clima)** (tracejada); só aparecem as que têm dados no período. O eixo Y mostra **potência média** com **auto-escala de unidade** (W, kW, MW ou GW) conforme a magnitude dos valores, e o gráfico tem legenda.
 
 ## 7. API GraphQL
 
@@ -80,9 +82,9 @@ Aplicação de página única, com rotas protegidas pela sessão do Supabase e t
 |---|---|---|---|
 | Login | `/login` | Autenticação | Supabase Auth (`signInWithPassword`) |
 | Registro | `/register` | Criação de conta | Supabase Auth (`signUp`) + trigger em `usuarios` |
-| Home | `/app/home` | Resumo do dashboard + grupos | `rpc dashboard_resumo`, `grupos_solares` |
-| Monitoramento | `/app/monitoramento` | Gráfico com visões Dia/Semana/Mês/Ano e auto-escala de potência | `rpc dashboard_metricas`, `leituras_energia` (última leitura) |
-| Cadastro | `/app/cadastro` | Gestão de grupos e placas. **(parcial)** - só cria/lista; editar/excluir está na branch `feat/muda-aba-cadastro` | `grupos_solares`, `placas` |
+| Home | `/app/home` | Cards Estimado Hoje (agora/amanhã), Medido Hoje, placas ativas e última limpeza + grupos | `rpc dashboard_resumo`, `grupos_solares` |
+| Monitoramento | `/app/monitoramento` | Gráfico medido x estimado (com previsão), visões Dia/Semana/Mês/Ano e auto-escala de potência | `rpc dashboard_metricas` |
+| Cadastro | `/app/cadastro` | Grupos (com local) e placas (com potência, inclinação e orientação) e status do clima. **(parcial)** - só cria/lista; editar/excluir está na branch `feat/muda-aba-cadastro` | `grupos_solares`, `placas` |
 | Limpeza | `/app/limpeza` | Registro e histórico de limpezas. **(parcial)** - só cria/lista | `limpezas`, `placas` |
 | Configurações | `/app/configuracoes` | Dados do usuário e do sistema (somente leitura). **(parcial)** - sem edição de perfil/senha | `usuarios` |
 
@@ -100,6 +102,7 @@ Todas as chamadas passam por `frontend/src/lib/api.js` e `frontend/src/context/A
 | `placas` | select, insert, update, delete | Autenticado |
 | `limpezas` | select, insert, update, delete | Autenticado |
 | `leituras_energia` | select | Autenticado |
+| `clima_horario` | select (gravação só pelo pg_cron) | Autenticado |
 | `rpc dashboard_metricas` | execute | Autenticado |
 | `rpc dashboard_resumo` | execute | Autenticado |
 | `/graphql/v1` | conforme as políticas acima | Autenticado |

@@ -15,7 +15,10 @@ async function unwrap(query) {
 // Os aliases (campo:coluna) mantêm o mesmo formato JSON que a API Spring Boot devolvia.
 export async function listGroups() {
   const groups = await unwrap(
-    supabase.from("grupos_solares").select("id, nome, status, criadoEm:criado_em, placas(count)").order("id")
+    supabase
+      .from("grupos_solares")
+      .select("id, nome, status, latitude, longitude, criadoEm:criado_em, placas(count)")
+      .order("id")
   );
   return groups.map(({ placas, ...group }) => ({ ...group, totalPlacas: placas[0]?.count ?? 0 }));
 }
@@ -24,7 +27,10 @@ export function listPanels() {
   return unwrap(
     supabase
       .from("placas")
-      .select("id, modelo, status, grupoId:grupo_id, criadoEm:criado_em, ...grupos_solares(grupoNome:nome)")
+      .select(
+        "id, modelo, status, grupoId:grupo_id, criadoEm:criado_em, potenciaWp:potencia_wp, inclinacao, azimute, " +
+          "climaHistoricoEm:clima_historico_em, ...grupos_solares(grupoNome:nome, latitude, longitude)"
+      )
       .order("id")
   );
 }
@@ -39,12 +45,22 @@ export function listCleanings() {
   );
 }
 
-export function createGroup({ nome, status }) {
-  return unwrap(supabase.from("grupos_solares").insert({ nome: nome.trim(), status }));
+export function createGroup({ nome, status, latitude, longitude }) {
+  return unwrap(supabase.from("grupos_solares").insert({ nome: nome.trim(), status, latitude, longitude }));
 }
 
-export function createPanel({ grupoId, modelo, status }) {
-  return unwrap(supabase.from("placas").insert({ grupo_id: grupoId, modelo: modelo.trim(), status }));
+// Com local (no grupo), potência, inclinação e azimute, o pg_cron carrega 5 anos de clima em ~1 min.
+export function createPanel({ grupoId, modelo, status, potenciaWp, inclinacao, azimute }) {
+  return unwrap(
+    supabase.from("placas").insert({
+      grupo_id: grupoId,
+      modelo: modelo.trim(),
+      status,
+      potencia_wp: potenciaWp,
+      inclinacao,
+      azimute
+    })
+  );
 }
 
 export function createCleaning({ placaId, dataLimpeza, observacao }) {
@@ -66,13 +82,6 @@ export function getDashboardMetrics({ granularidade, dataInicio, dataFim }) {
   return unwrap(
     supabase.rpc("dashboard_metricas", { granularidade, data_inicio: dataInicio, data_fim: dataFim })
   );
-}
-
-export async function getLastReadingDate() {
-  const row = await unwrap(
-    supabase.from("leituras_energia").select("data_hora").order("data_hora", { ascending: false }).limit(1).maybeSingle()
-  );
-  return row?.data_hora ?? null;
 }
 
 const MENSAGENS = {

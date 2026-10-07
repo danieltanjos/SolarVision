@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { extractErrorMessage, getDashboardSummary, listGroups } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import StatCard from "../components/StatCard";
-import { formatEnergy } from "../lib/power";
+import { formatEnergy, formatPower } from "../lib/power";
 import { titleCase } from "../lib/text";
 
 export default function HomePage() {
@@ -38,10 +38,16 @@ export default function HomePage() {
 
       <section className="sv-home-stats">
         <StatCard
-          title="Total Gerado Hoje"
-          value={formatEnergy(summary?.totalGeradoHoje)}
-          subtitle="Energia gerada desde o início do dia"
+          title="Estimado Hoje"
+          value={formatEnergy(summary?.estimadoHoje)}
+          subtitle={`Agora: ${formatPower(summary?.potenciaAgora)} · Amanhã: ${formatEnergy(summary?.previsaoAmanha)}`}
           icon="bi-sun-fill"
+        />
+        <StatCard
+          title="Medido Hoje"
+          value={formatEnergy(summary?.totalGeradoHoje)}
+          subtitle="Leituras dos sensores desde o início do dia"
+          icon="bi-speedometer2"
         />
         <StatCard
           title="Placas Ativas"

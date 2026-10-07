@@ -37,8 +37,9 @@ frontend/
 - Cadastro e login com Supabase Auth (sessão e refresh do JWT persistidos pelo `supabase-js`)
 - Rotas privadas com `react-router-dom`
 - Dados lidos/gravados nas tabelas do Supabase (PostgREST) e no dashboard via RPC (`lib/api.js`)
-- Dashboard com gráfico em `react-apexcharts`
-- Telas de grupos, placas, limpezas e configurações
+- Dashboard com gráfico em `react-apexcharts`: séries medida (sensores) e estimada pelo clima (Open-Meteo, com previsão)
+- Telas de grupos (com local), placas (com potência, inclinação e orientação), limpezas e configurações
+- Atribuição do Open-Meteo (CC BY 4.0) no rodapé
 - Tema escuro preservado da identidade anterior
 
 ## Desenvolvimento local
@@ -55,7 +56,7 @@ npm run dev                   # http://localhost:5173
 ## Testes e build
 
 ```bash
-npm test        # 21 testes (node --test)
+npm test        # 27 testes (node --test)
 npm run build   # gera dist/
 ```
 

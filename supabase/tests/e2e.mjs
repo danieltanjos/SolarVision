@@ -1,6 +1,7 @@
 // Teste de ponta a ponta: o api.js do frontend contra o Supabase real (o mesmo banco de QA e produção).
 // Uso: node --env-file=frontend/.env.local --test supabase/tests/e2e.mjs
-// Usa uma conta fixa (criada na 1ª execução) e apaga o grupo/placa/limpeza que criar.
+// Usa uma conta fixa (criada na 1ª execução) e apaga o grupo/placa/limpeza/clima que criar.
+// O teste do clima espera o pg_cron (até ~3 min).
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import * as api from "../../frontend/src/lib/api.js";
@@ -43,13 +44,15 @@ test("perfil criado pelo trigger", async () => {
 });
 
 test("cadastra grupo, placa e limpeza no formato da API antiga", async () => {
-  await api.createGroup({ nome: `  Grupo E2E ${sufixo} `, status: "ATIVO" });
+  await api.createGroup({ nome: `  Grupo E2E ${sufixo} `, status: "ATIVO", latitude: -27.59, longitude: -48.55 });
   grupo = (await api.listGroups()).find((g) => g.nome === `Grupo E2E ${sufixo}`);
   assert.equal(grupo.totalPlacas, 0);
 
-  await api.createPanel({ grupoId: grupo.id, modelo: "Placa E2E", status: "ATIVA" });
+  await api.createPanel({ grupoId: grupo.id, modelo: "Placa E2E", status: "ATIVA", potenciaWp: 3000, inclinacao: 27, azimute: 0 });
   placa = (await api.listPanels()).find((p) => p.grupoId === grupo.id);
   assert.equal(placa.grupoNome, grupo.nome);
+  assert.equal(placa.potenciaWp, 3000);
+  assert.equal(placa.latitude, -27.59);
   assert.equal((await api.listGroups()).find((g) => g.id === grupo.id).totalPlacas, 1);
 
   await api.createCleaning({ placaId: placa.id, dataLimpeza: new Date().toISOString(), observacao: " e2e " });
@@ -58,18 +61,25 @@ test("cadastra grupo, placa e limpeza no formato da API antiga", async () => {
   assert.equal(limpeza.observacao, "e2e");
 });
 
-test("dashboard: resumo em Wh e métricas por hora", async () => {
+test("pg_cron carrega 5 anos de clima da placa nova e o dashboard estima a geração", { timeout: 240000 }, async () => {
+  // o job roda a cada minuto; espera até ~3 min
+  for (let tentativa = 0; tentativa < 18 && !placa.climaHistoricoEm; tentativa += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 10000));
+    placa = (await api.listPanels()).find((p) => p.id === placa.id);
+  }
+  assert.ok(placa.climaHistoricoEm, "o histórico de clima não foi carregado em 3 min");
+
+  const anoPassado = await api.getDashboardMetrics({
+    granularidade: "mes",
+    dataInicio: new Date(Date.now() - 4 * 365 * 864e5).toISOString(),
+    dataFim: new Date(Date.now() - 3 * 365 * 864e5).toISOString()
+  });
+  assert.ok(anoPassado.filter((p) => p.estimada > 0).length >= 11, "esperava ~12 meses de estimativa de 3–4 anos atrás");
+
   const resumo = await api.getDashboardSummary();
   assert.ok(resumo.placasAtivas >= 1);
+  assert.ok(resumo.previsaoAmanha > 0, "sem previsão para amanhã");
   assert.ok(resumo.totalGeradoHoje >= 0);
-
-  assert.ok(await api.getLastReadingDate());
-  const pontos = await api.getDashboardMetrics({
-    granularidade: "hora",
-    dataInicio: new Date(Date.now() - 864e5).toISOString(),
-    dataFim: new Date().toISOString()
-  });
-  assert.ok(pontos.length > 0 && "x" in pontos[0] && "y" in pontos[0]);
 });
 
 test("erros chegam traduzidos", async () => {

@@ -112,7 +112,10 @@ export default function AppShell() {
           <div className="page-content px-3 px-lg-4">
             <Outlet />
           </div>
-          <footer className="footer">© 2026 SolarVision - Todos os direitos reservados.</footer>
+          <footer className="footer">
+            © 2026 SolarVision - Todos os direitos reservados. Dados meteorológicos:{" "}
+            <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo.com</a> (CC BY 4.0).
+          </footer>
         </main>
       </div>
 

@@ -21,32 +21,45 @@ Lista de funcionalidades que estão **referenciadas/parcialmente implementadas**
 
 ### 3. Editar/excluir na interface (Cadastro e Limpeza)
 - **Estado atual:** a RLS já permite `update`/`delete` em grupos, placas e limpezas, mas `lib/api.js` só tem funções de listar e criar, e a UI só cria e lista.
-- **Falta:** funções de atualizar/excluir em `lib/api.js` e os botões nas telas. Para **Cadastro**, a versão com edição/exclusão já existe na branch `feat/muda-aba-cadastro` (feita sobre a API antiga; precisa ser adaptada ao Supabase); para **Limpeza** ainda não existe em nenhuma branch.
+- **Falta:** funções de atualizar/excluir em `lib/api.js` e os botões nas telas. Para **Cadastro**, a versão com edição/exclusão já existe na branch `feat/muda-aba-cadastro` (feita sobre a API antiga; precisa ser adaptada ao Supabase; os nomes das colunas de local/especificações já são os mesmos); para **Limpeza** ainda não existe em nenhuma branch.
 - **Onde:** `frontend/src/lib/api.js`, `frontend/src/pages/CadastroPage.jsx`, `frontend/src/pages/CleaningPage.jsx`.
 
 ### 4. QA e produção no mesmo projeto Supabase
 - **Estado atual:** os ambientes `qa` e `production` da Vercel apontam para o mesmo banco; dados e usuários criados em QA aparecem em produção.
-- **Falta:** um segundo projeto Supabase para QA (mesma migration e carga) e variáveis `VITE_SUPABASE_*` diferentes por ambiente na Vercel.
+- **Falta:** um segundo projeto Supabase para QA (mesmas migrations) e variáveis `VITE_SUPABASE_*` diferentes por ambiente na Vercel.
 - **Onde:** Supabase e configuração de variáveis da Vercel.
+
+### 5. Geração medida (sensor ou inversor) - próximo passo
+- **Estado atual:** a geração é só **estimada** pelo clima (Open-Meteo); estimado não é medido. `leituras_energia` está vazia (os dados mocados do CSV foram removidos), então o card "Medido Hoje" fica zerado e a série "Medida (sensores)" não aparece no gráfico.
+- **Falta:** gravar leituras reais, por um sensor (ESP32) ou pela API do inversor, e comparar medido ÷ estimado (performance ratio) para detectar perda de rendimento e sujeira, ligando isso às limpezas.
+- **Onde:** dispositivo/integração externa, nova migration (forma de escrita em `leituras_energia`) e telas do dashboard.
 
 ---
 
 ## Média prioridade
 
-### 5. Alertas
+### 6. Limitações da geração estimada
+- **Resolução horária:** no Brasil o Open-Meteo só tem dados por hora (o de 15 min é interpolado).
+- **Modelo fixo:** PR 0,82 e NOCT 45 °C são constantes em `potencia_estimada()`; viram colunas da placa quando houver dado medido para calibrar (item 5).
+- **Edição não recarrega o clima:** mudar local, inclinação ou azimute de uma placa já sincronizada não recarrega o histórico (ainda não há tela de edição); ao criá-la (item 3), zerar `clima_historico_em` nesses updates.
+- **Uma série por placa:** ~3,5 MB por placa a cada 5 anos em `clima_horario`; deduplicar por local + inclinação + azimute se houver muitas placas.
+- **Uso não comercial:** a API gratuita do Open-Meteo não cobre uso comercial.
+- **Onde:** `supabase/migrations/20261007120000_clima_open_meteo.sql`.
+
+### 7. Alertas
 - **Estado atual:** a tabela `alertas` e os serviços gRPC que a preenchiam foram removidos na migração.
 - **Falta (se desejado):** tabela `alertas` com RLS, geração por função SQL/trigger ou Edge Function e tela de listagem.
 
-### 6. Envio real de e-mail de alerta
+### 8. Envio real de e-mail de alerta
 - **Estado atual:** não existe (na versão Spring Boot era apenas simulado por `log`).
-- **Falta:** Edge Function do Supabase integrada a um provedor de e-mail, disparada pelos alertas do item 5.
+- **Falta:** Edge Function do Supabase integrada a um provedor de e-mail, disparada pelos alertas do item 7.
 
-### 7. Dropdown "Meu perfil" x "Configurações"
+### 9. Dropdown "Meu perfil" x "Configurações"
 - **Estado atual:** os dois itens do menu do usuário navegam para `/app/configuracoes`.
 - **Falta:** ou uma tela de perfil separada (ver item 1), ou unificar os itens.
 - **Onde:** `frontend/src/components/AppShell.jsx`.
 
-### 8. Estados de carregamento e feedback de sucesso
+### 10. Estados de carregamento e feedback de sucesso
 - **Estado atual:** `HomePage` e `CadastroPage` não têm indicador de carregamento (mostram `--`/listas vazias); nenhum formulário mostra mensagem de sucesso após salvar.
 - **Falta:** estado de `loading` (spinner/skeleton) e feedback de sucesso (toast/alerta) nos formulários.
 - **Onde:** `frontend/src/pages/HomePage.jsx`, `CadastroPage.jsx`, `CleaningPage.jsx`.
@@ -55,7 +68,7 @@ Lista de funcionalidades que estão **referenciadas/parcialmente implementadas**
 
 ## Baixa prioridade (polimento)
 
-- **Cobertura de testes:** há testes de utilitários do frontend e um teste de ponta a ponta de `lib/api.js` contra o Supabase (`supabase/tests/e2e.mjs`). Faltam testes das telas (ex.: Playwright contra a URL de QA) e testes isolados do banco (ex.: pgTAP).
+- **Cobertura de testes:** há testes de utilitários do frontend e um teste de ponta a ponta de `lib/api.js` contra o Supabase (`supabase/tests/e2e.mjs`, incluindo a carga do clima pelo pg_cron). Faltam testes das telas (ex.: Playwright contra a URL de QA) e testes isolados do banco (ex.: pgTAP).
 - **Status do grupo exibido cru** ("ATIVO") na Home; `placaId` não reseta após salvar limpeza.
 
 ---
@@ -68,8 +81,10 @@ Lista de funcionalidades que estão **referenciadas/parcialmente implementadas**
 | 2 | Autorização por papel sem efeito | Alta | Banco |
 | 3 | Editar/excluir na UI (Cadastro/Limpeza) | Alta | Front |
 | 4 | QA e produção no mesmo Supabase | Alta | Infra |
-| 5 | Alertas | Média | Banco + Front |
-| 6 | Envio real de e-mail | Média | Supabase (Edge Function) |
-| 7 | "Meu perfil" x "Configurações" | Média | Front |
-| 8 | Loading + feedback de sucesso | Média | Front |
-| 9 | Testes ausentes / polimentos diversos | Baixa | Front + Banco |
+| 5 | Geração medida (sensor ESP32 ou inversor) | Alta | Hardware/integração + Banco + Front |
+| 6 | Limitações da geração estimada | Média | Banco |
+| 7 | Alertas | Média | Banco + Front |
+| 8 | Envio real de e-mail | Média | Supabase (Edge Function) |
+| 9 | "Meu perfil" x "Configurações" | Média | Front |
+| 10 | Loading + feedback de sucesso | Média | Front |
+| 11 | Testes ausentes / polimentos diversos | Baixa | Front + Banco |
