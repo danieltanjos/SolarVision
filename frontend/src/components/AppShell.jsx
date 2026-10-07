@@ -11,6 +11,7 @@ import logo from "../../img/logo.png";
 export default function AppShell() {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
+  // O tema vive aqui: o botão do cabeçalho e a tela de Configurações (via contexto do Outlet) mexem no mesmo estado.
   const [isDark, setIsDark] = useState(getInitialTheme);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
     () => window.localStorage.getItem("sv-sidebar-collapsed") === "true"
@@ -74,7 +75,7 @@ export default function AppShell() {
               <ul className="dropdown-menu dropdown-menu-end">
                 <li className="dropdown-header">{user?.email}</li>
                 <li>
-                  <button className="dropdown-item" onClick={() => navigate("/app/configuracoes")}>
+                  <button className="dropdown-item" onClick={() => navigate("/app/configuracoes#perfil")}>
                     <i className="bi bi-person me-2" />
                     Meu perfil
                   </button>
@@ -92,7 +93,7 @@ export default function AppShell() {
         </header>
 
         <main className="sv-content">
-          <Outlet />
+          <Outlet context={{ isDark, setIsDark }} />
         </main>
 
         <footer className="sv-footer">

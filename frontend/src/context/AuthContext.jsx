@@ -50,8 +50,24 @@ export function AuthProvider({ children }) {
     if (!data.session) throw new Error("Conta criada. Confirme seu e-mail para entrar.");
   }
 
-  function logout() {
-    return supabase.auth.signOut();
+  // "local": só esta sessão; "global": todos os dispositivos (o padrão do supabase-js).
+  function logout(scope = "local") {
+    return supabase.auth.signOut({ scope });
+  }
+
+  // Confere a senha atual com um novo login antes de trocar: a sessão aberta sozinha não prova quem está no teclado.
+  async function trocarSenha(atual, nova) {
+    const login = await supabase.auth.signInWithPassword({ email: user.email, password: atual });
+    if (login.error) {
+      throw login.error.message === "Invalid login credentials" ? new Error("A senha atual está incorreta.") : login.error;
+    }
+    const { error } = await supabase.auth.updateUser({ password: nova });
+    if (error) throw error;
+  }
+
+  // Depois de salvar o perfil/preferências.
+  async function recarregarUsuario() {
+    setUser(await getCurrentUser());
   }
 
   if (session === undefined) {
@@ -65,7 +81,9 @@ export function AuthProvider({ children }) {
         user,
         login,
         register,
-        logout
+        logout,
+        trocarSenha,
+        recarregarUsuario
       }}
     >
       {children}
@@ -75,4 +93,9 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   return useContext(AuthContext);
+}
+
+// Perda por sujeira (0 a 0,20) a partir da qual a limpeza é recomendada: a preferência do usuário (padrão 10 %).
+export function useLimiarLimpeza() {
+  return useAuth().user?.limiarLimpeza ?? 0.1;
 }
