@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { createCleaning, extractErrorMessage, listCleanings, listPanels } from "../lib/api";
+import { formatPerda } from "../lib/placas";
 
 function toDatetimeLocal(value) {
   const date = new Date(value);
@@ -71,7 +72,7 @@ export default function CleaningPage() {
       <header className="sv-page-head">
         <div>
           <h1>Limpeza</h1>
-          <p>Registre as limpezas e acompanhe o histórico de cada placa.</p>
+          <p>Registre as limpezas: a perda por sujeira da placa volta a zero e o real volta a bater com o estimado.</p>
         </div>
       </header>
 
@@ -96,7 +97,9 @@ export default function CleaningPage() {
                 {porGrupo.map(([grupo, placas]) => (
                   <optgroup key={grupo} label={grupo}>
                     {placas.map((panel) => (
-                      <option key={panel.id} value={panel.id}>{panel.modelo}</option>
+                      <option key={panel.id} value={panel.id}>
+                        {panel.modelo}{panel.perdaSujeira != null ? ` · sujeira ${formatPerda(panel.perdaSujeira)}` : ""}
+                      </option>
                     ))}
                   </optgroup>
                 ))}

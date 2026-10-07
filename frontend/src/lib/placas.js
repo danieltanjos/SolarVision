@@ -27,3 +27,17 @@ export function climaStatus(panel) {
 export function potenciaInstalada(panels) {
   return panels.reduce((total, panel) => total + (Number(panel.potenciaWp) || 0), 0);
 }
+
+// Perda por sujeira (0 a 0,20, calculada no banco) a partir da qual a limpeza é recomendada.
+export const LIMPAR_A_PARTIR = 0.1;
+
+// Perda média do conjunto, ponderada pela potência (placa maior pesa mais na geração).
+export function perdaMedia(panels) {
+  const comPerda = panels.filter((panel) => panel.perdaSujeira != null && panel.potenciaWp != null);
+  const total = potenciaInstalada(comPerda);
+  return total ? comPerda.reduce((soma, panel) => soma + panel.perdaSujeira * panel.potenciaWp, 0) / total : null;
+}
+
+export function formatPerda(perda) {
+  return perda == null ? "—" : `${Math.round(perda * 100)}%`;
+}

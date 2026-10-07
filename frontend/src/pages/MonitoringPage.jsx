@@ -1,19 +1,20 @@
 import { startTransition, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import MetricChart from "../components/MetricChart";
+import PrevisaoSemana from "../components/PrevisaoSemana";
 import StatCard from "../components/StatCard";
-import StatusBadge from "../components/StatusBadge";
+import StatusBadge, { SujeiraBadge } from "../components/StatusBadge";
 import { extractErrorMessage, getDashboardMetrics, listCleanings, listGroups, listPanels } from "../lib/api";
-import { TIME_ZONE, formatRangeLabel, rangeFor, shiftDate, toSaoPaulo } from "../lib/periodo";
-import { climaStatus, orientacao, potenciaInstalada } from "../lib/placas";
+import { formatRangeLabel, rangeFor, shiftDate, toSaoPaulo } from "../lib/periodo";
+import { LIMPAR_A_PARTIR, climaStatus, formatPerda, orientacao, perdaMedia, potenciaInstalada } from "../lib/placas";
 import { formatEnergy, formatPower } from "../lib/power";
 
 // Cada "view" é a janela mostrada; o "bucket" (date_trunc no Supabase) dá uma quantidade de pontos adequada.
 const VIEWS = [
-  { value: "dia", label: "Dia", bucket: "hora", melhor: "Melhor hora", formato: { hour: "2-digit", minute: "2-digit" } },
-  { value: "semana", label: "Semana", bucket: "dia", melhor: "Melhor dia", formato: { weekday: "long", day: "2-digit", month: "2-digit" } },
-  { value: "mes", label: "Mês", bucket: "dia", melhor: "Melhor dia", formato: { day: "2-digit", month: "2-digit" } },
-  { value: "ano", label: "Ano", bucket: "mes", melhor: "Melhor mês", formato: { month: "long" } }
+  { value: "dia", label: "Dia", bucket: "hora" },
+  { value: "semana", label: "Semana", bucket: "dia" },
+  { value: "mes", label: "Mês", bucket: "dia" },
+  { value: "ano", label: "Ano", bucket: "mes" }
 ];
 
 const ROTA = "/app/monitoramento";
@@ -32,7 +33,7 @@ export default function MonitoringPage() {
   const [cleanings, setCleanings] = useState([]);
   const [search, setSearch] = useState("");
   const [view, setView] = useState("dia");
-  // Ancorado em "agora": a série estimada vem do clima real e inclui a previsão.
+  // Ancorado em "agora": o estimado inclui a previsão do tempo; o real vai até a última hora completa.
   const [referenceDate, setReferenceDate] = useState(() => toSaoPaulo(new Date()));
   const [points, setPoints] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -88,10 +89,12 @@ export default function MonitoringPage() {
     ? `${panel.grupoNome} · ${panel.potenciaWp ?? "?"} Wp · ${panel.inclinacao ?? "?"}° · ${orientacao(panel.azimute)}`
     : `${group ? "" : `${plural(groups.length, "grupo", "grupos")} · `}${plural(selecionadas.length, "placa", "placas")} · ${formatPower(potenciaInstalada(selecionadas))}p instalados`;
 
-  const melhor = points.reduce((max, point) => (Number(point.estimadaWh) > Number(max?.estimadaWh ?? 0) ? point : max), null);
-  const temMedida = points.some((point) => point.medidaWh != null);
+  const temReal = points.some((point) => point.medidaWh != null);
   const futuro = points.some((point) => new Date(point.x) > new Date());
   const ultimaLimpeza = panel ? cleanings.find((item) => item.placaId === panel.id) : null;
+  const perda = perdaMedia(selecionadas);
+  const sujas = selecionadas.filter((p) => p.perdaSujeira >= LIMPAR_A_PARTIR).length;
+  const diasDesdeLimpeza = ultimaLimpeza ? Math.floor((Date.now() - new Date(ultimaLimpeza.dataLimpeza)) / 864e5) : null;
 
   const item = (ativo) => `sv-picker-item ${ativo ? "active" : ""}`;
 
@@ -100,7 +103,7 @@ export default function MonitoringPage() {
       <header className="sv-page-head">
         <div>
           <h1>Monitoramento</h1>
-          <p>Escolha um grupo ou uma placa para ver a geração medida e a estimada pelo clima.</p>
+          <p>Escolha um grupo ou uma placa e compare a geração real com a estimada pela previsão do tempo.</p>
         </div>
       </header>
 
@@ -204,36 +207,36 @@ export default function MonitoringPage() {
 
             <div className="sv-stats sv-stats-compact">
               <StatCard
+                title="Energia real"
+                value={loading ? "…" : temReal ? formatEnergy(soma(points, "medidaWh")) : "—"}
+                subtitle={temReal ? "Simulada, até a última hora completa" : "Período ainda não começou"}
+                icon="bi-lightning"
+                tone="primary"
+              />
+              <StatCard
                 title="Energia estimada"
                 value={loading ? "…" : formatEnergy(soma(points, "estimadaWh"))}
-                subtitle={futuro ? "Inclui a previsão do tempo" : "Pelo clima real do período"}
+                subtitle={futuro ? "Inclui a previsão do tempo" : "Pelo clima do período"}
                 icon="bi-sun"
                 tone="accent"
               />
               <StatCard
-                title={config.melhor}
-                value={loading || !melhor ? "—" : formatEnergy(melhor.estimadaWh)}
+                title="Perda por sujeira"
+                value={formatPerda(perda)}
                 subtitle={
-                  melhor
-                    ? new Date(melhor.x).toLocaleString("pt-BR", { timeZone: TIME_ZONE, ...config.formato })
-                    : "Sem estimativa"
+                  panel
+                    ? diasDesdeLimpeza != null ? `Limpa há ${plural(diasDesdeLimpeza, "dia", "dias")}` : "Nenhuma limpeza registrada"
+                    : sujas ? `${plural(sujas, "placa precisa", "placas precisam")} de limpeza` : "Nenhuma placa precisa de limpeza"
                 }
-                icon="bi-trophy"
-                tone="primary"
-              />
-              <StatCard
-                title="Energia medida"
-                value={loading ? "…" : temMedida ? formatEnergy(soma(points, "medidaWh")) : "—"}
-                subtitle={temMedida ? "Leituras dos sensores" : "Sem sensores neste período"}
-                icon="bi-speedometer2"
-                tone="muted"
+                icon="bi-droplet-half"
+                tone={perda >= LIMPAR_A_PARTIR ? "accent" : "success"}
               />
               <StatCard
                 title="Capacidade"
                 value={`${formatPower(potenciaInstalada(selecionadas))}p`}
                 subtitle={plural(selecionadas.length, "placa", "placas")}
-                icon="bi-lightning-charge"
-                tone="success"
+                icon="bi-grid-3x2"
+                tone="muted"
               />
             </div>
 
@@ -247,6 +250,8 @@ export default function MonitoringPage() {
               )}
             </div>
           </section>
+
+          <PrevisaoSemana grupoId={placaId ? null : grupoParam} placaId={placaId} />
 
           {panel ? (
             <section className="card">
@@ -273,6 +278,7 @@ export default function MonitoringPage() {
                   </dd>
                 </div>
                 <div><dt>Clima</dt><dd>{climaStatus(panel).texto}</dd></div>
+                <div><dt>Perda por sujeira</dt><dd><SujeiraBadge perda={panel.perdaSujeira} /></dd></div>
                 <div>
                   <dt>Última limpeza</dt>
                   <dd>{ultimaLimpeza ? new Date(ultimaLimpeza.dataLimpeza).toLocaleDateString("pt-BR") : "Nenhuma"}</dd>
@@ -295,6 +301,7 @@ export default function MonitoringPage() {
                       <th>Inclinação</th>
                       <th>Orientação</th>
                       <th>Clima</th>
+                      <th>Sujeira</th>
                       <th>Status</th>
                     </tr>
                   </thead>
@@ -307,12 +314,13 @@ export default function MonitoringPage() {
                         <td className="text-nowrap">{p.inclinacao != null ? `${p.inclinacao}°` : "—"}</td>
                         <td>{p.azimute != null ? orientacao(p.azimute) : "—"}</td>
                         <td className="sv-muted">{climaStatus(p).texto}</td>
+                        <td><SujeiraBadge perda={p.perdaSujeira} /></td>
                         <td><StatusBadge status={p.status} /></td>
                       </tr>
                     ))}
                     {selecionadas.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="sv-muted">Nenhuma placa por aqui.</td>
+                        <td colSpan="8" className="sv-muted">Nenhuma placa por aqui.</td>
                       </tr>
                     ) : null}
                   </tbody>

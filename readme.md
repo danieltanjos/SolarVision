@@ -1,6 +1,6 @@
 # SolarVision
 
-Sistema web para monitoramento de energia solar: SPA em React + Vite hospedada na **Vercel** e **Supabase** como backend completo (Auth, API REST gerada pelo PostgREST, funções SQL/RPC, PostgreSQL e pg_cron). A geração é **estimada a partir do clima real** ([Open-Meteo](https://open-meteo.com/)): ao cadastrar uma placa com local e especificações, o próprio banco carrega 5 anos de clima horário e a previsão dos próximos dias. A geração **medida** depende de sensores (ainda não integrados).
+Sistema web para monitoramento de energia solar: SPA em React + Vite hospedada na **Vercel** e **Supabase** como backend completo (Auth, API REST gerada pelo PostgREST, funções SQL/RPC, PostgreSQL e pg_cron). A geração é **estimada a partir do clima real** ([Open-Meteo](https://open-meteo.com/)): ao cadastrar uma placa com local e especificações, o próprio banco carrega 5 anos de clima horário e a previsão dos próximos 7 dias. A geração **real** é simulada (o estimado menos a perda por sujeira desde a última limpeza) até haver sensores integrados.
 
 > Até a migração, o backend era uma API Spring Boot (Java 25, JWT, GraphQL, gRPC, Flyway, Swagger) orquestrada com Docker Compose. Esse código foi removido; o histórico está no Git e em [`docs/QUALIDADE-E-TESTES.md`](docs/QUALIDADE-E-TESTES.md).
 

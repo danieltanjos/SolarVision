@@ -135,7 +135,7 @@ Registro de limpeza de uma placa.
 | criado_em | timestamptz | padrão `now()` |
 
 ### `leituras_energia`
-Leitura **medida** de geração de uma placa (série temporal de sensores). Vazia até haver sensor ou API de inversor integrados; os dados mocados do CSV foram removidos.
+Leitura **medida** de geração de uma placa (série temporal de sensores). Vazia até haver sensor ou API de inversor integrados; enquanto isso o real do dashboard é simulado (estimado menos a perda por sujeira).
 
 | Coluna | Tipo | Observações |
 |---|---|---|
@@ -189,6 +189,7 @@ A exclusão é em cascata (`on delete cascade`): remover um grupo remove suas pl
 
 - **Índices**: `placas.grupo_id`, `limpezas.placa_id`, `limpezas.data_limpeza desc`, `leituras_energia.placa_id`, `leituras_energia.data_hora`; `clima_horario` usa a PK `(placa_id, data_hora)`.
 - **Funções (RPC)**: `dashboard_metricas(granularidade, data_inicio, data_fim, grupo, placa)` e `dashboard_resumo()` - ver [FUNCIONALIDADES.md](FUNCIONALIDADES.md).
+- **Sujeira**: `perda_sujeira_em(placa_id, instante)` (0 a 0,20) e a coluna calculada `perda_sujeira(placas)` (perda agora, lida pela API como `placas?select=...,perda_sujeira`).
 - **Funções do clima**: `potencia_estimada(potencia_wp, coef_temperatura, irradiancia, temperatura)` (W estimados de uma hora) e, só para o pg_cron, `sincronizar_clima()` e `atualizar_clima_placa(placa_id, historico)` - ver [ARQUITETURA.md](ARQUITETURA.md#5-geração-estimada-pelo-clima-open-meteo).
 - **RLS**: habilitada em todas as tabelas - ver [ARQUITETURA.md](ARQUITETURA.md#4-segurança).
 - **Nomes no JSON**: `frontend/src/lib/api.js` usa aliases (`criadoEm:criado_em`, `grupoId:grupo_id`...) para entregar às telas os mesmos campos camelCase da API antiga.
