@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { createCleaning, extractErrorMessage, listCleanings, listPanels } from "../lib/api";
 
 function toDatetimeLocal(value) {
@@ -9,12 +10,14 @@ function toDatetimeLocal(value) {
 }
 
 export default function CleaningPage() {
+  const [params] = useSearchParams();
   const [cleanings, setCleanings] = useState([]);
   const [panels, setPanels] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    placaId: "",
+    placaId: params.get("placa") ?? "", // vindo de "Registrar limpeza" no Monitoramento
     dataLimpeza: toDatetimeLocal(new Date()),
     observacao: ""
   });
@@ -39,6 +42,7 @@ export default function CleaningPage() {
 
   async function handleSubmit(event) {
     event.preventDefault();
+    setSaving(true);
     try {
       await createCleaning({
         placaId: Number(form.placaId),
@@ -53,104 +57,124 @@ export default function CleaningPage() {
       await loadData();
     } catch (err) {
       setError(extractErrorMessage(err));
+    } finally {
+      setSaving(false);
     }
   }
 
+  // Placas agrupadas por grupo no select (<optgroup>).
+  const porGrupo = Object.entries(Object.groupBy(panels, (panel) => panel.grupoNome));
+  const grupoDaPlaca = Object.fromEntries(panels.map((panel) => [panel.id, panel.grupoNome]));
+
   return (
-    <div className="sv-page-stack">
-      <div>
-        <h1 className="mb-2">Limpeza</h1>
-        <p className="text-muted mb-0">Registro operacional e histórico das limpezas das placas.</p>
-      </div>
+    <div className="sv-page">
+      <header className="sv-page-head">
+        <div>
+          <h1>Limpeza</h1>
+          <p>Registre as limpezas e acompanhe o histórico de cada placa.</p>
+        </div>
+      </header>
 
-      {error ? <div className="alert alert-danger">{error}</div> : null}
+      {error ? <div className="alert alert-danger mb-0">{error}</div> : null}
 
-      <div className="row g-4">
-        <div className="col-xl-4">
-          <div className="card">
-            <h2 className="h5 mb-3">Registrar limpeza</h2>
-            <form onSubmit={handleSubmit} className="d-grid gap-3">
+      <div className="sv-split">
+        <section className="card">
+          <div className="sv-card-head">
+            <h2>Registrar limpeza</h2>
+          </div>
+          <form onSubmit={handleSubmit} className="sv-form">
+            <div>
+              <label className="form-label" htmlFor="limpeza-placa">Placa</label>
               <select
-                aria-label="Placa"
+                id="limpeza-placa"
                 className="form-select"
                 value={form.placaId}
                 onChange={(event) => setForm((current) => ({ ...current, placaId: event.target.value }))}
                 required
               >
                 <option value="">Selecione a placa</option>
-                {panels.map((panel) => (
-                  <option key={panel.id} value={panel.id}>
-                    {panel.modelo} · {panel.grupoNome}
-                  </option>
+                {porGrupo.map(([grupo, placas]) => (
+                  <optgroup key={grupo} label={grupo}>
+                    {placas.map((panel) => (
+                      <option key={panel.id} value={panel.id}>{panel.modelo}</option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
+            </div>
 
+            <div>
+              <label className="form-label" htmlFor="limpeza-data">Data e hora</label>
               <input
-                aria-label="Data da limpeza"
+                id="limpeza-data"
                 type="datetime-local"
                 className="form-control"
                 value={form.dataLimpeza}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, dataLimpeza: event.target.value }))
-                }
+                onChange={(event) => setForm((current) => ({ ...current, dataLimpeza: event.target.value }))}
                 required
               />
+            </div>
 
+            <div>
+              <label className="form-label" htmlFor="limpeza-obs">Observação</label>
               <textarea
+                id="limpeza-obs"
                 className="form-control"
                 rows="4"
-                placeholder="Observação"
-                aria-label="Observação"
+                placeholder="Ex.: lavagem com água desmineralizada"
                 maxLength={1000}
                 value={form.observacao}
                 onChange={(event) => setForm((current) => ({ ...current, observacao: event.target.value }))}
               />
-
-              <button type="submit" className="btn btn-primary">Salvar limpeza</button>
-            </form>
-          </div>
-        </div>
-
-        <div className="col-xl-8">
-          <div className="card">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h2 className="h5 mb-0">Histórico</h2>
-              <span className="badge text-bg-light">{cleanings.length} registros</span>
             </div>
 
-            {loading ? (
-              <div className="sv-state-block">
-                <div className="spinner-border text-primary" role="status" />
-              </div>
-            ) : (
-              <div className="sv-table-wrap">
-                <table className="table align-middle">
-                  <thead>
-                    <tr>
-                      <th>Placa</th>
-                      <th>Data</th>
-                      <th>Observação</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cleanings.map((cleaning) => (
-                      <tr key={cleaning.id}>
-                        <td>{cleaning.placaModelo}</td>
-                        <td>{new Date(cleaning.dataLimpeza).toLocaleString("pt-BR")}</td>
-                        <td>{cleaning.observacao || "Sem observação"}</td>
-                      </tr>
-                    ))}
-                    {cleanings.length === 0 ? (
-                      <tr>
-                        <td colSpan="3" className="text-muted">Nenhuma limpeza registrada.</td>
-                      </tr>
-                    ) : null}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <button type="submit" className="btn btn-primary" disabled={saving}>
+              {saving ? "Salvando..." : "Salvar limpeza"}
+            </button>
+          </form>
+        </section>
+
+        <section className="card">
+          <div className="sv-card-head">
+            <h2>Histórico</h2>
+            <span className="sv-chip">{cleanings.length} registros</span>
           </div>
-        </div>
+
+          {loading && cleanings.length === 0 ? (
+            <div className="sv-empty">
+              <div className="spinner-border text-primary" role="status" />
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table sv-table align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Placa</th>
+                    <th>Data</th>
+                    <th>Observação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cleanings.map((cleaning) => (
+                    <tr key={cleaning.id}>
+                      <td>
+                        <div className="fw-semibold">{cleaning.placaModelo}</div>
+                        <div className="sv-muted small">{grupoDaPlaca[cleaning.placaId]}</div>
+                      </td>
+                      <td className="text-nowrap">{new Date(cleaning.dataLimpeza).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</td>
+                      <td className="sv-muted">{cleaning.observacao || "Sem observação"}</td>
+                    </tr>
+                  ))}
+                  {cleanings.length === 0 ? (
+                    <tr>
+                      <td colSpan="3" className="sv-muted">Nenhuma limpeza registrada.</td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );

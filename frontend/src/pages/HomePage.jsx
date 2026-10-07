@@ -1,94 +1,180 @@
-import { useEffect, useState } from "react";
-import { extractErrorMessage, getDashboardSummary, listGroups } from "../lib/api";
-import { useAuth } from "../context/AuthContext";
+import { Suspense, lazy, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import StatCard from "../components/StatCard";
+import StatusBadge from "../components/StatusBadge";
+import { useAuth } from "../context/AuthContext";
+import {
+  extractErrorMessage,
+  getDashboardMetrics,
+  getDashboardSummary,
+  listCleanings,
+  listGroups,
+  listPanels
+} from "../lib/api";
+import { TIME_ZONE, rangeFor, toSaoPaulo } from "../lib/periodo";
+import { potenciaInstalada } from "../lib/placas";
 import { formatEnergy, formatPower } from "../lib/power";
 import { titleCase } from "../lib/text";
 
+// ApexCharts (~580 kB) carrega depois do resto da Home.
+const MetricChart = lazy(() => import("../components/MetricChart"));
+
+const hoje = () => new Date().toLocaleDateString("pt-BR", { timeZone: TIME_ZONE, weekday: "long", day: "numeric", month: "long" });
+
 export default function HomePage() {
   const { user } = useAuth();
-  const [summary, setSummary] = useState(null);
-  const [groups, setGroups] = useState([]);
+  const [data, setData] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        const [summaryData, groupsData] = await Promise.all([getDashboardSummary(), listGroups()]);
-        setSummary(summaryData);
-        setGroups(groupsData);
-      } catch (err) {
-        setError(extractErrorMessage(err));
-      }
-    }
-
-    loadData();
+    Promise.all([
+      getDashboardSummary(),
+      listGroups(),
+      listPanels(),
+      listCleanings(),
+      getDashboardMetrics({ granularidade: "hora", ...rangeFor("dia", toSaoPaulo(new Date())) })
+    ]).then(
+      ([summary, groups, panels, cleanings, today]) => setData({ summary, groups, panels, cleanings, today }),
+      (err) => setError(extractErrorMessage(err))
+    );
   }, []);
 
+  const { summary, groups = [], panels = [], cleanings = [], today = [] } = data ?? {};
+  const ativas = panels.filter((panel) => panel.status === "ATIVA").length;
+
   return (
-    <div className="sv-home">
-      <div className="sv-home-intro">
-        <h1>Olá, {user?.nome ? titleCase(user.nome) : "Usuário"}!</h1>
-        <p className="text-muted mb-0">
-          Visão resumida da operação solar com a linguagem visual original do painel.
-        </p>
-      </div>
+    <div className="sv-page">
+      <header className="sv-page-head">
+        <div>
+          <h1>Olá, {user?.nome ? titleCase(user.nome).split(" ")[0] : "Usuário"}!</h1>
+          <p>Resumo de {hoje()}.</p>
+        </div>
+        <Link to="/app/monitoramento" className="btn btn-primary">
+          <i className="bi bi-graph-up me-2" />
+          Monitorar
+        </Link>
+      </header>
 
-      {error ? <div className="alert alert-danger">{error}</div> : null}
+      {error ? <div className="alert alert-danger mb-0">{error}</div> : null}
 
-      <section className="sv-home-stats">
+      <section className="sv-stats">
         <StatCard
-          title="Estimado Hoje"
-          value={formatEnergy(summary?.estimadoHoje)}
-          subtitle={`Agora: ${formatPower(summary?.potenciaAgora)} · Amanhã: ${formatEnergy(summary?.previsaoAmanha)}`}
-          icon="bi-sun-fill"
+          title="Estimado hoje"
+          value={summary ? formatEnergy(summary.estimadoHoje) : "—"}
+          subtitle={summary ? `Agora: ${formatPower(summary.potenciaAgora)}` : null}
+          icon="bi-sun"
+          tone="accent"
         />
         <StatCard
-          title="Medido Hoje"
-          value={formatEnergy(summary?.totalGeradoHoje)}
-          subtitle="Leituras dos sensores desde o início do dia"
+          title="Previsão amanhã"
+          value={summary ? formatEnergy(summary.previsaoAmanha) : "—"}
+          subtitle="Pela previsão do tempo"
+          icon="bi-cloud-sun"
+          tone="primary"
+        />
+        <StatCard
+          title="Medido hoje"
+          value={summary ? formatEnergy(summary.totalGeradoHoje) : "—"}
+          subtitle="Leituras dos sensores"
           icon="bi-speedometer2"
+          tone="muted"
         />
         <StatCard
-          title="Placas Ativas"
-          value={summary?.placasAtivas ?? "--"}
-          subtitle="Equipamentos em operação"
-          icon="bi-lightning-charge-fill"
-        />
-        <StatCard
-          title="Última Limpeza"
-          value={summary?.ultimaLimpeza?.placaModelo || "Sem registro"}
-          subtitle={
-            summary?.ultimaLimpeza?.dataLimpeza
-              ? new Date(summary.ultimaLimpeza.dataLimpeza).toLocaleString("pt-BR")
-              : "Nenhuma limpeza cadastrada"
-          }
-          icon="bi-droplet-half"
+          title="Placas ativas"
+          value={data ? `${ativas}/${panels.length}` : "—"}
+          subtitle={data ? `${formatPower(potenciaInstalada(panels))}p instalados` : null}
+          icon="bi-lightning-charge"
+          tone="success"
         />
       </section>
 
-      <section className="card sv-home-panel">
-        <div className="sv-panel-head">
-          <div>
-            <h2>Grupos solares</h2>
-            <p className="text-muted mb-0">Resumo rápido dos grupos cadastrados.</p>
+      <div className="sv-home-grid">
+        <section className="card">
+          <div className="sv-card-head">
+            <div>
+              <h2>Geração de hoje</h2>
+              <p>Todas as placas, por hora (inclui a previsão).</p>
+            </div>
+            <Link to="/app/monitoramento" className="sv-link-arrow">
+              Ver detalhes <i className="bi bi-arrow-right" />
+            </Link>
           </div>
-          <span className="badge text-bg-light">{groups.length} grupos</span>
-        </div>
+          {data ? (
+            <Suspense fallback={<div className="sv-empty" style={{ minHeight: 260 }} />}>
+              <MetricChart points={today} view="dia" height={260} />
+            </Suspense>
+          ) : (
+            <div className="sv-empty" style={{ minHeight: 260 }}>
+              {error ? null : <div className="spinner-border text-primary" role="status" />}
+            </div>
+          )}
+        </section>
 
-        <div className="sv-group-grid">
-          {groups.map((group) => (
-            <article key={group.id} className="sv-summary-tile sv-group-card">
-              <div className="sv-group-card-head">
-                <div>
-                  <h3>{group.nome}</h3>
-                  <p>{group.status}</p>
+        <section className="card">
+          <div className="sv-card-head">
+            <div>
+              <h2>Limpezas recentes</h2>
+              <p>{cleanings.length} no total</p>
+            </div>
+            <Link to="/app/limpeza" className="sv-link-arrow">
+              Registrar <i className="bi bi-arrow-right" />
+            </Link>
+          </div>
+          <ul className="sv-list">
+            {cleanings.slice(0, 5).map((cleaning) => (
+              <li key={cleaning.id}>
+                <span className="sv-list-icon"><i className="bi bi-droplet" /></span>
+                <div className="min-w-0">
+                  <strong>{cleaning.placaModelo}</strong>
+                  <span>{cleaning.observacao || "Sem observação"}</span>
                 </div>
-                <span className="badge rounded-pill text-bg-primary">{group.totalPlacas} placas</span>
-              </div>
-            </article>
-          ))}
-          {groups.length === 0 ? <p className="sv-empty-state">Nenhum grupo cadastrado.</p> : null}
+                <time>{new Date(cleaning.dataLimpeza).toLocaleDateString("pt-BR")}</time>
+              </li>
+            ))}
+          </ul>
+          {data && cleanings.length === 0 ? (
+            <div className="sv-empty sv-empty-sm">
+              <i className="bi bi-droplet-half" />
+              <p>Nenhuma limpeza registrada.</p>
+            </div>
+          ) : null}
+        </section>
+      </div>
+
+      <section>
+        <div className="sv-section-head">
+          <h2>Grupos solares</h2>
+          <Link to="/app/cadastro" className="sv-link-arrow">
+            Gerenciar <i className="bi bi-arrow-right" />
+          </Link>
+        </div>
+        <div className="sv-group-grid">
+          {groups.map((group) => {
+            const doGrupo = panels.filter((panel) => panel.grupoId === group.id);
+            return (
+              <Link key={group.id} to={`/app/monitoramento?grupo=${group.id}`} className="card sv-group-card">
+                <div className="sv-group-card-head">
+                  <span className="sv-stat-icon sv-tone-primary"><i className="bi bi-collection" /></span>
+                  <StatusBadge status={group.status} />
+                </div>
+                <h3>{group.nome}</h3>
+                <p>
+                  {group.totalPlacas} {group.totalPlacas === 1 ? "placa" : "placas"} · {formatPower(potenciaInstalada(doGrupo))}p
+                </p>
+                <span className="sv-group-card-foot">
+                  <i className="bi bi-geo-alt" />
+                  {group.latitude != null ? `${group.latitude.toFixed(3)}, ${group.longitude.toFixed(3)}` : "Sem local"}
+                </span>
+              </Link>
+            );
+          })}
+          {data && groups.length === 0 ? (
+            <div className="card sv-empty sv-empty-sm">
+              <i className="bi bi-collection" />
+              <p>Nenhum grupo cadastrado.</p>
+              <Link to="/app/cadastro">Cadastrar o primeiro</Link>
+            </div>
+          ) : null}
         </div>
       </section>
     </div>

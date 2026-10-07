@@ -1,4 +1,4 @@
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { applyTheme, getInitialTheme } from "../lib/theme";
@@ -10,24 +10,17 @@ import logo from "../../img/logo.png";
 export default function AppShell() {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [isDark, setIsDark] = useState(getInitialTheme);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-
-    return window.localStorage.getItem("sv-sidebar-collapsed") === "true";
-  });
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
+    () => window.localStorage.getItem("sv-sidebar-collapsed") === "true"
+  );
 
   useEffect(() => {
     applyTheme(isDark);
   }, [isDark]);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("sv-sidebar-collapsed", String(isSidebarCollapsed));
-    }
+    window.localStorage.setItem("sv-sidebar-collapsed", String(isSidebarCollapsed));
   }, [isSidebarCollapsed]);
 
   async function handleLogout() {
@@ -35,88 +28,74 @@ export default function AppShell() {
     navigate("/login", { replace: true });
   }
 
-  const pageTitle = {
-    "/app/home": "Home",
-    "/app/limpeza": "Limpeza",
-    "/app/monitoramento": "Monitoramento",
-    "/app/cadastro": "Cadastro",
-    "/app/configuracoes": "Configurações"
-  }[location.pathname] || "SolarVision";
+  const nome = user?.nome ? titleCase(user.nome) : "Usuário";
+  const iniciais = nome.split(" ").map((parte) => parte[0]).slice(0, 2).join("");
 
   return (
-    <div className="sv-shell">
-      <header className="sv-topbar navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-        <div className="container-fluid px-3 px-lg-4">
-          <div className="d-flex align-items-center gap-3">
-            <Link className="navbar-brand d-flex align-items-center mb-0 sv-brand" to="/app/home">
-              <img src={logo} alt="Logo" className="navbar-logo me-2" />
-              SolarVision
-            </Link>
-            <span className="sv-page-tag d-none d-md-inline">{pageTitle}</span>
-          </div>
+    <div className={`sv-shell ${isSidebarCollapsed ? "is-collapsed" : ""}`}>
+      <Sidebar
+        logo={logo}
+        isCollapsed={isSidebarCollapsed}
+        onToggle={() => setIsSidebarCollapsed((current) => !current)}
+      />
 
-          <div className="sv-topbar-actions">
-            <div className="form-check form-switch mb-0 d-flex align-items-center gap-2">
-              <input
-                id="modoEscuro"
-                className="form-check-input mt-0"
-                type="checkbox"
-                checked={isDark}
-                onChange={(event) => setIsDark(event.target.checked)}
-              />
-              <label className="form-check-label text-muted small" htmlFor="modoEscuro">
-                Tema escuro
-              </label>
-            </div>
+      <div className="sv-main">
+        <header className="sv-header">
+          <Link className="sv-header-brand d-lg-none" to="/app/home">
+            <img src={logo} alt="" />
+            SolarVision
+          </Link>
+
+          <div className="sv-header-actions">
+            <button
+              type="button"
+              className="sv-icon-btn"
+              onClick={() => setIsDark((current) => !current)}
+              aria-label={isDark ? "Usar tema claro" : "Usar tema escuro"}
+              title={isDark ? "Tema claro" : "Tema escuro"}
+            >
+              <i className={`bi ${isDark ? "bi-sun" : "bi-moon-stars"}`} />
+            </button>
 
             <div className="dropdown">
               <button
-                className="btn btn-link nav-link dropdown-toggle text-decoration-none p-0 sv-user-button"
+                className="sv-user-button"
                 data-bs-toggle="dropdown"
                 type="button"
                 aria-label="Menu do usuário"
               >
-                <i className="bi bi-person-circle me-2" />
-                <span>{user?.nome ? titleCase(user.nome) : "Usuário"}</span>
+                <span className="sv-avatar">{iniciais}</span>
+                <span className="d-none d-sm-inline">{nome}</span>
+                <i className="bi bi-chevron-down small" />
               </button>
               <ul className="dropdown-menu dropdown-menu-end">
+                <li className="dropdown-header">{user?.email}</li>
                 <li>
                   <button className="dropdown-item" onClick={() => navigate("/app/configuracoes")}>
+                    <i className="bi bi-person me-2" />
                     Meu perfil
-                  </button>
-                </li>
-                <li>
-                  <button className="dropdown-item" onClick={() => navigate("/app/configuracoes")}>
-                    Configurações
                   </button>
                 </li>
                 <li><hr className="dropdown-divider" /></li>
                 <li>
                   <button className="dropdown-item text-danger" onClick={handleLogout}>
+                    <i className="bi bi-box-arrow-right me-2" />
                     Sair
                   </button>
                 </li>
               </ul>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <div className="sv-layout">
-        <Sidebar
-          isCollapsed={isSidebarCollapsed}
-          onToggle={() => setIsSidebarCollapsed((current) => !current)}
-        />
-
-        <main className="sv-main">
-          <div className="page-content px-3 px-lg-4">
-            <Outlet />
-          </div>
-          <footer className="footer">
-            © 2026 SolarVision - Todos os direitos reservados. Dados meteorológicos:{" "}
-            <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo.com</a> (CC BY 4.0).
-          </footer>
+        <main className="sv-content">
+          <Outlet />
         </main>
+
+        <footer className="sv-footer">
+          © 2026 SolarVision · Dados meteorológicos:{" "}
+          <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo.com</a> (CC BY 4.0)
+        </footer>
       </div>
 
       <MobileNav />

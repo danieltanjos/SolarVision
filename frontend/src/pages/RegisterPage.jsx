@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { extractErrorMessage } from "../lib/api";
+import logo from "../../img/logo.png";
 
 export default function RegisterPage() {
   const { isAuthenticated, register } = useAuth();
@@ -50,70 +51,76 @@ export default function RegisterPage() {
 
   return (
     <div className="sv-auth-screen">
-      <div className="card shadow sv-auth-card">
-        <h1 className="fw-bold text-center">SolarVision</h1>
-        <p className="text-center text-muted">Registre-se</p>
+      <div className="card sv-auth-card">
+        <div className="sv-auth-brand">
+          <img src={logo} alt="" />
+          <h1>Criar conta</h1>
+          <p>Comece a monitorar suas placas solares.</p>
+        </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="mb-3">
+          <div className="form-floating mb-3">
             <input
+              id="auth-nome"
               type="text"
               className="form-control"
               placeholder="Nome"
-              aria-label="Nome"
               maxLength={100}
               value={form.nome}
               onChange={(event) => setForm((current) => ({ ...current, nome: event.target.value }))}
               required
             />
+            <label htmlFor="auth-nome">Nome</label>
           </div>
-          <div className="mb-3">
+          <div className="form-floating mb-3">
             <input
+              id="auth-e-mail"
               type="email"
               className="form-control"
               placeholder="E-mail"
-              aria-label="E-mail"
               value={form.email}
               onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
               required
             />
+            <label htmlFor="auth-e-mail">E-mail</label>
           </div>
-          <div className="mb-3">
+          <div className="form-floating mb-3">
             <input
+              id="auth-senha"
               type="password"
               className="form-control"
               placeholder="Senha"
-              aria-label="Senha"
               value={form.senha}
               onChange={(event) => setForm((current) => ({ ...current, senha: event.target.value }))}
               minLength={8}
               required
             />
-            <div className="form-text">A senha deve ter no mínimo 8 caracteres.</div>
+            <label htmlFor="auth-senha">Senha (mínimo 8 caracteres)</label>
           </div>
-          <div className="mb-3">
+          <div className="form-floating mb-3">
             <input
+              id="auth-confirmar-senha"
               type="password"
               className="form-control"
               placeholder="Confirmar senha"
-              aria-label="Confirmar senha"
               value={form.confirmarSenha}
               onChange={(event) =>
                 setForm((current) => ({ ...current, confirmarSenha: event.target.value }))
               }
               required
             />
+            <label htmlFor="auth-confirmar-senha">Confirmar senha</label>
           </div>
 
           {error ? <div className="alert alert-danger">{error}</div> : null}
 
-          <button type="submit" className="btn btn-primary w-100" disabled={loading}>
+          <button type="submit" className="btn btn-primary btn-lg w-100" disabled={loading}>
             {loading ? "Criando conta..." : "Registrar-se"}
           </button>
         </form>
 
-        <p className="text-center mt-3 mb-0">
-          Já possui uma conta? <Link to="/login" className="text-decoration-none">Entrar</Link>
+        <p className="sv-auth-foot">
+          Já possui uma conta? <Link to="/login">Entrar</Link>
         </p>
       </div>
     </div>

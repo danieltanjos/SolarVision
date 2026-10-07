@@ -1,38 +1,14 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import StatusBadge from "../components/StatusBadge";
 import { createGroup, createPanel, extractErrorMessage, listGroups, listPanels } from "../lib/api";
 import { parseCoordenadas } from "../lib/coordenadas";
+import { ORIENTACOES, climaStatus, orientacao } from "../lib/placas";
 
 const EMPTY_GROUP = { nome: "", status: "ATIVO", coordenadas: "" };
 const EMPTY_PANEL = { grupoId: "", modelo: "", status: "ATIVA", potenciaWp: "", inclinacao: "", azimute: "0" };
 
-// Azimute em graus a partir do Norte, no sentido horário (no Brasil, placas costumam olhar para o Norte).
-const ORIENTACOES = [
-  ["0", "Norte"],
-  ["45", "Nordeste"],
-  ["90", "Leste"],
-  ["135", "Sudeste"],
-  ["180", "Sul"],
-  ["225", "Sudoeste"],
-  ["270", "Oeste"],
-  ["315", "Noroeste"]
-];
-
 const numOrNull = (value) => (value === "" ? null : Number(value));
-
-function climaStatus(panel) {
-  if (panel.latitude == null || panel.potenciaWp == null || panel.inclinacao == null || panel.azimute == null) {
-    return { texto: "Sem local/especificações: sem estimativa", sincronizando: false };
-  }
-  return panel.climaHistoricoEm
-    ? { texto: "Clima: 5 anos + previsão", sincronizando: false }
-    : { texto: "Clima: sincronizando (~1 min)", sincronizando: true };
-}
-
-function especificacoes(panel) {
-  if (panel.potenciaWp == null) return panel.grupoNome;
-  const orientacao = ORIENTACOES.find(([graus]) => Number(graus) === panel.azimute)?.[1] ?? `${panel.azimute}°`;
-  return `${panel.grupoNome} · ${panel.potenciaWp} Wp · ${panel.inclinacao}° · ${orientacao}`;
-}
 
 export default function CadastroPage() {
   const [groups, setGroups] = useState([]);
@@ -114,162 +90,240 @@ export default function CadastroPage() {
     );
   }, [deferredSearch, panels]);
 
+  const setGroupField = (field) => (event) => setGroupForm((current) => ({ ...current, [field]: event.target.value }));
+  const setPanelField = (field) => (event) => setPanelForm((current) => ({ ...current, [field]: event.target.value }));
+
   return (
-    <div className="sv-page-stack">
-      <div>
-        <h1 className="mb-2">Cadastro</h1>
-        <p className="text-muted mb-0">Gestão de grupos solares e placas individuais.</p>
-      </div>
+    <div className="sv-page">
+      <header className="sv-page-head">
+        <div>
+          <h1>Cadastro</h1>
+          <p>Grupos solares (usinas) e as placas de cada um.</p>
+        </div>
+      </header>
 
-      {error ? <div className="alert alert-danger">{error}</div> : null}
+      {error ? <div className="alert alert-danger mb-0">{error}</div> : null}
 
-      <div className="row g-4">
-        <div className="col-xl-4">
-          <div className="card mb-4">
-            <h2 className="h5 mb-3">Novo grupo</h2>
-            <form onSubmit={handleGroupSubmit} className="d-grid gap-3">
-              <input
-                className="form-control"
-                placeholder="Nome do grupo"
-                aria-label="Nome do grupo"
-                maxLength={120}
-                value={groupForm.nome}
-                onChange={(event) => setGroupForm((current) => ({ ...current, nome: event.target.value }))}
-                required
-              />
-              <select
-                aria-label="Status do grupo"
-                className="form-select"
-                value={groupForm.status}
-                onChange={(event) => setGroupForm((current) => ({ ...current, status: event.target.value }))}
-              >
-                <option value="ATIVO">Ativo</option>
-                <option value="INATIVO">Inativo</option>
-                <option value="MANUTENCAO">Manutenção</option>
-              </select>
-              <input
-                className={`form-control ${groupForm.coordenadas.trim() ? (coordenadas ? "is-valid" : "is-invalid") : ""}`}
-                placeholder="Coordenadas (ex.: -27.548, -48.4988)"
-                aria-label="Coordenadas do local"
-                value={groupForm.coordenadas}
-                onChange={(event) => setGroupForm((current) => ({ ...current, coordenadas: event.target.value }))}
-              />
-              <div className="form-text mt-n2">
-                {coordenadas
-                  ? `Latitude ${coordenadas.latitude}, longitude ${coordenadas.longitude}.`
-                  : "Local da usina: no Google Maps, clique com o botão direito no ponto e depois nas coordenadas para copiar (aceita também 27°32'52.8\"S 48°29'55.6\"W). Necessário para a geração estimada pelo clima."}
+      <div className="sv-split">
+        <div className="sv-stack">
+          <section className="card">
+            <div className="sv-card-head">
+              <h2><i className="bi bi-collection me-2" />Novo grupo</h2>
+            </div>
+            <form onSubmit={handleGroupSubmit} className="sv-form">
+              <div>
+                <label className="form-label" htmlFor="grupo-nome">Nome</label>
+                <input
+                  id="grupo-nome"
+                  className="form-control"
+                  placeholder="Ex.: SENAI Florianópolis"
+                  maxLength={120}
+                  value={groupForm.nome}
+                  onChange={setGroupField("nome")}
+                  required
+                />
+              </div>
+              <div>
+                <label className="form-label" htmlFor="grupo-status">Status</label>
+                <select id="grupo-status" className="form-select" value={groupForm.status} onChange={setGroupField("status")}>
+                  <option value="ATIVO">Ativo</option>
+                  <option value="INATIVO">Inativo</option>
+                  <option value="MANUTENCAO">Manutenção</option>
+                </select>
+              </div>
+              <div>
+                <label className="form-label" htmlFor="grupo-coordenadas">Coordenadas do local</label>
+                <input
+                  id="grupo-coordenadas"
+                  className={`form-control ${groupForm.coordenadas.trim() ? (coordenadas ? "is-valid" : "is-invalid") : ""}`}
+                  placeholder="-27.548, -48.4988"
+                  value={groupForm.coordenadas}
+                  onChange={setGroupField("coordenadas")}
+                />
+                <div className="form-text">
+                  {coordenadas
+                    ? `Latitude ${coordenadas.latitude}, longitude ${coordenadas.longitude}.`
+                    : "No Google Maps, clique com o botão direito no local e copie as coordenadas (aceita também 27°32'52.8\"S 48°29'55.6\"W). Necessário para a geração estimada."}
+                </div>
               </div>
               <button type="submit" className="btn btn-primary">Criar grupo</button>
             </form>
-          </div>
+          </section>
 
-          <div className="card">
-            <h2 className="h5 mb-3">Nova placa</h2>
-            <form onSubmit={handlePanelSubmit} className="d-grid gap-3">
-              <select
-                aria-label="Grupo da placa"
-                className="form-select"
-                value={panelForm.grupoId}
-                onChange={(event) => setPanelForm((current) => ({ ...current, grupoId: event.target.value }))}
-                required
-              >
-                <option value="">Selecione o grupo</option>
-                {groups.map((group) => (
-                  <option key={group.id} value={group.id}>{group.nome}</option>
-                ))}
-              </select>
-              <input
-                className="form-control"
-                placeholder="Modelo da placa"
-                aria-label="Modelo da placa"
-                maxLength={120}
-                value={panelForm.modelo}
-                onChange={(event) => setPanelForm((current) => ({ ...current, modelo: event.target.value }))}
-                required
-              />
-              <select
-                aria-label="Status da placa"
-                className="form-select"
-                value={panelForm.status}
-                onChange={(event) => setPanelForm((current) => ({ ...current, status: event.target.value }))}
-              >
-                <option value="ATIVA">Ativa</option>
-                <option value="INATIVA">Inativa</option>
-                <option value="MANUTENCAO">Manutenção</option>
-              </select>
-              <div className="d-flex gap-2">
+          <section className="card">
+            <div className="sv-card-head">
+              <h2><i className="bi bi-grid-3x2 me-2" />Nova placa</h2>
+            </div>
+            <form onSubmit={handlePanelSubmit} className="sv-form">
+              <div>
+                <label className="form-label" htmlFor="placa-grupo">Grupo</label>
+                <select id="placa-grupo" className="form-select" value={panelForm.grupoId} onChange={setPanelField("grupoId")} required>
+                  <option value="">Selecione o grupo</option>
+                  {groups.map((group) => (
+                    <option key={group.id} value={group.id}>{group.nome}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="form-label" htmlFor="placa-modelo">Modelo / identificação</label>
                 <input
-                  type="number"
-                  step="any"
-                  min="1"
+                  id="placa-modelo"
                   className="form-control"
-                  placeholder="Potência (Wp)"
-                  aria-label="Potência em Wp"
-                  value={panelForm.potenciaWp}
-                  onChange={(event) => setPanelForm((current) => ({ ...current, potenciaWp: event.target.value }))}
-                />
-                <input
-                  type="number"
-                  step="any"
-                  min="0"
-                  max="90"
-                  className="form-control"
-                  placeholder="Inclinação (°)"
-                  aria-label="Inclinação em graus"
-                  value={panelForm.inclinacao}
-                  onChange={(event) => setPanelForm((current) => ({ ...current, inclinacao: event.target.value }))}
+                  placeholder="Ex.: Bloco A - Telhado Norte"
+                  maxLength={120}
+                  value={panelForm.modelo}
+                  onChange={setPanelField("modelo")}
+                  required
                 />
               </div>
-              <select
-                aria-label="Orientação da placa"
-                className="form-select"
-                value={panelForm.azimute}
-                onChange={(event) => setPanelForm((current) => ({ ...current, azimute: event.target.value }))}
-              >
-                {ORIENTACOES.map(([graus, nome]) => (
-                  <option key={graus} value={graus}>Voltada para o {nome} ({graus}°)</option>
-                ))}
-              </select>
-              <div className="form-text mt-n2">
+              <div className="sv-form-row">
+                <div>
+                  <label className="form-label" htmlFor="placa-potencia">Potência (Wp)</label>
+                  <input
+                    id="placa-potencia"
+                    type="number"
+                    step="any"
+                    min="1"
+                    className="form-control"
+                    placeholder="5000"
+                    value={panelForm.potenciaWp}
+                    onChange={setPanelField("potenciaWp")}
+                  />
+                </div>
+                <div>
+                  <label className="form-label" htmlFor="placa-inclinacao">Inclinação (°)</label>
+                  <input
+                    id="placa-inclinacao"
+                    type="number"
+                    step="any"
+                    min="0"
+                    max="90"
+                    className="form-control"
+                    placeholder="27"
+                    value={panelForm.inclinacao}
+                    onChange={setPanelField("inclinacao")}
+                  />
+                </div>
+              </div>
+              <div className="sv-form-row">
+                <div>
+                  <label className="form-label" htmlFor="placa-orientacao">Orientação</label>
+                  <select id="placa-orientacao" className="form-select" value={panelForm.azimute} onChange={setPanelField("azimute")}>
+                    {ORIENTACOES.map(([graus, nome]) => (
+                      <option key={graus} value={graus}>{nome} ({graus}°)</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="form-label" htmlFor="placa-status">Status</label>
+                  <select id="placa-status" className="form-select" value={panelForm.status} onChange={setPanelField("status")}>
+                    <option value="ATIVA">Ativa</option>
+                    <option value="INATIVA">Inativa</option>
+                    <option value="MANUTENCAO">Manutenção</option>
+                  </select>
+                </div>
+              </div>
+              <div className="form-text mt-0">
                 Com o local no grupo, a potência e a inclinação, o sistema carrega 5 anos de clima e a previsão em ~1 min.
               </div>
               <button type="submit" className="btn btn-primary">Criar placa</button>
             </form>
-          </div>
+          </section>
         </div>
 
-        <div className="col-xl-8">
-          <div className="card">
-            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
-              <div>
-                <h2 className="h5 mb-1">Placas cadastradas</h2>
-                <p className="text-muted mb-0">Busca rápida mantendo a ideia da listagem anterior.</p>
-              </div>
-              <input
-                className="form-control sv-search"
-                placeholder="Filtrar por grupo, modelo ou status"
-                aria-label="Filtrar por grupo, modelo ou status"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-              />
+        <div className="sv-stack">
+          <section className="card">
+            <div className="sv-card-head">
+              <h2>Grupos</h2>
+              <span className="sv-chip">{groups.length}</span>
             </div>
+            <div className="table-responsive">
+              <table className="table sv-table align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Grupo</th>
+                    <th>Local</th>
+                    <th>Placas</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {groups.map((group) => (
+                    <tr key={group.id}>
+                      <td><Link to={`/app/monitoramento?grupo=${group.id}`} className="fw-semibold">{group.nome}</Link></td>
+                      <td className="sv-muted">{group.latitude != null ? `${group.latitude}, ${group.longitude}` : "Sem local"}</td>
+                      <td>{group.totalPlacas}</td>
+                      <td><StatusBadge status={group.status} /></td>
+                    </tr>
+                  ))}
+                  {groups.length === 0 ? (
+                    <tr>
+                      <td colSpan="4" className="sv-muted">Nenhum grupo cadastrado.</td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          </section>
 
-            <div className="scroll-box">
-              {filteredPanels.map((panel) => (
-                <div className="placa-item" key={panel.id}>
-                  <div>
-                    <strong>{panel.modelo}</strong>
-                    <div className="text-muted small">{especificacoes(panel)}</div>
-                    <div className="text-muted small">{climaStatus(panel).texto}</div>
-                  </div>
-                  <span className="badge text-bg-light">{panel.status}</span>
-                </div>
-              ))}
-              {filteredPanels.length === 0 ? (
-                <div className="text-muted py-2">Nenhuma placa encontrada.</div>
-              ) : null}
+          <section className="card">
+            <div className="sv-card-head">
+              <h2>Placas</h2>
+              <div className="sv-search">
+                <i className="bi bi-search" />
+                <input
+                  type="search"
+                  className="form-control"
+                  placeholder="Filtrar por grupo, modelo ou status"
+                  aria-label="Filtrar por grupo, modelo ou status"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </div>
             </div>
-          </div>
+            <div className="table-responsive">
+              <table className="table sv-table align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Placa</th>
+                    <th>Especificações</th>
+                    <th>Clima</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPanels.map((panel) => {
+                    const clima = climaStatus(panel);
+                    return (
+                      <tr key={panel.id}>
+                        <td>
+                          <Link to={`/app/monitoramento?grupo=${panel.grupoId}&placa=${panel.id}`} className="fw-semibold">
+                            {panel.modelo}
+                          </Link>
+                          <div className="sv-muted small">{panel.grupoNome}</div>
+                        </td>
+                        <td className="sv-muted">
+                          {panel.potenciaWp != null
+                            ? `${panel.potenciaWp} Wp · ${panel.inclinacao}° · ${orientacao(panel.azimute)}`
+                            : "—"}
+                        </td>
+                        <td>
+                          <span className={`sv-dot ${clima.ok ? "is-ok" : clima.sincronizando ? "is-wait" : ""}`} />
+                          <span className="sv-muted small">{clima.texto}</span>
+                        </td>
+                        <td><StatusBadge status={panel.status} /></td>
+                      </tr>
+                    );
+                  })}
+                  {filteredPanels.length === 0 ? (
+                    <tr>
+                      <td colSpan="4" className="sv-muted">Nenhuma placa encontrada.</td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          </section>
         </div>
       </div>
     </div>

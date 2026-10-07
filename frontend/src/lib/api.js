@@ -78,9 +78,16 @@ export function getDashboardSummary() {
   return unwrap(supabase.rpc("dashboard_resumo"));
 }
 
-export function getDashboardMetrics({ granularidade, dataInicio, dataFim }) {
+// grupoId/placaId opcionais: sem eles, soma todas as placas.
+export function getDashboardMetrics({ granularidade, dataInicio, dataFim, grupoId = null, placaId = null }) {
   return unwrap(
-    supabase.rpc("dashboard_metricas", { granularidade, data_inicio: dataInicio, data_fim: dataFim })
+    supabase.rpc("dashboard_metricas", {
+      granularidade,
+      data_inicio: dataInicio,
+      data_fim: dataFim,
+      grupo: grupoId,
+      placa: placaId
+    }).select("x, medida, estimada, medidaWh:medida_wh, estimadaWh:estimada_wh")
   );
 }
 

@@ -188,7 +188,7 @@ A exclusão é em cascata (`on delete cascade`): remover um grupo remove suas pl
 ## Índices, funções e políticas
 
 - **Índices**: `placas.grupo_id`, `limpezas.placa_id`, `limpezas.data_limpeza desc`, `leituras_energia.placa_id`, `leituras_energia.data_hora`; `clima_horario` usa a PK `(placa_id, data_hora)`.
-- **Funções (RPC)**: `dashboard_metricas(granularidade, data_inicio, data_fim)` e `dashboard_resumo()` - ver [FUNCIONALIDADES.md](FUNCIONALIDADES.md).
+- **Funções (RPC)**: `dashboard_metricas(granularidade, data_inicio, data_fim, grupo, placa)` e `dashboard_resumo()` - ver [FUNCIONALIDADES.md](FUNCIONALIDADES.md).
 - **Funções do clima**: `potencia_estimada(potencia_wp, coef_temperatura, irradiancia, temperatura)` (W estimados de uma hora) e, só para o pg_cron, `sincronizar_clima()` e `atualizar_clima_placa(placa_id, historico)` - ver [ARQUITETURA.md](ARQUITETURA.md#5-geração-estimada-pelo-clima-open-meteo).
 - **RLS**: habilitada em todas as tabelas - ver [ARQUITETURA.md](ARQUITETURA.md#4-segurança).
 - **Nomes no JSON**: `frontend/src/lib/api.js` usa aliases (`criadoEm:criado_em`, `grupoId:grupo_id`...) para entregar às telas os mesmos campos camelCase da API antiga.
