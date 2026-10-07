@@ -137,6 +137,14 @@ test("pg_cron carrega 5 anos de clima da placa nova e o dashboard estima a gera�
   assert.ok(resumo.totalGeradoHoje >= 0);
 });
 
+test("média de 5 anos alinhada ao gráfico e acerto da previsão", async () => {
+  const semana = { granularidade: "dia", dataInicio: new Date(Date.now() - 7 * 864e5).toISOString(), dataFim: new Date().toISOString(), placaId: placa.id };
+  const [metricas, historico] = await Promise.all([api.getDashboardMetrics(semana), api.getDashboardHistorico(semana)]);
+  assert.deepEqual(historico.map((h) => h.x), metricas.map((m) => m.x));
+  assert.ok(historico.every((h) => h.anos >= 4 && h.minWh <= h.mediaWh && h.mediaWh <= h.maxWh), "média fora do mínimo/máximo");
+  assert.deepEqual(await api.getAcertoPrevisao({ placaId: placa.id }), []); // a previsão só é guardada às 21:00
+});
+
 test("erros chegam traduzidos", async () => {
   const granularidade = await api.getDashboardMetrics({ granularidade: "ano" }).catch(api.extractErrorMessage);
   assert.match(granularidade, /Granularidade inválida/);

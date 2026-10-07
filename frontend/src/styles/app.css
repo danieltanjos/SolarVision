@@ -1193,6 +1193,11 @@ h1, h2, h3 {
     background: var(--sv-surface-2) !important;
 }
 
+/* Calendário de geração: o espaço entre os dias tem a cor do cartão. */
+.sv-calendario .apexcharts-heatmap-rect {
+    stroke: var(--sv-surface);
+}
+
 /* ---------- Login e registro ---------- */
 
 .sv-auth-screen {
