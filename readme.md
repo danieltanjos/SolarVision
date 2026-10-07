@@ -100,7 +100,7 @@ Os dois ambientes usam **o mesmo projeto Supabase** (`skfguameoeklepcjnqth`): QA
 
 ## Qualidade e testes
 
-- **Frontend:** 27 testes nativos do Node (`node --test`) para escala de potência/energia, formatação pt-BR, nomes com acentos e janelas do gráfico no fuso de São Paulo.
+- **Frontend:** 40 testes nativos do Node (`node --test`) para escala de potência/energia, formatação pt-BR, nomes com acentos, janelas do gráfico no fuso de São Paulo e leitura de coordenadas do Google Maps.
 - **Ponta a ponta:** `supabase/tests/e2e.mjs` roda o `api.js` do frontend contra o Supabase real (RLS, perfil, cadastros, carga dos 5 anos de clima pelo pg_cron, estimativa/previsão do dashboard e mensagens de erro), com uma conta fixa de teste, e apaga o que cria. Espera o pg_cron carregar o clima (~30 s observados, limite de 3 min).
 - **CI:** `.github/workflows/quality.yml` roda em push/PR com Node 24 (`npm ci`, testes com relatório JUnit e `npm run build`). `.github/workflows/supabase.yml` aplica as migrations e roda o teste de ponta a ponta a cada push em `qa`/`production`, e faz uma requisição diária ao Supabase, porque o plano free pausa projetos parados por 7 dias. O GitHub desliga workflows agendados após 60 dias sem commits no repositório.
 

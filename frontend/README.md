@@ -56,7 +56,7 @@ npm run dev                   # http://localhost:5173
 ## Testes e build
 
 ```bash
-npm test        # 27 testes (node --test)
+npm test        # 40 testes (node --test)
 npm run build   # gera dist/
 ```
 

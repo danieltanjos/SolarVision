@@ -1,7 +1,8 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { createGroup, createPanel, extractErrorMessage, listGroups, listPanels } from "../lib/api";
+import { parseCoordenadas } from "../lib/coordenadas";
 
-const EMPTY_GROUP = { nome: "", status: "ATIVO", latitude: "", longitude: "" };
+const EMPTY_GROUP = { nome: "", status: "ATIVO", coordenadas: "" };
 const EMPTY_PANEL = { grupoId: "", modelo: "", status: "ATIVA", potenciaWp: "", inclinacao: "", azimute: "0" };
 
 // Azimute em graus a partir do Norte, no sentido horário (no Brasil, placas costumam olhar para o Norte).
@@ -65,13 +66,20 @@ export default function CadastroPage() {
     return () => clearInterval(id);
   }, [sincronizando]);
 
+  const coordenadas = groupForm.coordenadas.trim() ? parseCoordenadas(groupForm.coordenadas) : null;
+
   async function handleGroupSubmit(event) {
     event.preventDefault();
+    if (groupForm.coordenadas.trim() && !coordenadas) {
+      setError("Coordenadas não reconhecidas. Use, por exemplo, -27.548, -48.4988.");
+      return;
+    }
     try {
       await createGroup({
-        ...groupForm,
-        latitude: numOrNull(groupForm.latitude),
-        longitude: numOrNull(groupForm.longitude)
+        nome: groupForm.nome,
+        status: groupForm.status,
+        latitude: coordenadas?.latitude ?? null,
+        longitude: coordenadas?.longitude ?? null
       });
       setGroupForm(EMPTY_GROUP);
       await loadData();
@@ -139,33 +147,17 @@ export default function CadastroPage() {
                 <option value="INATIVO">Inativo</option>
                 <option value="MANUTENCAO">Manutenção</option>
               </select>
-              <div className="d-flex gap-2">
-                <input
-                  type="number"
-                  step="any"
-                  min="-90"
-                  max="90"
-                  className="form-control"
-                  placeholder="Latitude"
-                  aria-label="Latitude"
-                  value={groupForm.latitude}
-                  onChange={(event) => setGroupForm((current) => ({ ...current, latitude: event.target.value }))}
-                />
-                <input
-                  type="number"
-                  step="any"
-                  min="-180"
-                  max="180"
-                  className="form-control"
-                  placeholder="Longitude"
-                  aria-label="Longitude"
-                  value={groupForm.longitude}
-                  onChange={(event) => setGroupForm((current) => ({ ...current, longitude: event.target.value }))}
-                />
-              </div>
+              <input
+                className={`form-control ${groupForm.coordenadas.trim() ? (coordenadas ? "is-valid" : "is-invalid") : ""}`}
+                placeholder="Coordenadas (ex.: -27.548, -48.4988)"
+                aria-label="Coordenadas do local"
+                value={groupForm.coordenadas}
+                onChange={(event) => setGroupForm((current) => ({ ...current, coordenadas: event.target.value }))}
+              />
               <div className="form-text mt-n2">
-                Local da usina (no Google Maps, clique com o botão direito no ponto para copiar). Necessário para a
-                geração estimada pelo clima.
+                {coordenadas
+                  ? `Latitude ${coordenadas.latitude}, longitude ${coordenadas.longitude}.`
+                  : "Local da usina: no Google Maps, clique com o botão direito no ponto e depois nas coordenadas para copiar (aceita também 27°32'52.8\"S 48°29'55.6\"W). Necessário para a geração estimada pelo clima."}
               </div>
               <button type="submit" className="btn btn-primary">Criar grupo</button>
             </form>
