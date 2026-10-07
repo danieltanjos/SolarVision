@@ -145,6 +145,11 @@ export default function MonitoringPage() {
           <h1>Monitoramento</h1>
           <p>Escolha um grupo ou uma placa e compare a geração real com a estimada pela previsão do tempo.</p>
         </div>
+        {/* os params daqui são a seleção (grupo/placa); o relatório abre no mês passado */}
+        <Link to={`/app/relatorio?${params}`} className="btn btn-outline-primary">
+          <i className="bi bi-file-earmark-text me-2" />
+          Relatório do mês
+        </Link>
       </header>
 
       {error ? <div className="alert alert-danger mb-0">{error}</div> : null}

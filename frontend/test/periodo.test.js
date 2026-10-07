@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatRangeLabel, rangeFor, shiftDate, toSaoPaulo } from '../src/lib/periodo.js';
+import { formatRangeLabel, mesRelatorio, rangeFor, shiftDate, toSaoPaulo } from '../src/lib/periodo.js';
 
 // 06/10/2026 22:30 em SP = 07/10 01:30 UTC: em navegador fora de SP o dia "local" seria outro.
 const ref = toSaoPaulo('2026-10-07T01:30:00Z');
@@ -20,4 +20,11 @@ for (const [view, inicio, fim, label] of [
 test('FE-PER: navegar volta um período inteiro', () => {
   assert.equal(rangeFor('dia', shiftDate(ref, 'dia', -1)).dataInicio, '2026-10-05T03:00:00.000Z');
   assert.equal(rangeFor('ano', shiftDate(ref, 'ano', 1)).dataInicio, '2027-01-01T03:00:00.000Z');
+});
+
+test('FE-PER: mês do relatório: o da URL ou o mês passado em SP', () => {
+  assert.equal(mesRelatorio('2026-02', new Date('2026-10-07T12:00:00Z')), '2026-02');
+  assert.equal(mesRelatorio('2026-13', new Date('2026-10-07T12:00:00Z')), '2026-09');
+  assert.equal(mesRelatorio(null, new Date('2026-03-31T12:00:00Z')), '2026-02'); // não pula fevereiro
+  assert.equal(mesRelatorio(null, new Date('2026-01-01T02:00:00Z')), '2025-11'); // ainda 31/12 em SP
 });

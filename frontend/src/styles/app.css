@@ -1,5 +1,5 @@
 /* SolarVision: a paleta original (#3b7197, sidebar azul-marinho, âmbar do sol) como tokens sobre o Bootstrap 5.3.
-   O tema escuro troca só os tokens (html.dark-mode) e o Bootstrap segue o data-bs-theme. */
+   O tema escuro troca só os tokens (html.dark-mode, só na tela) e o Bootstrap segue o data-bs-theme. */
 
 :root {
     --sv-primary: #3b7197;
@@ -39,26 +39,29 @@
     --bs-focus-ring-color: rgba(59, 113, 151, 0.25);
 }
 
-html.dark-mode {
-    --sv-sidebar: linear-gradient(180deg, #111a23 0%, #182633 48%, #1f3444 100%);
-    --sv-success: #5cc495;
-    --sv-warning: #f0b84a;
-    --sv-bg: #111820;
-    --sv-surface: #18222d;
-    --sv-surface-2: #1d2834;
-    --sv-raised: #2a3846;
-    --sv-input-bg: #121b24;
-    --sv-border: #2a3846;
-    --sv-text: #e7edf3;
-    --sv-muted: #9caab8;
-    --sv-link: var(--sv-primary-light);
-    --sv-tint: rgba(108, 160, 198, 0.14);
-    --sv-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.18);
+/* Só na tela: no papel valem sempre os tokens claros (texto escuro, inclusive no gráfico). */
+@media screen {
+    html.dark-mode {
+        --sv-sidebar: linear-gradient(180deg, #111a23 0%, #182633 48%, #1f3444 100%);
+        --sv-success: #5cc495;
+        --sv-warning: #f0b84a;
+        --sv-bg: #111820;
+        --sv-surface: #18222d;
+        --sv-surface-2: #1d2834;
+        --sv-raised: #2a3846;
+        --sv-input-bg: #121b24;
+        --sv-border: #2a3846;
+        --sv-text: #e7edf3;
+        --sv-muted: #9caab8;
+        --sv-link: var(--sv-primary-light);
+        --sv-tint: rgba(108, 160, 198, 0.14);
+        --sv-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.18);
 
-    --bs-link-color-rgb: 108, 160, 198;
-    --bs-link-hover-color: #9cc3df;
-    --bs-link-hover-color-rgb: 156, 195, 223;
-    --bs-focus-ring-color: rgba(108, 160, 198, 0.3);
+        --bs-link-color-rgb: 108, 160, 198;
+        --bs-link-hover-color: #9cc3df;
+        --bs-link-hover-color-rgb: 156, 195, 223;
+        --bs-focus-ring-color: rgba(108, 160, 198, 0.3);
+    }
 }
 
 /* ---------- Base e Bootstrap ---------- */
@@ -400,7 +403,8 @@ h1, h2, h3 {
     bottom: 0;
     z-index: 40;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
     gap: 0.25rem;
     padding: 0.4rem 0.5rem calc(0.4rem + env(safe-area-inset-bottom));
     border-top: 1px solid var(--sv-border);
@@ -1198,6 +1202,53 @@ h1, h2, h3 {
     stroke: var(--sv-surface);
 }
 
+/* ---------- Relatório mensal ---------- */
+
+/* Na tela, a largura útil da folha A4 (210 mm − 2 × 10 mm de margem): o ApexCharts desenha o gráfico em px
+   e não redesenha ao imprimir, então ele já nasce na largura do papel. */
+.sv-relatorio {
+    width: 100%;
+    max-width: 190mm;
+    margin: 0 auto;
+}
+
+.sv-relatorio-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.sv-relatorio-filtros .form-control,
+.sv-relatorio-filtros .form-select {
+    width: auto;
+}
+
+.sv-relatorio-capa h2 {
+    margin: 0.75rem 0 0.25rem;
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+.sv-relatorio-marca {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--sv-link);
+    font-weight: 700;
+}
+
+.sv-relatorio-marca img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+}
+
+.sv-relatorio-nota {
+    margin: 0;
+    color: var(--sv-muted);
+    font-size: 0.78rem;
+}
+
 /* ---------- Login e registro ---------- */
 
 .sv-auth-screen {
@@ -1318,5 +1369,47 @@ h1, h2, h3 {
 
     .sv-auth-card {
         padding: 1.5rem;
+    }
+}
+
+/* ---------- Impressão (relatório mensal) ---------- */
+
+@page {
+    size: A4 portrait;
+    margin: 10mm;
+}
+
+@media print {
+    :root {
+        --sv-bg: #fff;
+        --sv-shadow: none;
+    }
+
+    /* Só o conteúdo: sem menu, cabeçalho e botões (os filtros usam d-print-none).
+       O rodapé fica: tem a atribuição do Open-Meteo. */
+    .sv-sidebar,
+    .sv-header,
+    .sv-bottom-nav,
+    .btn {
+        display: none !important;
+    }
+
+    .sv-content {
+        padding: 0;
+    }
+
+    .sv-footer {
+        padding: 0.75rem 0 0;
+    }
+
+    /* Tons dos cartões e badges como na tela (o navegador tira os fundos por padrão). */
+    .sv-relatorio {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+
+    .card,
+    .sv-table tr {
+        break-inside: avoid;
     }
 }
