@@ -1,6 +1,6 @@
 import { startTransition, useEffect, useMemo, useState } from "react";
 import Chart from "react-apexcharts";
-import { extractErrorMessage, getDashboardMetrics, getLastReadingDate } from "../lib/api";
+import { extractErrorMessage, getDashboardMetrics } from "../lib/api";
 import { formatRangeLabel, rangeFor, shiftDate, toSaoPaulo } from "../lib/periodo";
 import { formatPower, powerUnit } from "../lib/power";
 
@@ -13,35 +13,24 @@ const VIEWS = [
   { value: "ano", label: "Ano", bucket: "mes" }
 ];
 
+const SERIES = [
+  { key: "medida", name: "Medida (sensores)", color: "#3b7197", dash: 0 },
+  { key: "estimada", name: "Estimada (clima)", color: "#e8a317", dash: 6 }
+];
+
 function viewConfig(view) {
   return VIEWS.find((item) => item.value === view) ?? VIEWS[0];
 }
 
 export default function MetricChart() {
   const [granularity, setGranularity] = useState("dia");
-  const [referenceDate, setReferenceDate] = useState(null);
+  // Sempre ancorado em "agora": a série estimada vem do clima real e inclui a previsão.
+  const [referenceDate, setReferenceDate] = useState(() => toSaoPaulo(new Date()));
   const [points, setPoints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Ancora o grafico na ULTIMA leitura disponivel (com o shift do seeder, ~hoje),
-  // dando a sensacao de monitoramento em tempo real.
   useEffect(() => {
-    async function fetchRange() {
-      try {
-        const ultimaLeitura = await getLastReadingDate();
-        setReferenceDate(toSaoPaulo(ultimaLeitura ?? new Date()));
-      } catch {
-        setReferenceDate(toSaoPaulo(new Date()));
-      }
-    }
-
-    fetchRange();
-  }, []);
-
-  useEffect(() => {
-    if (!referenceDate) return;
-
     async function fetchMetrics() {
       setLoading(true);
       setError("");
@@ -61,18 +50,22 @@ export default function MetricChart() {
     fetchMetrics();
   }, [granularity, referenceDate]);
 
-  const seriesData = useMemo(
-    // Eixo no relógio de SP: os pontos vão "como UTC" e o ApexCharts formata em UTC.
-    () => points.map((point) => [toSaoPaulo(point.x).getTime(), Number(point.y)]),
+  // Só as séries com dados no período. Eixo no relógio de SP: os pontos vão "como UTC" e o ApexCharts formata em UTC.
+  const series = useMemo(
+    () =>
+      SERIES.map(({ key, ...serie }) => ({
+        ...serie,
+        data: points
+          .filter((point) => point[key] != null)
+          .map((point) => [toSaoPaulo(point.x).getTime(), Number(point[key])])
+      })).filter((serie) => serie.data.length > 0),
     [points]
   );
 
-  const unit = useMemo(() => {
-    const max = seriesData.reduce((acc, [, y]) => (y > acc ? y : acc), 0);
-    return powerUnit(max);
-  }, [seriesData]);
-
-  const series = [{ name: "Potência média", data: seriesData }];
+  const unit = useMemo(
+    () => powerUnit(Math.max(0, ...series.flatMap((serie) => serie.data.map(([, y]) => y)))),
+    [series]
+  );
 
   const tooltipFormat =
     granularity === "dia" ? "HH:mm" : granularity === "ano" ? "MMM/yyyy" : "dd/MM/yyyy";
@@ -83,8 +76,7 @@ export default function MetricChart() {
       toolbar: { show: false },
       zoom: { enabled: false }
     },
-    colors: ["#3b7197"],
-    stroke: { curve: "smooth", width: 3 },
+    stroke: { curve: "smooth", width: 3, dashArray: series.map((serie) => serie.dash) },
     fill: {
       type: "gradient",
       gradient: { shadeIntensity: 1, opacityFrom: 0.38, opacityTo: 0.04, stops: [0, 90, 100] }
@@ -110,7 +102,7 @@ export default function MetricChart() {
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
           <h2 className="h4 text-secondary mb-1">Geração de Energia</h2>
-          <p className="text-muted mb-0">Potência média gerada, agregada por período.</p>
+          <p className="text-muted mb-0">Potência média medida e estimada pelo clima real (com previsão), agregada por período.</p>
         </div>
 
         <div className="chart-controls d-flex flex-column flex-md-row align-items-stretch gap-2">
@@ -152,8 +144,10 @@ export default function MetricChart() {
         </div>
       ) : error ? (
         <div className="alert alert-danger mb-0">{error}</div>
-      ) : points.length === 0 ? (
-        <div className="sv-state-block text-muted">Sem leituras neste período.</div>
+      ) : series.length === 0 ? (
+        <div className="sv-state-block text-muted">
+          Sem dados neste período. Cadastre uma placa com local, potência e inclinação para ver a geração estimada.
+        </div>
       ) : (
         <Chart options={options} series={series} type="area" height={320} />
       )}
