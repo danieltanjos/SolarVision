@@ -50,13 +50,14 @@ Distinção conceitual usada no projeto:
 ## 4. Justificativas por dimensão
 
 ### Técnica
-- **RLS no lugar de um filtro de segurança**: a regra de acesso fica no banco e vale para qualquer cliente (REST, GraphQL, SQL).
+- **RLS no lugar de um filtro de segurança**: a regra de acesso (cada usuário só vê as próprias usinas; ADMIN vê todas) fica no banco e vale para qualquer cliente (REST, GraphQL, SQL).
 - **Funções SQL para o dashboard**: a agregação (`date_trunc` + `avg`) roda onde os dados estão e devolve só os pontos do gráfico.
-- **Migration versionada** (`supabase/migrations/`): schema, políticas, funções e job reproduzíveis, como era com o Flyway.
+- **Migration versionada** (`supabase/migrations/`): schema, políticas, funções e jobs reproduzíveis, como era com o Flyway.
 - **Supabase Auth**: JWT com refresh, hash de senha e confirmação de e-mail prontos, sem código próprio de autenticação.
 
 ### Legal / Normativa
-- **LGPD**: o sistema trata dados pessoais (nome, e-mail, senha). A senha fica apenas como hash no Supabase Auth e não existe em tabela da aplicação; cada usuário só lê o próprio perfil. Os dados ficam na região **São Paulo**.
+- **LGPD**: o sistema trata dados pessoais (nome, e-mail, senha). A senha fica apenas como hash no Supabase Auth e não existe em tabela da aplicação; cada usuário só lê o próprio perfil e as próprias usinas. Os dados ficam na região **São Paulo**.
+- **Fator de emissão de CO₂**: o CO₂ evitado usa o fator médio anual do Sistema Interligado Nacional publicado pelo MCTI (2023: 0,0385 tCO₂/MWh); é uma estimativa, não um crédito de carbono certificado.
 - **Licenças open-source**: React (MIT), PostgreSQL (licença PostgreSQL) e os componentes do Supabase (Apache 2.0/MIT) - compatíveis com uso acadêmico e comercial.
 - **Dados do Open-Meteo**: licença CC BY 4.0, com a atribuição no rodapé do app. A API gratuita é para uso não comercial; um uso comercial exige o plano pago.
 - **Boas práticas de segurança**: HTTPS em todo o tráfego (Vercel e Supabase), consultas parametrizadas pelo PostgREST e apenas a chave publicável no frontend.
@@ -122,4 +123,27 @@ Distinção conceitual usada no projeto:
 - Uma Edge Function exigiria deploy separado, token de acesso no CI e um agendamento chamando a função por HTTP.
 - O custo é a chamada síncrona dentro de uma transação (timeout de 60 s, até 5 placas por minuto); suficiente para a escala do projeto.
 
-**Limites aceitos:** estimado não é medido (falta sensor ou API de inversor), PR e NOCT fixos e uma série de clima por placa - ver [FEATURES-INCOMPLETAS.md](FEATURES-INCOMPLETAS.md).
+**Limites aceitos:** estimado não é medido (as leituras reais entram por CSV, mas não há sensor nem API de inversor integrados), PR e NOCT fixos e uma série de clima por placa - ver [FEATURES-INCOMPLETAS.md](FEATURES-INCOMPLETAS.md). A validação do modelo contra 5 anos de leituras reais do Fotovoltaica-UFSC está em [validacao/RESULTADO.md](validacao/RESULTADO.md).
+
+---
+
+## 8. Análises: dono por grupo, chuva, valores, histórico e leituras reais
+
+Rodada da branch `feat/analises` (migrations `20261008090000` a `20261008130000`).
+
+| Decisão | Alternativa | Por que escolhemos |
+|---|---|---|
+| Dono por grupo (`grupos_solares.dono_id`, padrão `auth.uid()`) e o resto herdando pelo grupo | Coluna de dono em cada tabela | Uma regra só; placas, limpezas, leituras, clima, chuvas e previsões já pendem do grupo |
+| Políticas `placa_id in (select id from placas)` | `exists (...)` correlacionado | A subconsulta não depende da linha e é calculada uma vez por consulta |
+| ADMIN por `e_admin()` na política dos grupos, promoção por SQL | Tela de administração | Basta para o projeto acadêmico; a tela fica como pendência |
+| Grupos antigos com o primeiro usuário cadastrado | Deixar sem dono (invisíveis) | Nada some depois do deploy; dá para reatribuir por SQL |
+| View `geracao_horaria` (`security_invoker`) como fonte única da geração por hora | Cada função recalcular estimado e real | Gráfico, cards e análises somam a mesma coisa; a view respeita a RLS de quem consulta e as colunas não usadas não são calculadas |
+| `perda_sujeira_em` security definer com a regra do dono repetida | Deixar a RLS filtrar | Roda por hora e por placa; com RLS a visão Ano de todas as placas levava 14 s. O custo é manter a regra em dois lugares |
+| Tabela `chuvas_que_lavam` (≥ 5 mm/dia) | Somar a chuva do dia a cada hora calculada | A última chuva vira uma busca no índice; limiar fixo e limpeza total até haver dado para calibrar |
+| CO₂ com o fator médio anual do SIN de 2023 (0,0385 kgCO₂/kWh, MCTI) | Fator mensal ou de outro ano | Valor oficial mais recente na data; fixo na função, a trocar quando o MCTI publicar o próximo |
+| Média de 5 anos só do **estimado** | Média do real | O real carrega a sujeira; a média do clima separa "o clima foi ruim" de "a placa está ruim" |
+| `previsoes_diarias` + job `guardar-previsao` | Comparar com `clima_horario` | O clima da previsão é sobrescrito de hora em hora pelo observado; a previsão precisa ser guardada antes |
+| Importação de CSV lida no navegador e gravada por upsert | Edge Function ou upload de arquivo | Sem deploy à parte; a RLS já garante que só o dono grava; reimportar não duplica |
+| Ranking contra a **mediana do grupo** | Alarmar por desempenho absoluto | No mesmo grupo o clima é o mesmo e o erro da reanálise (~15 % ao dia, ver a validação) se cancela |
+
+Os atalhos conscientes ficam marcados com `ponytail:` nas migrations e listados em [FEATURES-INCOMPLETAS.md](FEATURES-INCOMPLETAS.md).

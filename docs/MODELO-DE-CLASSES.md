@@ -1,6 +1,6 @@
 # Modelo de Classes - SolarVision
 
-Modelo de domínio do SolarVision. Desde a migração para o Supabase, o domínio é representado diretamente pelas **tabelas do PostgreSQL** (`supabase/migrations/`; o clima vem de `20261007120000_clima_open_meteo.sql`); não há mais classes de entidade no backend. O diagrama abaixo mostra cada tabela como uma classe.
+Modelo de domínio do SolarVision. Desde a migração para o Supabase, o domínio é representado diretamente pelas **tabelas do PostgreSQL** (`supabase/migrations/`; o clima vem de `20261007120000_clima_open_meteo.sql`, o dono dos grupos e a view `geracao_horaria` de `20261008090000_dono_e_geracao_horaria.sql` e as análises das migrations `20261008110000` a `20261008130000`); não há mais classes de entidade no backend. O diagrama abaixo mostra cada tabela como uma classe.
 
 > Arquitetura geral do sistema: [ARQUITETURA.md](ARQUITETURA.md).
 
@@ -21,10 +21,13 @@ classDiagram
     }
     class grupos_solares {
         +bigint id
+        +uuid dono_id
         +varchar nome
         +varchar status
         +float latitude
         +float longitude
+        +numeric tarifa_kwh
+        +numeric custo_limpeza
         +timestamptz criado_em
     }
     class placas {
@@ -36,6 +39,7 @@ classDiagram
         +float inclinacao
         +float azimute
         +float coef_temperatura
+        +date instalada_em
         +timestamptz clima_historico_em
         +timestamptz clima_atualizado_em
         +timestamptz criado_em
@@ -45,6 +49,18 @@ classDiagram
         +timestamptz data_hora
         +real irradiancia
         +real temperatura
+        +real precipitacao
+    }
+    class chuvas_que_lavam {
+        +bigint placa_id
+        +date dia
+        +real precipitacao
+    }
+    class previsoes_diarias {
+        +bigint placa_id
+        +date dia
+        +numeric estimada_wh
+        +timestamptz feita_em
     }
     class limpezas {
         +bigint id
@@ -60,6 +76,16 @@ classDiagram
         +numeric wats_gerados
         +timestamptz criado_em
     }
+    class geracao_horaria {
+        <<view>>
+        +bigint placa_id
+        +bigint grupo_id
+        +timestamptz data_hora
+        +float estimada_wh
+        +float real_wh
+        +real precipitacao
+        +boolean real_medido
+    }
     class auth_users {
         <<Supabase Auth>>
         +uuid id
@@ -70,13 +96,18 @@ classDiagram
     %% Composições (losango cheio) refletem ON DELETE CASCADE:
     %% remover o pai remove os filhos.
     auth_users "1" *-- "1" usuarios : perfil
+    auth_users "1" *-- "0..*" grupos_solares : dono
     grupos_solares "1" *-- "0..*" placas : placas
     placas "1" *-- "0..*" limpezas : limpezas
     placas "1" *-- "0..*" leituras_energia : leituras
     placas "1" *-- "0..*" clima_horario : clima
+    placas "1" *-- "0..*" chuvas_que_lavam : chuvas
+    placas "1" *-- "0..*" previsoes_diarias : previsões
+    clima_horario ..> geracao_horaria : estimado
+    leituras_energia ..> geracao_horaria : real medido
 
-    note for usuarios "Perfil criado pelo trigger criar_perfil_usuario; não se relaciona ao domínio solar."
-    note for placas "Núcleo do domínio: pertence a um grupo e agrega limpezas, leituras medidas e clima (geração estimada)."
+    note for usuarios "Perfil criado pelo trigger criar_perfil_usuario; role ADMIN vê as usinas de todos."
+    note for placas "Núcleo do domínio: pertence a um grupo (e, por ele, a um dono) e agrega limpezas, leituras, clima, chuvas e previsões."
 ```
 
 ---
@@ -91,19 +122,22 @@ Perfil do usuário. A senha e o login ficam no Supabase Auth (`auth.users`); a l
 | id | uuid (PK) | FK para `auth.users(id)`, `on delete cascade` |
 | nome | varchar(100) | obrigatório; vem de `options.data.nome` no cadastro (ou da parte local do e-mail) |
 | email | varchar(255) | único |
-| role | varchar(30) | `ADMIN` ou `USER`, padrão `USER` |
+| role | varchar(30) | `ADMIN` ou `USER`, padrão `USER`. `ADMIN` vê e altera os grupos de todos os usuários; a promoção é só por SQL (`update usuarios set role = 'ADMIN' where email = '...'`) |
 | criado_em | timestamptz | padrão `now()` |
 
 ### `grupos_solares`
-Agrupamento de placas (ex.: uma usina/instalação).
+Agrupamento de placas (ex.: uma usina/instalação). Cada grupo tem um dono; placas, limpezas, leituras, clima, chuvas e previsões herdam o acesso pelo grupo.
 
 | Coluna | Tipo | Observações |
 |---|---|---|
 | id | bigint (PK) | identity |
+| dono_id | uuid (FK) | `auth.users(id)`, obrigatório, padrão `auth.uid()` (quem cria), `on delete cascade`. Os grupos que já existiam antes da coluna ficaram com o primeiro usuário cadastrado |
 | nome | varchar(120) | obrigatório, não pode ser só espaços |
 | status | varchar(30) | `ATIVO`, `INATIVO` ou `MANUTENCAO`, padrão `ATIVO` |
 | latitude | double precision | opcional, -90 a 90; local usado para buscar o clima |
 | longitude | double precision | opcional, -180 a 180 |
+| tarifa_kwh | numeric(8,4) | opcional, > 0; R$/kWh da conta de luz, valora a energia (economia e perda em R$) |
+| custo_limpeza | numeric(10,2) | opcional, ≥ 0; R$ para limpar uma placa, usado na recomendação de limpeza |
 | criado_em | timestamptz | padrão `now()` |
 
 ### `placas`
@@ -119,7 +153,8 @@ Placa/painel solar, pertencente a um grupo. As especificações são opcionais; 
 | inclinacao | double precision | graus, 0 a 90 |
 | azimute | double precision | graus, 0 a <360: 0 = Norte, 90 = Leste, 180 = Sul, 270 = Oeste (convertido para a convenção do Open-Meteo na busca) |
 | coef_temperatura | double precision | %/°C, padrão `-0.40` |
-| clima_historico_em | timestamptz | quando os 5 anos de clima foram carregados (null = pendente) |
+| instalada_em | date | opcional; sem limpeza nem chuva que lave depois dela, a sujeira conta a partir desta data |
+| clima_historico_em | timestamptz | quando os 5 anos de clima foram carregados (null = pendente; zerado pelos triggers de recarga) |
 | clima_atualizado_em | timestamptz | última busca no Open-Meteo |
 | criado_em | timestamptz | padrão `now()` |
 
@@ -135,14 +170,14 @@ Registro de limpeza de uma placa.
 | criado_em | timestamptz | padrão `now()` |
 
 ### `leituras_energia`
-Leitura **medida** de geração de uma placa (série temporal de sensores). Vazia até haver sensor ou API de inversor integrados; enquanto isso o real do dashboard é simulado (estimado menos a perda por sujeira).
+Leitura **medida** de geração de uma placa. Preenchida pela importação de CSV no Monitoramento (`ImportarLeituras`), gravada pelo dono do grupo; nas horas com leituras, o real do dashboard é o medido. Sensor (ESP32) ou API de inversor ainda não estão integrados.
 
 | Coluna | Tipo | Observações |
 |---|---|---|
 | id | bigint (PK) | identity |
 | placa_id | bigint (FK) | `placas(id)`, obrigatório |
-| data_hora | timestamptz | obrigatório |
-| wats_gerados | numeric(14,4) | obrigatório; potência média de 5 min |
+| data_hora | timestamptz | obrigatório; início do intervalo da leitura. Único por placa (`unique (placa_id, data_hora)`, alvo do upsert: reimportar não duplica) |
+| wats_gerados | numeric(14,4) | obrigatório; potência média (W) do intervalo que começa em `data_hora` (5 min no CSV de referência) |
 | criado_em | timestamptz | padrão `now()` |
 
 ### `clima_horario`
@@ -154,8 +189,41 @@ Clima de cada hora no local e no plano de uma placa (Open-Meteo), base da geraç
 | data_hora | timestamptz (PK) | início da hora (UTC) |
 | irradiancia | real | W/m² no plano da placa (GTI), média da hora |
 | temperatura | real | °C do ar a 2 m |
+| precipitacao | real | mm de chuva na hora (null nas linhas carregadas antes da coluna; o deploy recarregou o histórico de todas as placas) |
+
+### `chuvas_que_lavam`
+Dias em que choveu o bastante para lavar a placa (≥ 5 mm no dia, fuso de São Paulo). Recalculada por `atualizar_clima_placa` a partir do clima recebido (inclui os dias da previsão); só leitura para o cliente.
+
+| Coluna | Tipo | Observações |
+|---|---|---|
+| placa_id | bigint (PK, FK) | `placas(id)`, `on delete cascade` |
+| dia | date (PK) | dia no fuso de São Paulo; a placa fica limpa no fim do dia |
+| precipitacao | real | mm no dia |
+
+### `previsoes_diarias`
+Energia estimada de amanhã, guardada às 21:00 (São Paulo) pelo job `guardar-previsao`, para comparar depois com o clima que aconteceu (o `clima_horario` é sobrescrito de hora em hora). Começa vazia após o deploy.
+
+| Coluna | Tipo | Observações |
+|---|---|---|
+| placa_id | bigint (PK, FK) | `placas(id)`, `on delete cascade` |
+| dia | date (PK) | dia previsto, no fuso de São Paulo |
+| estimada_wh | numeric | energia estimada do dia (Wh) |
+| feita_em | timestamptz | quando a previsão foi guardada |
 
 > A tabela `alertas` da versão Spring Boot foi removida: só era usada pelos serviços gRPC.
+
+### View `geracao_horaria`
+Fonte única da geração por hora e por placa, usada por todas as funções do dashboard. `security_invoker`: respeita a RLS de quem consulta. Só placas com `potencia_wp`.
+
+| Coluna | Observações |
+|---|---|
+| placa_id, grupo_id, data_hora | uma linha por hora de `clima_horario` |
+| estimada_wh | `potencia_estimada(...)` da hora (W médio da hora = Wh) |
+| real_wh | só até a última hora completa: a energia das leituras da hora, se houver; senão o estimado × (1 − `perda_sujeira_em`) |
+| precipitacao | mm na hora |
+| real_medido | true quando o real da hora veio de leituras |
+
+Energia de uma hora com leituras: Σ W × intervalo, com o intervalo inferido pelo espaçamento das leituras dentro da hora e limitado a 60 min ÷ nº de leituras (leituras de 1, 5 ou 15 min dão a mesma energia; uma leitura isolada vale pela hora).
 
 ---
 
@@ -176,20 +244,25 @@ Os antigos enums Java viraram constraints `CHECK` no banco:
 | Origem | Cardinalidade | Destino | Chave estrangeira |
 |---|---|---|---|
 | auth.users | 1 : 1 | usuarios | `usuarios.id` |
+| auth.users | 1 : N | grupos_solares | `grupos_solares.dono_id` |
 | grupos_solares | 1 : N | placas | `placas.grupo_id` |
 | placas | 1 : N | limpezas | `limpezas.placa_id` |
 | placas | 1 : N | leituras_energia | `leituras_energia.placa_id` |
 | placas | 1 : N | clima_horario | `clima_horario.placa_id` |
+| placas | 1 : N | chuvas_que_lavam | `chuvas_que_lavam.placa_id` |
+| placas | 1 : N | previsoes_diarias | `previsoes_diarias.placa_id` |
 
-A exclusão é em cascata (`on delete cascade`): remover um grupo remove suas placas e, por consequência, limpezas, leituras e clima.
+A exclusão é em cascata (`on delete cascade`): remover um usuário do Auth remove seus grupos; remover um grupo remove suas placas e, por consequência, limpezas, leituras, clima, chuvas e previsões.
 
 ---
 
 ## Índices, funções e políticas
 
-- **Índices**: `placas.grupo_id`, `limpezas.placa_id`, `limpezas.data_limpeza desc`, `leituras_energia.placa_id`, `leituras_energia.data_hora`; `clima_horario` usa a PK `(placa_id, data_hora)`.
-- **Funções (RPC)**: `dashboard_metricas(granularidade, data_inicio, data_fim, grupo, placa)` e `dashboard_resumo()` - ver [FUNCIONALIDADES.md](FUNCIONALIDADES.md).
-- **Sujeira**: `perda_sujeira_em(placa_id, instante)` (0 a 0,20) e a coluna calculada `perda_sujeira(placas)` (perda agora, lida pela API como `placas?select=...,perda_sujeira`).
-- **Funções do clima**: `potencia_estimada(potencia_wp, coef_temperatura, irradiancia, temperatura)` (W estimados de uma hora) e, só para o pg_cron, `sincronizar_clima()` e `atualizar_clima_placa(placa_id, historico)` - ver [ARQUITETURA.md](ARQUITETURA.md#5-geração-estimada-pelo-clima-open-meteo).
-- **RLS**: habilitada em todas as tabelas - ver [ARQUITETURA.md](ARQUITETURA.md#4-segurança).
-- **Nomes no JSON**: `frontend/src/lib/api.js` usa aliases (`criadoEm:criado_em`, `grupoId:grupo_id`...) para entregar às telas os mesmos campos camelCase da API antiga.
+- **Índices**: `grupos_solares.dono_id`, `placas.grupo_id`, `limpezas.placa_id`, `limpezas.data_limpeza desc`; `leituras_energia` usa o unique `(placa_id, data_hora)` (os índices de uma coluna saíram); `clima_horario`, `chuvas_que_lavam` e `previsoes_diarias` usam a PK `(placa_id, data_hora|dia)`.
+- **Funções do dashboard (RPC)**: `dashboard_metricas(granularidade, data_inicio, data_fim, grupo, placa)`, `dashboard_resumo()`, `dashboard_financeiro(data_inicio, data_fim, grupo, placa)`, `dashboard_historico(granularidade, data_inicio, data_fim, grupo, placa)`, `ranking_placas(data_inicio, data_fim, grupo)`, `recomendacoes_limpeza()` e `acerto_previsao(dias, grupo, placa)` - ver [FUNCIONALIDADES.md](FUNCIONALIDADES.md).
+- **Sujeira**: `perda_sujeira_em(placa_id, instante)` (0 a 0,20; security definer com a regra do dono repetida, ver [ARQUITETURA.md](ARQUITETURA.md#4-segurança)) e a coluna calculada `perda_sujeira(placas)` (perda agora, lida pela API como `placas?select=...,perda_sujeira`).
+- **Funções do clima**: `potencia_estimada(potencia_wp, coef_temperatura, irradiancia, temperatura)` (W estimados de uma hora) e, só para o pg_cron, `sincronizar_clima()`, `atualizar_clima_placa(placa_id, historico)` e `guardar_previsao()` - ver [ARQUITETURA.md](ARQUITETURA.md#5-geração-estimada-pelo-clima-open-meteo).
+- **Triggers**: `criar_perfil_usuario` (perfil no cadastro), `ao_mudar_orientacao_placa` (inclinação, azimute ou grupo) e `ao_mudar_local_grupo` (latitude/longitude) zeram `clima_historico_em`/`clima_atualizado_em` para o pg_cron recarregar o clima.
+- **Acesso**: `e_admin()` (o usuário logado tem `role = 'ADMIN'`), usada pela política dos grupos.
+- **RLS**: habilitada em todas as tabelas; grupos pelo dono (ou ADMIN), o resto pelo grupo - ver [ARQUITETURA.md](ARQUITETURA.md#4-segurança).
+- **Nomes no JSON**: `frontend/src/lib/api.js` usa aliases (`criadoEm:criado_em`, `grupoId:grupo_id`, `tarifaKwh:tarifa_kwh`...) para entregar às telas os campos em camelCase.
