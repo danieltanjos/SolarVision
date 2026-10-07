@@ -94,6 +94,27 @@ export function getDashboardMetrics({ granularidade, dataInicio, dataFim, grupoI
   );
 }
 
+// Estimado (só o clima) da mesma janela nos 5 anos anteriores, com os mesmos x de getDashboardMetrics.
+export function getDashboardHistorico({ granularidade, dataInicio, dataFim, grupoId = null, placaId = null }) {
+  return unwrap(
+    supabase.rpc("dashboard_historico", {
+      granularidade,
+      data_inicio: dataInicio,
+      data_fim: dataFim,
+      grupo: grupoId,
+      placa: placaId
+    }).select("x, mediaW:media_w, mediaWh:media_wh, minWh:min_wh, maxWh:max_wh, anos")
+  );
+}
+
+// Por dia encerrado: a previsão guardada na véspera (21:00) x o estimado com o clima que aconteceu.
+export function getAcertoPrevisao({ dias = 7, grupoId = null, placaId = null } = {}) {
+  return unwrap(
+    supabase.rpc("acerto_previsao", { dias, grupo: grupoId, placa: placaId })
+      .select("dia, previstoWh:previsto_wh, ocorridoWh:ocorrido_wh")
+  );
+}
+
 const MENSAGENS = {
   "Invalid login credentials": "Credenciais inválidas.",
   "User already registered": "Já existe um usuário cadastrado com este email.",

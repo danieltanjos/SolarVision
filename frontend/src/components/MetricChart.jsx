@@ -1,5 +1,6 @@
 import Chart from "react-apexcharts";
 import ptBr from "apexcharts/dist/locales/pt-br.json";
+import { textoAnos } from "../lib/historico";
 import { toSaoPaulo } from "../lib/periodo";
 import { formatPower, powerUnit } from "../lib/power";
 
@@ -12,12 +13,22 @@ const SERIES = [
 const TOOLTIP_FORMAT = { dia: "dd/MM HH:mm", ano: "MMMM 'de' yyyy" };
 
 // Só desenha: quem usa busca os pontos (dashboard_metricas) e decide a janela (view).
-export default function MetricChart({ points, view = "dia", height = 320 }) {
+// historico (opcional, dashboard_historico): a média do estimado nos anos anteriores, nos mesmos x.
+export default function MetricChart({ points, historico = [], view = "dia", height = 320 }) {
   // Só as séries com dados. Eixo no relógio de SP: os pontos vão "como UTC" e o ApexCharts formata em UTC.
   const series = SERIES.map(({ key, ...serie }) => ({
     ...serie,
     data: points.filter((point) => point[key] != null).map((point) => [toSaoPaulo(point.x).getTime(), Number(point[key])])
   })).filter((serie) => serie.data.length > 0);
+  if (historico.length > 0) {
+    series.push({
+      name: `Média de ${textoAnos(historico[0].anos)}`,
+      type: "line",
+      color: "#7f91a3",
+      dash: 3,
+      data: historico.map((h) => [toSaoPaulo(h.x).getTime(), Number(h.mediaW)])
+    });
+  }
 
   if (series.length === 0) {
     return (
@@ -48,7 +59,8 @@ export default function MetricChart({ points, view = "dia", height = 320 }) {
     colors: series.map((serie) => serie.color),
     stroke: { curve: "smooth", width: 2.5, dashArray: series.map((serie) => serie.dash) },
     fill: {
-      type: "gradient",
+      // num gráfico misto o gradiente também pintaria o traço da linha da média (quase sumiria)
+      type: series.map((serie) => (serie.type === "line" ? "solid" : "gradient")),
       gradient: { shadeIntensity: 1, opacityFrom: 0.32, opacityTo: 0.02, stops: [0, 90, 100] }
     },
     dataLabels: { enabled: false },

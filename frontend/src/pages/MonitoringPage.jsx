@@ -1,13 +1,16 @@
-import { startTransition, useEffect, useState } from "react";
+import { Suspense, lazy, startTransition, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import MetricChart from "../components/MetricChart";
 import PrevisaoSemana from "../components/PrevisaoSemana";
 import StatCard from "../components/StatCard";
 import StatusBadge, { SujeiraBadge } from "../components/StatusBadge";
-import { extractErrorMessage, getDashboardMetrics, listCleanings, listGroups, listPanels } from "../lib/api";
+import { extractErrorMessage, getDashboardHistorico, getDashboardMetrics, listCleanings, listGroups, listPanels } from "../lib/api";
+import { comparacaoClima } from "../lib/historico";
 import { formatRangeLabel, rangeFor, shiftDate, toSaoPaulo } from "../lib/periodo";
 import { LIMPAR_A_PARTIR, climaStatus, formatPerda, orientacao, perdaMedia, potenciaInstalada } from "../lib/placas";
 import { formatEnergy, formatPower } from "../lib/power";
+
+const CalendarioGeracao = lazy(() => import("../components/CalendarioGeracao"));
 
 // Cada "view" é a janela mostrada; o "bucket" (date_trunc no Supabase) dá uma quantidade de pontos adequada.
 const VIEWS = [
@@ -36,6 +39,7 @@ export default function MonitoringPage() {
   // Ancorado em "agora": o estimado inclui a previsão do tempo; o real vai até a última hora completa.
   const [referenceDate, setReferenceDate] = useState(() => toSaoPaulo(new Date()));
   const [points, setPoints] = useState([]);
+  const [historico, setHistorico] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -56,13 +60,17 @@ export default function MonitoringPage() {
     let ativo = true; // descarta a resposta se a seleção ou o período mudar antes dela chegar
     setLoading(true);
     setError("");
-    getDashboardMetrics({
-      granularidade: config.bucket,
-      ...rangeFor(view, referenceDate),
-      grupoId: placaId ? null : grupoParam,
-      placaId
-    })
-      .then((data) => ativo && setPoints(data), (err) => ativo && setError(extractErrorMessage(err)))
+    const filtro = { granularidade: config.bucket, ...rangeFor(view, referenceDate), grupoId: placaId ? null : grupoParam, placaId };
+    // A média de 5 anos é extra: se falhar, o gráfico sai sem ela.
+    Promise.all([getDashboardMetrics(filtro), getDashboardHistorico(filtro).catch(() => [])])
+      .then(
+        ([data, media]) => {
+          if (!ativo) return;
+          setPoints(data);
+          setHistorico(media);
+        },
+        (err) => ativo && setError(extractErrorMessage(err))
+      )
       .finally(() => ativo && setLoading(false));
     return () => {
       ativo = false;
@@ -91,6 +99,7 @@ export default function MonitoringPage() {
 
   const temReal = points.some((point) => point.medidaWh != null);
   const futuro = points.some((point) => new Date(point.x) > new Date());
+  const clima = comparacaoClima(points, historico);
   const ultimaLimpeza = panel ? cleanings.find((item) => item.placaId === panel.id) : null;
   const perda = perdaMedia(selecionadas);
   const sujas = selecionadas.filter((p) => p.perdaSujeira >= LIMPAR_A_PARTIR).length;
@@ -216,7 +225,7 @@ export default function MonitoringPage() {
               <StatCard
                 title="Energia estimada"
                 value={loading ? "…" : formatEnergy(soma(points, "estimadaWh"))}
-                subtitle={futuro ? "Inclui a previsão do tempo" : "Pelo clima do período"}
+                subtitle={clima ?? (futuro ? "Inclui a previsão do tempo" : "Pelo clima do período")}
                 icon="bi-sun"
                 tone="accent"
               />
@@ -246,12 +255,16 @@ export default function MonitoringPage() {
                   <div className="spinner-border text-primary" role="status" />
                 </div>
               ) : (
-                <MetricChart points={points} view={view} height={340} />
+                <MetricChart points={points} historico={historico} view={view} height={340} />
               )}
             </div>
           </section>
 
           <PrevisaoSemana grupoId={placaId ? null : grupoParam} placaId={placaId} />
+
+          <Suspense fallback={null}>
+            <CalendarioGeracao grupoId={placaId ? null : grupoParam} placaId={placaId} />
+          </Suspense>
 
           {panel ? (
             <section className="card">
