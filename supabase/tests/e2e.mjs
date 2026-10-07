@@ -76,6 +76,13 @@ test("pg_cron carrega 5 anos de clima da placa nova e o dashboard estima a gera�
   });
   assert.ok(anoPassado.filter((p) => p.estimada > 0).length >= 11, "esperava ~12 meses de estimativa de 3–4 anos atrás");
 
+  // Filtros do Monitoramento: o grupo E2E só tem esta placa, então grupo e placa dão a mesma série.
+  const mes = { granularidade: "dia", dataInicio: new Date(Date.now() - 30 * 864e5).toISOString(), dataFim: new Date().toISOString() };
+  const daPlaca = await api.getDashboardMetrics({ ...mes, placaId: placa.id });
+  assert.ok(daPlaca.length >= 30 && daPlaca.some((p) => p.estimadaWh > 0), "sem energia estimada da placa no último mês");
+  assert.deepEqual(await api.getDashboardMetrics({ ...mes, grupoId: grupo.id }), daPlaca);
+  assert.deepEqual(await api.getDashboardMetrics({ ...mes, placaId: -1 }), []);
+
   const resumo = await api.getDashboardSummary();
   assert.ok(resumo.placasAtivas >= 1);
   assert.ok(resumo.previsaoAmanha > 0, "sem previsão para amanhã");

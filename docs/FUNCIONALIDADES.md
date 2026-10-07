@@ -53,11 +53,13 @@ Tabela `limpezas`, histórico de limpeza das placas:
 
 Painel alimentado por duas funções SQL (RPC):
 
-- **Métricas** (`rpc('dashboard_metricas', { granularidade, data_inicio, data_fim })`): devolve `x`, `medida` e `estimada` - a **potência média** do conjunto (soma da média de cada placa) por balde de tempo (`hora`, `dia`, `semana` ou `mes` via `date_trunc`) dentro do período. Granularidade inválida ou início depois do fim geram erro. Alimenta o gráfico de geração.
+- **Métricas** (`rpc('dashboard_metricas', { granularidade, data_inicio, data_fim, grupo, placa })`): devolve `x`, `medida` e `estimada` - a **potência média** do conjunto (soma da média de cada placa) por balde de tempo (`hora`, `dia`, `semana` ou `mes` via `date_trunc`) dentro do período - e `medida_wh`/`estimada_wh`, a **energia** do balde. `grupo` e `placa` são opcionais (null = todas). Granularidade inválida ou início depois do fim geram erro. Alimenta o gráfico de geração.
 - **Resumo** (`rpc('dashboard_resumo')`): `estimadoHoje` e `previsaoAmanha` (Wh, soma das horas estimadas), `potenciaAgora` (W estimados na hora atual), `totalGeradoHoje` (medido; cada leitura é a potência média de 5 min: Wh = W × 5/60), número de placas ativas e dados da última limpeza. Energia exibida com auto-escala Wh/kWh/MWh.
 - As agregações usam o fuso `America/Sao_Paulo`.
 
 ### Gráfico de geração (Monitoramento)
+
+A tela tem um **seletor** à esquerda (busca + *Todas as usinas* → grupos → placas); a seleção fica na URL (`?grupo=17&placa=10`), então dá para compartilhar o link e chegar direto da Home ou do Cadastro. Acima do gráfico, cards com a energia estimada do período, o melhor balde (hora/dia/mês), a energia medida e a capacidade instalada; abaixo, a tabela de placas da seleção ou os detalhes da placa (com atalho para registrar limpeza).
 
 O gráfico de área usa quatro **visões de calendário** - **Dia, Semana, Mês e Ano**. A visão define a janela mostrada; o agrupamento (balde) é escolhido automaticamente para dar uma quantidade adequada de pontos:
 
@@ -68,7 +70,7 @@ O gráfico de área usa quatro **visões de calendário** - **Dia, Semana, Mês 
 | Mês | dia 1 ao último | por dia |
 | Ano | janeiro a dezembro | por mês |
 
-As setas navegam uma unidade por vez (um dia, uma semana, um mês ou um ano). O gráfico abre ancorado em **agora** e inclui as horas de previsão. Há duas séries, **Medida (sensores)** e **Estimada (clima)** (tracejada); só aparecem as que têm dados no período. O eixo Y mostra **potência média** com **auto-escala de unidade** (W, kW, MW ou GW) conforme a magnitude dos valores, e o gráfico tem legenda.
+As setas navegam uma unidade por vez (um dia, uma semana, um mês ou um ano) e **Hoje** volta para a data atual; uma linha marca **Agora**. O gráfico abre ancorado em **agora** e inclui as horas de previsão. Há duas séries, **Medida (sensores)** e **Estimada (clima)** (tracejada); só aparecem as que têm dados no período. O eixo Y mostra **potência média** com **auto-escala de unidade** (W, kW, MW ou GW) conforme a magnitude dos valores, e o gráfico tem legenda.
 
 ## 7. API GraphQL
 
@@ -82,8 +84,8 @@ Aplicação de página única, com rotas protegidas pela sessão do Supabase e t
 |---|---|---|---|
 | Login | `/login` | Autenticação | Supabase Auth (`signInWithPassword`) |
 | Registro | `/register` | Criação de conta | Supabase Auth (`signUp`) + trigger em `usuarios` |
-| Home | `/app/home` | Cards Estimado Hoje (agora/amanhã), Medido Hoje, placas ativas e última limpeza + grupos | `rpc dashboard_resumo`, `grupos_solares` |
-| Monitoramento | `/app/monitoramento` | Gráfico medido x estimado (com previsão), visões Dia/Semana/Mês/Ano e auto-escala de potência | `rpc dashboard_metricas` |
+| Home | `/app/home` | Cards (estimado hoje/agora, previsão amanhã, medido hoje, placas ativas), gráfico de hoje, limpezas recentes e grupos (link para o Monitoramento) | `rpc dashboard_resumo`, `rpc dashboard_metricas`, `grupos_solares`, `placas`, `limpezas` |
+| Monitoramento | `/app/monitoramento` | Seletor de grupo/placa, cards de energia, gráfico medido x estimado (com previsão), visões Dia/Semana/Mês/Ano e detalhes da placa | `rpc dashboard_metricas`, `grupos_solares`, `placas`, `limpezas` |
 | Cadastro | `/app/cadastro` | Grupos (com local) e placas (com potência, inclinação e orientação) e status do clima. **(parcial)** - só cria/lista; editar/excluir está na branch `feat/muda-aba-cadastro` | `grupos_solares`, `placas` |
 | Limpeza | `/app/limpeza` | Registro e histórico de limpezas. **(parcial)** - só cria/lista | `limpezas`, `placas` |
 | Configurações | `/app/configuracoes` | Dados do usuário e do sistema (somente leitura). **(parcial)** - sem edição de perfil/senha | `usuarios` |

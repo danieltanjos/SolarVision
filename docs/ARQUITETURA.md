@@ -165,7 +165,7 @@ sequenceDiagram
 1. A placa entra na fila quando o grupo tem latitude/longitude e ela tem potência, inclinação e azimute (0 = Norte, 90 = Leste, 180 = Sul, 270 = Oeste; convertido para a convenção do Open-Meteo, 0 = Sul).
 2. O job `sincronizar-clima` chama `sincronizar_clima()`, que processa até 5 placas por vez: placa nova recebe os 5 anos de histórico + previsão em ~1 min após o cadastro; as demais têm a previsão renovada de hora em hora. Uma falha só gera `warning` e não trava a fila; o histórico pendente é tentado de novo a cada 10 min.
 3. `potencia_estimada()` converte cada hora de clima em potência: P = Wp × G/1000 × PR × [1 + γ(T_célula − 25)], com T_célula ≈ T_ar + G × (45 − 20)/800, PR = 0,82 e γ = `coef_temperatura` (padrão −0,40 %/°C).
-4. `dashboard_metricas` devolve, por balde, `medida` e `estimada`; `dashboard_resumo` soma o estimado de hoje, a previsão de amanhã e a potência estimada agora.
+4. `dashboard_metricas` devolve, por balde, `medida` e `estimada` (potência) e `medida_wh`/`estimada_wh` (energia), de todas as placas ou filtrando por grupo/placa; `dashboard_resumo` soma o estimado de hoje, a previsão de amanhã e a potência estimada agora.
 
 Todas as agregações usam o fuso `America/Sao_Paulo` (o Supabase e o clima gravado ficam em UTC). Limitações em [FEATURES-INCOMPLETAS.md](FEATURES-INCOMPLETAS.md).
 

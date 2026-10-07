@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   build: {
-    // O chunk da ApexCharts (~580 kB) só carrega na página de Monitoramento.
+    // O chunk da ApexCharts (~580 kB) só carrega no gráfico (Monitoramento e, depois do resto, na Home).
     chunkSizeWarningLimit: 650,
     rollupOptions: {
       output: {

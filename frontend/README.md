@@ -18,13 +18,12 @@ frontend/
 ├── src/
 │   ├── components
 │   ├── context        # AuthContext (Supabase Auth)
-│   ├── lib            # api.js (cliente Supabase e funções de dados), power.js, text.js
+│   ├── lib            # api.js (cliente Supabase e funções de dados), placas.js, periodo.js, power.js, text.js
 │   ├── pages
-│   ├── styles
+│   ├── styles         # app.css: tokens de cor (claro/escuro) sobre o Bootstrap
 │   ├── App.jsx
 │   └── main.jsx
 ├── test/              # testes nativos do Node
-├── css/style.css
 ├── img/
 ├── .env.example
 ├── vercel.json        # rewrite de SPA para index.html
@@ -37,10 +36,10 @@ frontend/
 - Cadastro e login com Supabase Auth (sessão e refresh do JWT persistidos pelo `supabase-js`)
 - Rotas privadas com `react-router-dom`
 - Dados lidos/gravados nas tabelas do Supabase (PostgREST) e no dashboard via RPC (`lib/api.js`)
-- Dashboard com gráfico em `react-apexcharts`: séries medida (sensores) e estimada pelo clima (Open-Meteo, com previsão)
+- Monitoramento por grupo ou placa (seleção na URL) com gráfico em `react-apexcharts`: séries medida (sensores) e estimada pelo clima (Open-Meteo, com previsão)
 - Telas de grupos (com local), placas (com potência, inclinação e orientação), limpezas e configurações
 - Atribuição do Open-Meteo (CC BY 4.0) no rodapé
-- Tema escuro preservado da identidade anterior
+- Tema claro/escuro com a paleta original (#3b7197, sidebar azul-marinho, âmbar)
 
 ## Desenvolvimento local
 

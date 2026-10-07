@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { extractErrorMessage } from "../lib/api";
+import logo from "../../img/logo.png";
 
 export default function LoginPage() {
   const { isAuthenticated, login } = useAuth();
@@ -31,43 +32,48 @@ export default function LoginPage() {
 
   return (
     <div className="sv-auth-screen">
-      <div className="card shadow card-auth sv-auth-card">
-        <h1 className="h4 text-center fw-bold mb-1">SolarVision</h1>
-        <p className="text-center text-muted mb-4">Bem-vindo de volta!</p>
+      <div className="card sv-auth-card">
+        <div className="sv-auth-brand">
+          <img src={logo} alt="" />
+          <h1>SolarVision</h1>
+          <p>Bem-vindo de volta! Entre para ver suas placas.</p>
+        </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="mb-3">
+          <div className="form-floating mb-3">
             <input
+              id="auth-e-mail"
               type="email"
               className="form-control"
               placeholder="E-mail"
-              aria-label="E-mail"
               value={form.email}
               onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
               required
             />
+            <label htmlFor="auth-e-mail">E-mail</label>
           </div>
-          <div className="mb-3">
+          <div className="form-floating mb-3">
             <input
+              id="auth-senha"
               type="password"
               className="form-control"
               placeholder="Senha"
-              aria-label="Senha"
               value={form.senha}
               onChange={(event) => setForm((current) => ({ ...current, senha: event.target.value }))}
               required
             />
+            <label htmlFor="auth-senha">Senha</label>
           </div>
 
           {error ? <div className="alert alert-danger">{error}</div> : null}
 
-          <button type="submit" className="btn btn-primary w-100 mb-3" disabled={loading}>
+          <button type="submit" className="btn btn-primary btn-lg w-100" disabled={loading}>
             {loading ? "Entrando..." : "Login"}
           </button>
         </form>
 
-        <p className="text-center mt-3 mb-0">
-          Não possui uma conta? <Link to="/register" className="text-decoration-none">Registre-se</Link>
+        <p className="sv-auth-foot">
+          Não possui uma conta? <Link to="/register">Registre-se</Link>
         </p>
       </div>
     </div>
