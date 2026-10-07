@@ -144,8 +144,8 @@ Sem JWT a requisição usa o papel `anon`, que não tem nenhuma política RLS: l
 
 Os dados mocados do CSV (e o job que os deslocava para hoje) saíram do banco. A geração agora tem duas séries:
 
-- **Medida** - `leituras_energia`, vinda de sensores; vazia até haver sensor (ESP32) ou API de inversor integrados.
-- **Estimada** - calculada a partir do clima real do local de cada placa:
+- **Real (simulada)** - o estimado de cada hora já passada vezes (1 − perda por sujeira). A perda (`perda_sujeira_em`) cresce 0,2 %/dia desde a última limpeza da placa, até 20 %; registrar uma limpeza zera. Quando houver sensor (ESP32) ou API de inversor, o real passa a vir de `leituras_energia` (hoje vazia).
+- **Estimada** - calculada a partir do clima do local de cada placa, com a previsão do tempo:
 
 ```mermaid
 sequenceDiagram
@@ -157,7 +157,7 @@ sequenceDiagram
     U->>DB: grupo (latitude/longitude) + placa (Wp, inclinação, azimute)
     J->>DB: sincronizar_clima()
     DB->>M: archive API: 5 anos por hora (~44 mil horas, ~2-4 s)
-    DB->>M: forecast API: últimos 3 dias + previsão de 3 dias
+    DB->>M: forecast API: últimos 3 dias + previsão de 7 dias
     M-->>DB: irradiância no plano da placa (GTI) + temperatura
     DB->>DB: upsert em clima_horario
 ```
@@ -165,7 +165,7 @@ sequenceDiagram
 1. A placa entra na fila quando o grupo tem latitude/longitude e ela tem potência, inclinação e azimute (0 = Norte, 90 = Leste, 180 = Sul, 270 = Oeste; convertido para a convenção do Open-Meteo, 0 = Sul).
 2. O job `sincronizar-clima` chama `sincronizar_clima()`, que processa até 5 placas por vez: placa nova recebe os 5 anos de histórico + previsão em ~1 min após o cadastro; as demais têm a previsão renovada de hora em hora. Uma falha só gera `warning` e não trava a fila; o histórico pendente é tentado de novo a cada 10 min.
 3. `potencia_estimada()` converte cada hora de clima em potência: P = Wp × G/1000 × PR × [1 + γ(T_célula − 25)], com T_célula ≈ T_ar + G × (45 − 20)/800, PR = 0,82 e γ = `coef_temperatura` (padrão −0,40 %/°C).
-4. `dashboard_metricas` devolve, por balde, `medida` e `estimada` (potência) e `medida_wh`/`estimada_wh` (energia), de todas as placas ou filtrando por grupo/placa; `dashboard_resumo` soma o estimado de hoje, a previsão de amanhã e a potência estimada agora.
+4. `dashboard_metricas` devolve, por balde, `medida` (= real simulado, só até a última hora completa) e `estimada` (potência) e `medida_wh`/`estimada_wh` (energia), de todas as placas ou filtrando por grupo/placa; `dashboard_resumo` soma o real e o estimado de hoje, a previsão de amanhã e a potência estimada agora.
 
 Todas as agregações usam o fuso `America/Sao_Paulo` (o Supabase e o clima gravado ficam em UTC). Limitações em [FEATURES-INCOMPLETAS.md](FEATURES-INCOMPLETAS.md).
 

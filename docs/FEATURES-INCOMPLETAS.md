@@ -30,8 +30,8 @@ Lista de funcionalidades que estão **referenciadas/parcialmente implementadas**
 - **Onde:** Supabase e configuração de variáveis da Vercel.
 
 ### 5. Geração medida (sensor ou inversor) - próximo passo
-- **Estado atual:** a geração é só **estimada** pelo clima (Open-Meteo); estimado não é medido. `leituras_energia` está vazia (os dados mocados do CSV foram removidos), então o card "Medido Hoje" fica zerado e a série "Medida (sensores)" não aparece no gráfico.
-- **Falta:** gravar leituras reais, por um sensor (ESP32) ou pela API do inversor, e comparar medido ÷ estimado (performance ratio) para detectar perda de rendimento e sujeira, ligando isso às limpezas.
+- **Estado atual:** o **real** é simulado (estimado × (1 − perda por sujeira), com taxa de 0,2 %/dia e limite de 20 % fixos e sem a chuva limpando as placas). `leituras_energia` está vazia.
+- **Falta:** gravar leituras reais, por um sensor (ESP32) ou pela API do inversor, e usá-las no lugar da simulação; com dado medido, calibrar a taxa de sujeira por placa (e a limpeza pela chuva).
 - **Onde:** dispositivo/integração externa, nova migration (forma de escrita em `leituras_energia`) e telas do dashboard.
 
 ---

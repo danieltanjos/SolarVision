@@ -83,6 +83,22 @@ test("pg_cron carrega 5 anos de clima da placa nova e o dashboard estima a gera�
   assert.deepEqual(await api.getDashboardMetrics({ ...mes, grupoId: grupo.id }), daPlaca);
   assert.deepEqual(await api.getDashboardMetrics({ ...mes, placaId: -1 }), []);
 
+  // Real simulado = estimado menos a sujeira: antes da limpeza (registrada agora há pouco) a perda está no limite de 20%.
+  const antesDaLimpeza = daPlaca.filter((p) => new Date(p.x) < Date.now() - 2 * 864e5 && p.estimadaWh > 0);
+  assert.ok(antesDaLimpeza.length > 0 && antesDaLimpeza.every((p) => Math.abs(p.medidaWh - 0.8 * p.estimadaWh) < 0.05), "real deveria ser 80% do estimado");
+  placa = (await api.listPanels()).find((p) => p.id === placa.id);
+  assert.ok(placa.perdaSujeira < 0.001, "placa recém-limpa deveria estar sem perda");
+
+  // Estimado com a previsão do tempo (7 dias); real nunca no futuro.
+  const proximos = await api.getDashboardMetrics({
+    granularidade: "dia",
+    dataInicio: new Date(Date.now() + 864e5).toISOString(),
+    dataFim: new Date(Date.now() + 8 * 864e5).toISOString(),
+    placaId: placa.id
+  });
+  assert.ok(proximos.filter((p) => p.estimadaWh > 0).length >= 5, "esperava previsão para os próximos dias");
+  assert.ok(proximos.every((p) => p.medidaWh == null), "real não pode existir no futuro");
+
   const resumo = await api.getDashboardSummary();
   assert.ok(resumo.placasAtivas >= 1);
   assert.ok(resumo.previsaoAmanha > 0, "sem previsão para amanhã");

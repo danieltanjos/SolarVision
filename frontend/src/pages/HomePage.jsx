@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import StatCard from "../components/StatCard";
+import PrevisaoSemana from "../components/PrevisaoSemana";
 import StatusBadge from "../components/StatusBadge";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -12,7 +13,7 @@ import {
   listPanels
 } from "../lib/api";
 import { TIME_ZONE, rangeFor, toSaoPaulo } from "../lib/periodo";
-import { potenciaInstalada } from "../lib/placas";
+import { LIMPAR_A_PARTIR, formatPerda, perdaMedia, potenciaInstalada } from "../lib/placas";
 import { formatEnergy, formatPower } from "../lib/power";
 import { titleCase } from "../lib/text";
 
@@ -41,6 +42,10 @@ export default function HomePage() {
 
   const { summary, groups = [], panels = [], cleanings = [], today = [] } = data ?? {};
   const ativas = panels.filter((panel) => panel.status === "ATIVA").length;
+  const perda = perdaMedia(panels);
+  const sujas = panels.filter((panel) => panel.perdaSujeira >= LIMPAR_A_PARTIR).length;
+  // Real x estimado nas mesmas horas (o real só existe até a última hora completa).
+  const desempenho = summary?.estimadoAteAgora > 0 ? Math.round((summary.totalGeradoHoje / summary.estimadoAteAgora) * 100) : null;
 
   return (
     <div className="sv-page">
@@ -59,6 +64,13 @@ export default function HomePage() {
 
       <section className="sv-stats">
         <StatCard
+          title="Real hoje"
+          value={summary ? formatEnergy(summary.totalGeradoHoje) : "—"}
+          subtitle={desempenho != null ? `${desempenho}% do estimado até agora` : "Até a última hora completa"}
+          icon="bi-lightning"
+          tone="primary"
+        />
+        <StatCard
           title="Estimado hoje"
           value={summary ? formatEnergy(summary.estimadoHoje) : "—"}
           subtitle={summary ? `Agora: ${formatPower(summary.potenciaAgora)}` : null}
@@ -66,25 +78,18 @@ export default function HomePage() {
           tone="accent"
         />
         <StatCard
-          title="Previsão amanhã"
-          value={summary ? formatEnergy(summary.previsaoAmanha) : "—"}
-          subtitle="Pela previsão do tempo"
-          icon="bi-cloud-sun"
-          tone="primary"
-        />
-        <StatCard
-          title="Medido hoje"
-          value={summary ? formatEnergy(summary.totalGeradoHoje) : "—"}
-          subtitle="Leituras dos sensores"
-          icon="bi-speedometer2"
-          tone="muted"
+          title="Perda por sujeira"
+          value={data ? formatPerda(perda) : "—"}
+          subtitle={data ? (sujas ? `${sujas} ${sujas === 1 ? "placa precisa" : "placas precisam"} de limpeza` : "Nenhuma placa precisa de limpeza") : null}
+          icon="bi-droplet-half"
+          tone={perda >= LIMPAR_A_PARTIR ? "accent" : "success"}
         />
         <StatCard
           title="Placas ativas"
           value={data ? `${ativas}/${panels.length}` : "—"}
           subtitle={data ? `${formatPower(potenciaInstalada(panels))}p instalados` : null}
-          icon="bi-lightning-charge"
-          tone="success"
+          icon="bi-grid-3x2"
+          tone="muted"
         />
       </section>
 
@@ -93,7 +98,7 @@ export default function HomePage() {
           <div className="sv-card-head">
             <div>
               <h2>Geração de hoje</h2>
-              <p>Todas as placas, por hora (inclui a previsão).</p>
+              <p>Todas as placas: real até agora e estimado pela previsão do tempo.</p>
             </div>
             <Link to="/app/monitoramento" className="sv-link-arrow">
               Ver detalhes <i className="bi bi-arrow-right" />
@@ -140,6 +145,8 @@ export default function HomePage() {
           ) : null}
         </section>
       </div>
+
+      <PrevisaoSemana />
 
       <section>
         <div className="sv-section-head">

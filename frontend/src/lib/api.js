@@ -29,7 +29,7 @@ export function listPanels() {
       .from("placas")
       .select(
         "id, modelo, status, grupoId:grupo_id, criadoEm:criado_em, potenciaWp:potencia_wp, inclinacao, azimute, " +
-          "climaHistoricoEm:clima_historico_em, ...grupos_solares(grupoNome:nome, latitude, longitude)"
+          "climaHistoricoEm:clima_historico_em, perdaSujeira:perda_sujeira, ...grupos_solares(grupoNome:nome, latitude, longitude)"
       )
       .order("id")
   );
@@ -78,7 +78,7 @@ export function getDashboardSummary() {
   return unwrap(supabase.rpc("dashboard_resumo"));
 }
 
-// grupoId/placaId opcionais: sem eles, soma todas as placas.
+// medida = real (simulado: estimado menos a sujeira). grupoId/placaId opcionais: sem eles, soma todas as placas.
 export function getDashboardMetrics({ granularidade, dataInicio, dataFim, grupoId = null, placaId = null }) {
   return unwrap(
     supabase.rpc("dashboard_metricas", {
