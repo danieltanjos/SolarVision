@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Chart from "react-apexcharts";
 import { Link, useSearchParams } from "react-router-dom";
+import { useLimiarLimpeza } from "../context/AuthContext";
 import {
   extractErrorMessage,
   getDashboardHistorico,
@@ -15,7 +16,7 @@ import {
 import { formatCo2, formatReais } from "../lib/financeiro";
 import { baldesComMedia, comparacaoClima, textoAnos } from "../lib/historico";
 import { TIME_ZONE, formatRangeLabel, janelasRelatorio, mesRelatorio, rangeFor } from "../lib/periodo";
-import { LIMPAR_A_PARTIR, formatPerda, orientacao, perdaMedia, potenciaInstalada } from "../lib/placas";
+import { formatPerda, orientacao, perdaMedia, potenciaInstalada } from "../lib/placas";
 import { formatEnergy, formatPower, powerUnit } from "../lib/power";
 import logo from "../../img/logo.png";
 
@@ -154,6 +155,7 @@ function agrupar(placas, doRanking, chave) {
 // Painel de um mês da seleção comparado ao mês anterior, para ver na tela ou imprimir/salvar em PDF pelo navegador
 // (estilos de impressão no app.css). Filtros na URL: ?mes=AAAA-MM&grupo=G&placa=P.
 export default function RelatorioPage() {
+  const limiar = useLimiarLimpeza();
   const [params, setParams] = useSearchParams();
   const mes = mesRelatorio(params.get("mes"));
   const grupoParam = Number(params.get("grupo")) || null;
@@ -263,7 +265,7 @@ export default function RelatorioPage() {
   ].filter((parte) => parte.wh > 0);
   const totalPartes = partes.reduce((total, parte) => total + parte.wh, 0) || 1;
   const recomendadas = recomendacoes.filter(
-    (item) => ids.has(item.placaId) && (item.limpar || (item.perda >= LIMPAR_A_PARTIR && item.chuvaPrevistaEm))
+    (item) => ids.has(item.placaId) && (item.limpar || (item.perda >= limiar && item.chuvaPrevistaEm))
   );
 
   const baldes = baldesComMedia(points, historico);
