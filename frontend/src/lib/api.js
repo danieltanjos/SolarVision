@@ -196,6 +196,27 @@ export function getAcertoPrevisao({ dias = 7, grupoId = null, placaId = null } =
   );
 }
 
+// Alertas dos grupos visíveis (gerados pelo pg_cron às 07:00), mais recentes primeiro; placaModelo null = alerta do grupo.
+export function listAlertas() {
+  return unwrap(
+    supabase
+      .from("alertas")
+      .select(
+        "id, tipo, mensagem, grupoId:grupo_id, placaId:placa_id, criadoEm:criado_em, lidoEm:lido_em, " +
+          "...grupos_solares(grupoNome:nome), ...placas(placaModelo:modelo)"
+      )
+      .order("criado_em", { ascending: false })
+      .order("id", { ascending: false })
+      .limit(20)
+  );
+}
+
+// Marca um alerta (id) ou todos os não lidos; o banco só deixa o dono alterar lido_em.
+export function marcarAlertasLidos(id = null) {
+  const query = supabase.from("alertas").update({ lido_em: new Date().toISOString() }).is("lido_em", null);
+  return unwrap(id ? query.eq("id", id) : query);
+}
+
 const MENSAGENS = {
   "Invalid login credentials": "Credenciais inválidas.",
   "User already registered": "Já existe um usuário cadastrado com este email.",

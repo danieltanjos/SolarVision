@@ -340,6 +340,44 @@ h1, h2, h3 {
     color: var(--sv-link);
 }
 
+.sv-alertas {
+    width: min(380px, calc(100vw - 2rem));
+    max-height: min(480px, 75vh);
+    overflow-y: auto;
+}
+
+.sv-alertas-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.25rem 0.5rem;
+}
+
+.sv-alertas .sv-list li {
+    align-items: flex-start;
+    padding: 0.6rem 0.5rem;
+}
+
+.sv-alertas .sv-list li > div > span {
+    white-space: normal;
+}
+
+.sv-alertas small {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.75rem;
+    margin-top: 0.3rem;
+    font-size: 0.78rem;
+}
+
+.sv-alertas small time {
+    margin-left: 0;
+}
+
+.sv-alertas .is-lido {
+    opacity: 0.6;
+}
+
 .sv-user-button {
     display: flex;
     align-items: center;

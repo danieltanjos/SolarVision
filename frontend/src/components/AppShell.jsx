@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { applyTheme, getInitialTheme } from "../lib/theme";
 import { titleCase } from "../lib/text";
+import Alertas from "./Alertas";
 import MobileNav from "./MobileNav";
 import Sidebar from "./Sidebar";
 import logo from "../../img/logo.png";
@@ -47,6 +48,8 @@ export default function AppShell() {
           </Link>
 
           <div className="sv-header-actions">
+            <Alertas />
+
             <button
               type="button"
               className="sv-icon-btn"
