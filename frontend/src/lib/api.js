@@ -94,6 +94,25 @@ export function getDashboardMetrics({ granularidade, dataInicio, dataFim, grupoI
   );
 }
 
+// Valores do período: realWh, economia (R$), perdaSujeiraWh, perdaSujeira (R$), co2EvitadoKg e placasSemTarifa.
+export function getFinanceiro({ dataInicio, dataFim, grupoId = null, placaId = null }) {
+  return unwrap(
+    supabase.rpc("dashboard_financeiro", { data_inicio: dataInicio, data_fim: dataFim, grupo: grupoId, placa: placaId })
+  );
+}
+
+// Por placa visível: perda, quanto se perde na semana sem limpar, chuva prevista e se vale limpar agora (motivo).
+export function getRecomendacoesLimpeza() {
+  return unwrap(
+    supabase
+      .rpc("recomendacoes_limpeza")
+      .select(
+        "placaId:placa_id, perda, perdaKwhSemana:perda_kwh_semana, perdaRsSemana:perda_rs_semana, custoLimpeza:custo_limpeza, " +
+          "chuvaPrevistaEm:chuva_prevista_em, diasParaCompensar:dias_para_compensar, limpar, motivo"
+      )
+  );
+}
+
 const MENSAGENS = {
   "Invalid login credentials": "Credenciais inválidas.",
   "User already registered": "Já existe um usuário cadastrado com este email.",

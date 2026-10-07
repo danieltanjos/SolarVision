@@ -1,6 +1,8 @@
 import { startTransition, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import Financeiro from "../components/Financeiro";
 import MetricChart from "../components/MetricChart";
+import { MotivoLimpeza } from "../components/RecomendacoesLimpeza";
 import PrevisaoSemana from "../components/PrevisaoSemana";
 import StatCard from "../components/StatCard";
 import StatusBadge, { SujeiraBadge } from "../components/StatusBadge";
@@ -251,6 +253,13 @@ export default function MonitoringPage() {
             </div>
           </section>
 
+          <Financeiro
+            {...rangeFor(view, referenceDate)}
+            grupoId={placaId ? null : grupoParam}
+            placaId={placaId}
+            totalPlacas={selecionadas.length}
+          />
+
           <PrevisaoSemana grupoId={placaId ? null : grupoParam} placaId={placaId} />
 
           {panel ? (
@@ -279,6 +288,7 @@ export default function MonitoringPage() {
                 </div>
                 <div><dt>Clima</dt><dd>{climaStatus(panel).texto}</dd></div>
                 <div><dt>Perda por sujeira</dt><dd><SujeiraBadge perda={panel.perdaSujeira} /></dd></div>
+                <div><dt>Recomendação</dt><dd><MotivoLimpeza placaId={panel.id} /></dd></div>
                 <div>
                   <dt>Última limpeza</dt>
                   <dd>{ultimaLimpeza ? new Date(ultimaLimpeza.dataLimpeza).toLocaleDateString("pt-BR") : "Nenhuma"}</dd>

@@ -103,11 +103,23 @@ test("pg_cron carrega 5 anos de clima da placa nova e o dashboard estima a gera�
   assert.deepEqual(await api.getDashboardMetrics({ ...mes, grupoId: grupo.id }), daPlaca);
   assert.deepEqual(await api.getDashboardMetrics({ ...mes, placaId: -1 }), []);
 
-  // Real simulado = estimado menos a sujeira: antes da limpeza (registrada agora há pouco) a perda está no limite de 20%.
+  // Real simulado = estimado menos a sujeira (até 20%; a chuva também limpa), antes da limpeza registrada agora há pouco.
   const antesDaLimpeza = daPlaca.filter((p) => new Date(p.x) < Date.now() - 2 * 864e5 && p.estimadaWh > 0);
-  assert.ok(antesDaLimpeza.length > 0 && antesDaLimpeza.every((p) => Math.abs(p.medidaWh - 0.8 * p.estimadaWh) < 0.05), "real deveria ser 80% do estimado");
+  assert.ok(
+    antesDaLimpeza.length > 0 && antesDaLimpeza.every((p) => p.medidaWh <= p.estimadaWh + 0.05 && p.medidaWh >= 0.8 * p.estimadaWh - 0.05),
+    "real deveria ficar entre 80% e 100% do estimado"
+  );
   placa = (await api.listPanels()).find((p) => p.id === placa.id);
   assert.ok(placa.perdaSujeira < 0.001, "placa recém-limpa deveria estar sem perda");
+
+  // Valores do mês: grupo sem tarifa (R$ 0, conta a placa sem tarifa), CO₂ pela energia real.
+  const financeiro = await api.getFinanceiro({ dataInicio: mes.dataInicio, dataFim: mes.dataFim, placaId: placa.id });
+  assert.equal(financeiro.placasSemTarifa, 1);
+  assert.equal(financeiro.economia, 0);
+  assert.ok(financeiro.realWh > 0 && financeiro.co2EvitadoKg > 0 && financeiro.perdaSujeiraWh >= 0);
+  const recomendacao = (await api.getRecomendacoesLimpeza()).find((r) => r.placaId === placa.id);
+  assert.equal(recomendacao.limpar, false, "placa recém-limpa não precisa de limpeza");
+  assert.match(recomendacao.motivo, /ainda não precisa limpar/);
 
   // Estimado com a previsão do tempo (7 dias); real nunca no futuro.
   const proximos = await api.getDashboardMetrics({
