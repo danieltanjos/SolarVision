@@ -4,6 +4,10 @@
 // O teste do clima espera o pg_cron (até ~3 min).
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
+import { createRequire } from "node:module";
+
+// O supabase-js está instalado só no frontend.
+const { createClient } = createRequire(new URL("../../frontend/package.json", import.meta.url))("@supabase/supabase-js");
 import * as api from "../../frontend/src/lib/api.js";
 
 const { supabase } = api;
@@ -59,6 +63,22 @@ test("cadastra grupo, placa e limpeza no formato da API antiga", async () => {
   const limpeza = (await api.listCleanings()).find((l) => l.placaId === placa.id);
   assert.equal(limpeza.placaModelo, "Placa E2E");
   assert.equal(limpeza.observacao, "e2e");
+});
+
+test("outro usuário não vê nem apaga o grupo (RLS por dono)", async () => {
+  const outro = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_PUBLISHABLE_KEY, {
+    auth: { persistSession: false }
+  });
+  const conta = { email: email.replace("@", "-2@"), password: senha };
+  if ((await outro.auth.signInWithPassword(conta)).error) {
+    const cadastro = await outro.auth.signUp({ ...conta, options: { data: { nome: "E2E SolarVision 2" } } });
+    if (cadastro.error) throw cadastro.error;
+  }
+  const { data: visiveis } = await outro.from("grupos_solares").select("id").eq("id", grupo.id);
+  assert.deepEqual(visiveis, []);
+  await outro.from("grupos_solares").delete().eq("id", grupo.id);
+  assert.ok((await api.listGroups()).some((g) => g.id === grupo.id), "o grupo foi apagado por outro usuário");
+  await outro.auth.signOut();
 });
 
 test("pg_cron carrega 5 anos de clima da placa nova e o dashboard estima a geração", { timeout: 240000 }, async () => {
