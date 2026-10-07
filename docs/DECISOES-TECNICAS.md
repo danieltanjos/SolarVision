@@ -19,10 +19,9 @@ Na fase atual, o critério passou a ser **colocar o sistema no ar de forma cont�
 **Plataforma do sistema:** **SPA** no navegador + **backend como serviço** (Supabase).
 
 - **Front-end: JavaScript (React + Vite)** - plataforma navegador, onde JS é a linguagem nativa; React é o padrão de mercado para SPAs.
-- **Regras no banco: SQL / PL/pgSQL** - as agregações do dashboard e o trigger de perfil rodam dentro do PostgreSQL, perto dos dados.
-- **Carga de dados: Python** - script curto para ler o CSV e inserir em lote (psycopg2).
+- **Regras no banco: SQL / PL/pgSQL** - as agregações do dashboard, o trigger de perfil, o modelo de geração estimada e a busca agendada do clima (extensão `http` + pg_cron) rodam dentro do PostgreSQL, perto dos dados.
 
-> Reconhecimento da adequação linguagem x plataforma: JavaScript para o navegador, SQL para regras que dependem dos dados, Python para a tarefa pontual de importação.
+> Reconhecimento da adequação linguagem x plataforma: JavaScript para o navegador e SQL para regras e integrações que dependem dos dados.
 
 ---
 
@@ -38,9 +37,9 @@ Distinção conceitual usada no projeto:
 |---|---|---|
 | React | Framework | SPA do front-end |
 | `@supabase/supabase-js`, ApexCharts, Bootstrap, React Router | Biblioteca | Acesso ao Supabase, gráfico, UI, rotas |
-| psycopg2 | Biblioteca | Conexão do seeder com o PostgreSQL |
 | `node:test` | Biblioteca (teste) | Testes automatizados do frontend |
-| Supabase (Auth, PostgREST, pg_graphql, pg_cron) | Plataforma / ferramenta | Backend gerenciado |
+| Supabase (Auth, PostgREST, pg_graphql, pg_cron, `http`) | Plataforma / ferramenta | Backend gerenciado |
+| Open-Meteo | Serviço externo (API) | Clima horário: histórico e previsão |
 | Vite | Ferramenta | Servidor de desenvolvimento e build |
 | Vercel | Ferramenta | Hospedagem e deploy por branch |
 | GitHub Actions | Ferramenta | CI (testes + build) |
@@ -59,6 +58,7 @@ Distinção conceitual usada no projeto:
 ### Legal / Normativa
 - **LGPD**: o sistema trata dados pessoais (nome, e-mail, senha). A senha fica apenas como hash no Supabase Auth e não existe em tabela da aplicação; cada usuário só lê o próprio perfil. Os dados ficam na região **São Paulo**.
 - **Licenças open-source**: React (MIT), PostgreSQL (licença PostgreSQL) e os componentes do Supabase (Apache 2.0/MIT) - compatíveis com uso acadêmico e comercial.
+- **Dados do Open-Meteo**: licença CC BY 4.0, com a atribuição no rodapé do app. A API gratuita é para uso não comercial; um uso comercial exige o plano pago.
 - **Boas práticas de segurança**: HTTPS em todo o tráfego (Vercel e Supabase), consultas parametrizadas pelo PostgREST e apenas a chave publicável no frontend.
 
 ### Institucional / Acadêmica
@@ -90,7 +90,7 @@ Distinção conceitual usada no projeto:
 | Swagger/OpenAPI | Sem a UI interativa do springdoc | O painel do Supabase gera a documentação da API (tabelas e funções) a partir do schema |
 | 38 testes Java (JUnit/Mockito/MockMvc) | As regras que estavam em Java (validação, dashboard) não têm teste automatizado | Regras agora são constraints e funções SQL; testes de banco (pgTAP) ficam como evolução |
 | Regra de negócio em Java | Lógica passou para SQL/RLS | Migration única e comentada |
-| **Um único projeto Supabase para QA e produção** | QA e produção compartilham banco, usuários e leituras; um teste em QA altera dados vistos em produção | Aceito por ser ambiente acadêmico e para não duplicar migration, carga e chaves; separar em dois projetos quando houver usuários reais |
+| **Um único projeto Supabase para QA e produção** | QA e produção compartilham banco, usuários e leituras; um teste em QA altera dados vistos em produção | Aceito por ser ambiente acadêmico e para não duplicar migrations e chaves; separar em dois projetos quando houver usuários reais |
 
 ---
 
@@ -102,5 +102,24 @@ Distinção conceitual usada no projeto:
 | Vercel | Nginx em contêiner | Deploy automático por branch, HTTPS e CDN sem configuração |
 | RLS | Validação de acesso no frontend | O frontend é público; só o banco é confiável para autorização |
 | Funções SQL para o dashboard | Agregar no navegador | Evita trafegar todas as leituras |
-| pg_cron para "tempo real" | Reexecutar o seeder | Atualiza as datas sem intervenção, uma vez por dia |
-| Um projeto Supabase para QA e produção | Um projeto por ambiente | Simplicidade: uma migration, uma carga, um conjunto de chaves (ver seção 5) |
+| Geração estimada pelo Open-Meteo | CSV mocado deslocado para hoje (versão anterior) | Dado real do local de cada placa, com histórico e previsão (ver seção 7) |
+| HTTP dentro do Postgres (`http` + pg_cron) | Edge Function agendada | Tudo em migrations aplicadas pelo CI existente, sem deploy nem token à parte |
+| Um projeto Supabase para QA e produção | Um projeto por ambiente | Simplicidade: as mesmas migrations e um conjunto de chaves (ver seção 5) |
+
+---
+
+## 7. Geração estimada pelo clima (Open-Meteo)
+
+**Decisão:** trocar os dados mocados do CSV por geração **estimada** a partir do clima real do local de cada placa, buscado pelo próprio banco.
+
+**Por que Open-Meteo:**
+- Gratuito e **sem chave** (nada para guardar como segredo), com cobertura do Brasil.
+- **Arquivo histórico** (reanálise) e **previsão** na mesma API: 5 anos de histórico por hora para ver tendências e a previsão para os próximos dias.
+- Calcula a irradiância **no plano da placa** (GTI) a partir da inclinação e do azimute, então o banco só aplica o modelo de potência (`potencia_estimada`).
+
+**Por que o HTTP roda dentro do Postgres:**
+- A extensão `http` + o job pg_cron `sincronizar-clima` ficam em uma migration, aplicada pelo mesmo CI (`supabase db push`) que já cuida do schema.
+- Uma Edge Function exigiria deploy separado, token de acesso no CI e um agendamento chamando a função por HTTP.
+- O custo é a chamada síncrona dentro de uma transação (timeout de 60 s, até 5 placas por minuto); suficiente para a escala do projeto.
+
+**Limites aceitos:** estimado não é medido (falta sensor ou API de inversor), PR e NOCT fixos e uma série de clima por placa - ver [FEATURES-INCOMPLETAS.md](FEATURES-INCOMPLETAS.md).

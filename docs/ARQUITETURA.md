@@ -28,7 +28,7 @@ flowchart LR
         cron["pg_cron"]
     end
 
-    seeder["supabase/seed/inserirCSV.py<br/>(carga única)"]
+    meteo["Open-Meteo<br/>archive + forecast API"]
 
     browser -->|HTTPS| spa
     browser -->|supabase-js| auth
@@ -36,8 +36,8 @@ flowchart LR
     rest --> db
     gql --> db
     auth -.->|trigger criar_perfil_usuario| db
-    cron -->|job diário| db
-    seeder -->|INSERT em lote| db
+    cron -->|sincronizar_clima a cada minuto| db
+    db -->|extensão http| meteo
 ```
 
 | Componente | Responsabilidade |
@@ -45,16 +45,17 @@ flowchart LR
 | Vercel | Serve os arquivos estáticos da SPA; `vercel.json` reescreve qualquer rota para `index.html` |
 | Supabase Auth | Cadastro, login, emissão e renovação do JWT; guarda a senha (hash) em `auth.users` |
 | PostgREST (`/rest/v1`) | API REST gerada a partir das tabelas e funções do schema `public` |
-| PostgreSQL | Tabelas do domínio, políticas RLS, trigger de perfil e funções do dashboard |
-| pg_cron | Job `deslocar-leituras-para-hoje`, todo dia às 00:05 de Brasília (03:05 UTC) |
+| PostgreSQL | Tabelas do domínio, políticas RLS, trigger de perfil, funções do dashboard e do clima |
+| pg_cron + extensão `http` | Job `sincronizar-clima`, a cada minuto: busca o clima das placas no Open-Meteo (seção 5) |
 | pg_graphql (`/graphql/v1`) | GraphQL nativo do Supabase sobre as mesmas tabelas (substitui o Spring GraphQL) |
-| `inserirCSV.py` | Importa o CSV de leituras uma vez, via connection string do Session pooler |
+| Open-Meteo | API externa de clima, gratuita e sem chave: histórico (reanálise) e previsão por hora |
 
 ### Preparação do ambiente
 
 1. Aplicar as migrations de `supabase/migrations/` (schema, RLS, trigger, funções e job). O workflow `supabase.yml` faz isso a cada push em `qa`/`production`.
-2. Rodar `inserirCSV.py` com `DATABASE_URL` para carregar `leituras_energia`.
-3. Configurar `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` na Vercel (ou em `frontend/.env.local`).
+2. Configurar `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` na Vercel (ou em `frontend/.env.local`).
+
+Não há carga de dados: o clima entra sozinho quando uma placa é cadastrada com local e especificações.
 
 ---
 
@@ -127,11 +128,11 @@ Sem JWT a requisição usa o papel `anon`, que não tem nenhuma política RLS: l
 |---|---|
 | Token | JWT emitido e assinado pelo Supabase Auth |
 | Senha | Hash gerenciado pelo Supabase Auth em `auth.users`; não existe coluna de senha em `public` |
-| Autorização | RLS em todas as tabelas: autenticados gerenciam grupos/placas/limpezas, leem leituras e leem apenas o próprio perfil |
-| Funções | `execute` das funções do dashboard revogado de `public` e `anon` |
+| Autorização | RLS em todas as tabelas: autenticados gerenciam grupos/placas/limpezas, leem leituras e clima e leem apenas o próprio perfil |
+| Funções | `execute` das funções do dashboard revogado de `public` e `anon`; as do clima (`sincronizar_clima`, `atualizar_clima_placa`, security definer) não são executáveis por nenhum papel do cliente, só pelo pg_cron |
 | Chave do cliente | Chave **publicável** (pública por definição); a chave secreta/service role nunca vai para o frontend |
 | Validação | Constraints `CHECK` no banco (nome/modelo não vazios, status válidos, observação até 1000 caracteres); `lib/api.js` traduz os erros para mensagens em português |
-| Segredos | `VITE_SUPABASE_*` em `.env.local` (fora do Git) e nas variáveis da Vercel; `DATABASE_URL` só na máquina de quem roda o seeder |
+| Segredos | `VITE_SUPABASE_*` em `.env.local` (fora do Git) e nas variáveis da Vercel; a connection string do banco só no segredo `SUPABASE_DB_URL` do CI. O Open-Meteo não usa chave |
 
 ### Observações
 - O papel `role` (ADMIN/USER) existe em `usuarios`, mas nenhuma política o considera ainda; ver [FEATURES-INCOMPLETAS.md](FEATURES-INCOMPLETAS.md).
@@ -139,14 +140,34 @@ Sem JWT a requisição usa o papel `anon`, que não tem nenhuma política RLS: l
 
 ---
 
-## 5. Dados em "tempo real"
+## 5. Geração estimada pelo clima (Open-Meteo)
 
-O CSV de leituras é histórico. Para o gráfico sempre terminar no dia atual:
+Os dados mocados do CSV (e o job que os deslocava para hoje) saíram do banco. A geração agora tem duas séries:
 
-1. `inserirCSV.py` desloca as datas por dias inteiros (`hoje - última data do CSV`), preservando a hora do dia.
-2. O job pg_cron `deslocar-leituras-para-hoje` repete o deslocamento todo dia às 00:05 (horário de Brasília), fazendo o papel que antes era de cada `docker compose up`.
+- **Medida** - `leituras_energia`, vinda de sensores; vazia até haver sensor (ESP32) ou API de inversor integrados.
+- **Estimada** - calculada a partir do clima real do local de cada placa:
 
-Todas as agregações usam o fuso `America/Sao_Paulo` (o Supabase roda em UTC).
+```mermaid
+sequenceDiagram
+    participant U as Cadastro (SPA)
+    participant DB as PostgreSQL
+    participant J as pg_cron (a cada minuto)
+    participant M as Open-Meteo
+
+    U->>DB: grupo (latitude/longitude) + placa (Wp, inclinação, azimute)
+    J->>DB: sincronizar_clima()
+    DB->>M: archive API: 5 anos por hora (~44 mil horas, ~2-4 s)
+    DB->>M: forecast API: últimos 3 dias + previsão de 3 dias
+    M-->>DB: irradiância no plano da placa (GTI) + temperatura
+    DB->>DB: upsert em clima_horario
+```
+
+1. A placa entra na fila quando o grupo tem latitude/longitude e ela tem potência, inclinação e azimute (0 = Norte, 90 = Leste, 180 = Sul, 270 = Oeste; convertido para a convenção do Open-Meteo, 0 = Sul).
+2. O job `sincronizar-clima` chama `sincronizar_clima()`, que processa até 5 placas por vez: placa nova recebe os 5 anos de histórico + previsão em ~1 min após o cadastro; as demais têm a previsão renovada de hora em hora. Uma falha só gera `warning` e não trava a fila; o histórico pendente é tentado de novo a cada 10 min.
+3. `potencia_estimada()` converte cada hora de clima em potência: P = Wp × G/1000 × PR × [1 + γ(T_célula − 25)], com T_célula ≈ T_ar + G × (45 − 20)/800, PR = 0,82 e γ = `coef_temperatura` (padrão −0,40 %/°C).
+4. `dashboard_metricas` devolve, por balde, `medida` e `estimada`; `dashboard_resumo` soma o estimado de hoje, a previsão de amanhã e a potência estimada agora.
+
+Todas as agregações usam o fuso `America/Sao_Paulo` (o Supabase e o clima gravado ficam em UTC). Limitações em [FEATURES-INCOMPLETAS.md](FEATURES-INCOMPLETAS.md).
 
 ---
 
@@ -160,10 +181,10 @@ Todas as agregações usam o fuso `America/Sao_Paulo` (o Supabase roda em UTC).
 | Autenticação | Supabase Auth | Cadastro, login, JWT e refresh |
 | API | PostgREST (Supabase) | REST gerado a partir do schema |
 | API de consulta | pg_graphql (Supabase) | GraphQL nativo em `/graphql/v1` |
-| Regras de negócio | PL/pgSQL / SQL | Funções `dashboard_metricas` e `dashboard_resumo` |
+| Regras de negócio | PL/pgSQL / SQL | Funções do dashboard (`dashboard_metricas`, `dashboard_resumo`) e do clima (`sincronizar_clima`, `potencia_estimada`) |
 | Banco | PostgreSQL (Supabase, São Paulo) | Armazenamento relacional + RLS |
-| Agendamento | pg_cron | Deslocamento diário das leituras |
-| Carga de dados | Python + psycopg2 | Importação do CSV |
+| Agendamento | pg_cron | Sincronização do clima a cada minuto |
+| Dados meteorológicos | Open-Meteo + extensão `http` | 5 anos de clima horário + previsão por placa |
 | Hospedagem | Vercel | Build do Vite e CDN dos estáticos |
 | CI | GitHub Actions | Testes e build do frontend; migrations + teste de ponta a ponta em `qa`/`production`; requisição diária contra a pausa do plano free |
 
@@ -175,5 +196,6 @@ Todas as agregações usam o fuso `America/Sao_Paulo` (o Supabase roda em UTC).
 - **Segurança no banco.** As políticas RLS são a fonte única da regra de acesso, valendo para REST, GraphQL e qualquer outro cliente.
 - **Migration como dono do schema.** `supabase/migrations/` versiona tabelas, políticas, funções e o job, no papel que era do Flyway.
 - **Agregação no banco.** O dashboard roda como função SQL (`date_trunc` + `avg`) e devolve só os pontos do gráfico, sem trafegar as leituras.
+- **Integração externa dentro do banco.** O clima é buscado pelo próprio PostgreSQL (`http` + pg_cron), então continua tudo em migrations aplicadas pelo CI (ver [DECISOES-TECNICAS.md](DECISOES-TECNICAS.md#7-geração-estimada-pelo-clima-open-meteo)).
 - **Formato JSON preservado.** `lib/api.js` usa aliases para que as telas recebam os mesmos campos da API antiga.
 - **Um projeto Supabase para QA e produção.** Simplifica o ambiente acadêmico; o custo é dado compartilhado entre os ambientes (ver [DECISOES-TECNICAS.md](DECISOES-TECNICAS.md)).

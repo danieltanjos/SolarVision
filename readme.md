@@ -1,6 +1,6 @@
 # SolarVision
 
-Sistema web para monitoramento de energia solar: SPA em React + Vite hospedada na **Vercel** e **Supabase** como backend completo (Auth, API REST gerada pelo PostgREST, funções SQL/RPC, PostgreSQL e pg_cron). A carga inicial das leituras vem de um CSV, importado por um script Python.
+Sistema web para monitoramento de energia solar: SPA em React + Vite hospedada na **Vercel** e **Supabase** como backend completo (Auth, API REST gerada pelo PostgREST, funções SQL/RPC, PostgreSQL e pg_cron). A geração é **estimada a partir do clima real** ([Open-Meteo](https://open-meteo.com/)): ao cadastrar uma placa com local e especificações, o próprio banco carrega 5 anos de clima horário e a previsão dos próximos dias. A geração **medida** depende de sensores (ainda não integrados).
 
 > Até a migração, o backend era uma API Spring Boot (Java 25, JWT, GraphQL, gRPC, Flyway, Swagger) orquestrada com Docker Compose. Esse código foi removido; o histórico está no Git e em [`docs/QUALIDADE-E-TESTES.md`](docs/QUALIDADE-E-TESTES.md).
 
@@ -10,8 +10,9 @@ Sistema web para monitoramento de energia solar: SPA em React + Vite hospedada n
 SolarVision/
 ├── frontend/              # SPA React + Vite + ApexCharts (deploy na Vercel)
 ├── supabase/
-│   ├── migrations/        # schema, RLS, trigger, funções RPC e job pg_cron
-│   └── seed/              # inserirCSV.py + CSV de leituras
+│   ├── migrations/        # schema, RLS, trigger, funções RPC, clima (Open-Meteo) e job pg_cron
+│   ├── seed/              # CSV antigo de leituras (só referência, não é mais carregado)
+│   └── tests/             # teste de ponta a ponta (e2e.mjs)
 └── docs/                  # documentação técnica
 ```
 
@@ -29,18 +30,18 @@ flowchart LR
         auth["Auth<br/>cadastro, login, JWT"]
         rest["PostgREST / RPC<br/>/rest/v1"]
         db[("PostgreSQL<br/>tabelas + RLS")]
-        cron["pg_cron<br/>job diário 00:05"]
+        cron["pg_cron<br/>a cada minuto"]
     end
 
-    seeder["inserirCSV.py<br/>(carga única)"]
+    meteo["Open-Meteo<br/>histórico + previsão"]
 
     browser -->|HTTPS| spa
     browser -->|supabase-js + JWT| auth
     browser -->|supabase-js + JWT| rest
     rest --> db
     auth -.->|trigger cria o perfil| db
-    cron -->|desloca leituras para hoje| db
-    seeder -->|INSERT em lote| db
+    cron -->|sincronizar_clima| db
+    db -->|extensão http| meteo
 ```
 
 A Vercel só entrega os arquivos estáticos; depois de carregada, a SPA fala direto com o Supabase pelo `@supabase/supabase-js`. Detalhes em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) e o modelo de dados em [`docs/MODELO-DE-CLASSES.md`](docs/MODELO-DE-CLASSES.md).
@@ -48,9 +49,9 @@ A Vercel só entrega os arquivos estáticos; depois de carregada, a SPA fala dir
 ## Stack
 
 - Frontend: React 19, Vite 7, React Router, `@supabase/supabase-js`, ApexCharts, Bootstrap
-- Backend: Supabase (Auth, PostgREST, funções PL/pgSQL via RPC, pg_graphql, pg_cron)
+- Backend: Supabase (Auth, PostgREST, funções PL/pgSQL via RPC, pg_graphql, pg_cron, extensão `http`)
 - Banco: PostgreSQL gerenciado pelo Supabase (região São Paulo)
-- Carga de dados: Python 3 + psycopg2
+- Clima: Open-Meteo (gratuito para uso não comercial, sem chave; dados CC BY 4.0, atribuição no rodapé do app)
 - Hospedagem: Vercel (projeto `solarvision`, Root Directory `frontend`)
 - CI: GitHub Actions (testes + build do frontend; migrations + teste de ponta a ponta ao publicar em `qa`/`production`; requisição diária para o Supabase free não pausar)
 
@@ -72,17 +73,12 @@ Variáveis (em Supabase > Project Settings > API Keys):
 | `VITE_SUPABASE_URL` | `https://skfguameoeklepcjnqth.supabase.co` |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | chave publicável (pública; a proteção dos dados é feita pela RLS) |
 
-## Banco: migration e carga inicial
+## Banco: migrations e clima
 
-1. **Schema:** as migrations de `supabase/migrations/` são aplicadas automaticamente pelo workflow `.github/workflows/supabase.yml` a cada push em `qa`/`production` (`supabase db push`, segredo `SUPABASE_DB_URL` do repositório). Para aplicar à mão: `npx supabase db push --db-url "<connection string do Session pooler>"`. Elas criam as tabelas, as políticas RLS, o trigger de perfil, as funções `dashboard_metricas`/`dashboard_resumo` e o job pg_cron.
-2. **Leituras do CSV** (uma vez):
+1. **Schema:** as migrations de `supabase/migrations/` são aplicadas automaticamente pelo workflow `.github/workflows/supabase.yml` a cada push em `qa`/`production` (`supabase db push`, segredo `SUPABASE_DB_URL` do repositório). Para aplicar à mão: `npx supabase db push --db-url "<connection string do Session pooler>"`. Elas criam as tabelas, as políticas RLS, o trigger de perfil, as funções do dashboard e do clima e o job pg_cron.
+2. **Dados:** não há carga manual. Ao cadastrar um grupo com latitude/longitude e uma placa com potência (Wp), inclinação e orientação, o job `sincronizar-clima` (pg_cron, a cada minuto) baixa do Open-Meteo, em ~1 min, 5 anos de clima horário e a previsão; depois a previsão é atualizada de hora em hora. Detalhes em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md#5-geração-estimada-pelo-clima-open-meteo).
 
-```bash
-pip install psycopg2-binary
-DATABASE_URL="<connection string do Session pooler>" python supabase/seed/inserirCSV.py
-```
-
-A connection string fica em Supabase > Connect > Session pooler. O script usa o fuso `America/Sao_Paulo` e desloca as datas do CSV para que a última leitura caia hoje; a partir daí, o job `deslocar-leituras-para-hoje` (pg_cron, todo dia às 00:05 de Brasília) mantém a série terminando no dia atual.
+Os dados mocados do CSV (grupo "Grupo Seeder SolarVision", o job que os deslocava para hoje e o `inserirCSV.py`) foram removidos; `supabase/seed/Dados_Tratados_CDTE-PSI.csv` fica só como referência histórica.
 
 ## Deploy e branches
 
@@ -105,7 +101,7 @@ Os dois ambientes usam **o mesmo projeto Supabase** (`skfguameoeklepcjnqth`): QA
 ## Qualidade e testes
 
 - **Frontend:** 27 testes nativos do Node (`node --test`) para escala de potência/energia, formatação pt-BR, nomes com acentos e janelas do gráfico no fuso de São Paulo.
-- **Ponta a ponta:** `supabase/tests/e2e.mjs` roda o `api.js` do frontend contra o Supabase real (RLS, perfil, cadastros, dashboard e mensagens de erro), com uma conta fixa de teste, e apaga o que cria.
+- **Ponta a ponta:** `supabase/tests/e2e.mjs` roda o `api.js` do frontend contra o Supabase real (RLS, perfil, cadastros, carga dos 5 anos de clima pelo pg_cron, estimativa/previsão do dashboard e mensagens de erro), com uma conta fixa de teste, e apaga o que cria. Espera o pg_cron carregar o clima (~30 s observados, limite de 3 min).
 - **CI:** `.github/workflows/quality.yml` roda em push/PR com Node 24 (`npm ci`, testes com relatório JUnit e `npm run build`). `.github/workflows/supabase.yml` aplica as migrations e roda o teste de ponta a ponta a cada push em `qa`/`production`, e faz uma requisição diária ao Supabase, porque o plano free pausa projetos parados por 7 dias. O GitHub desliga workflows agendados após 60 dias sem commits no repositório.
 
 Para reproduzir, em `frontend`: `npm ci`, `npm test` e `npm run build`. Ponta a ponta, na raiz: `node --env-file=frontend/.env.local --test supabase/tests/e2e.mjs`.
