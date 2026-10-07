@@ -7,6 +7,7 @@ import { MotivoLimpeza } from "../components/RecomendacoesLimpeza";
 import PrevisaoSemana from "../components/PrevisaoSemana";
 import StatCard from "../components/StatCard";
 import StatusBadge, { SujeiraBadge } from "../components/StatusBadge";
+import { useLimiarLimpeza } from "../context/AuthContext";
 import {
   extractErrorMessage,
   getDashboardHistorico,
@@ -18,7 +19,7 @@ import {
 } from "../lib/api";
 import { comparacaoClima } from "../lib/historico";
 import { formatRangeLabel, rangeFor, shiftDate, toSaoPaulo } from "../lib/periodo";
-import { LIMPAR_A_PARTIR, climaStatus, formatPerda, orientacao, perdaMedia, potenciaInstalada } from "../lib/placas";
+import { climaStatus, formatPerda, orientacao, perdaMedia, potenciaInstalada } from "../lib/placas";
 import { formatEnergy, formatPower } from "../lib/power";
 
 const CalendarioGeracao = lazy(() => import("../components/CalendarioGeracao"));
@@ -42,6 +43,7 @@ export default function MonitoringPage() {
   const [params] = useSearchParams();
   const grupoParam = Number(params.get("grupo")) || null;
   const placaId = Number(params.get("placa")) || null;
+  const limiar = useLimiarLimpeza();
 
   const [groups, setGroups] = useState([]);
   const [panels, setPanels] = useState([]);
@@ -133,7 +135,7 @@ export default function MonitoringPage() {
   const clima = comparacaoClima(points, historico);
   const ultimaLimpeza = panel ? cleanings.find((item) => item.placaId === panel.id) : null;
   const perda = perdaMedia(selecionadas);
-  const sujas = selecionadas.filter((p) => p.perdaSujeira >= LIMPAR_A_PARTIR).length;
+  const sujas = selecionadas.filter((p) => p.perdaSujeira >= limiar).length;
   const diasDesdeLimpeza = ultimaLimpeza ? Math.floor((Date.now() - new Date(ultimaLimpeza.dataLimpeza)) / 864e5) : null;
 
   const item = (ativo) => `sv-picker-item ${ativo ? "active" : ""}`;
@@ -279,7 +281,7 @@ export default function MonitoringPage() {
                     : sujas ? `${plural(sujas, "placa precisa", "placas precisam")} de limpeza` : "Nenhuma placa precisa de limpeza"
                 }
                 icon="bi-droplet-half"
-                tone={perda >= LIMPAR_A_PARTIR ? "accent" : "success"}
+                tone={perda >= limiar ? "accent" : "success"}
               />
               <StatCard
                 title="Capacidade"

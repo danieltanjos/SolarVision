@@ -1,4 +1,5 @@
-import { LIMPAR_A_PARTIR, formatPerda } from "../lib/placas";
+import { useLimiarLimpeza } from "../context/AuthContext";
+import { formatPerda } from "../lib/placas";
 
 const STATUS = {
   ATIVO: ["Ativo", "success"],
@@ -15,8 +16,9 @@ export default function StatusBadge({ status }) {
 
 // Perda por sujeira: âmbar a partir do ponto em que a limpeza é recomendada.
 export function SujeiraBadge({ perda }) {
+  const limiar = useLimiarLimpeza();
   if (perda == null) return <span className="sv-muted">—</span>;
-  const limpar = perda >= LIMPAR_A_PARTIR;
+  const limpar = perda >= limiar;
   return (
     <span className={`sv-badge sv-badge-${limpar ? "warning" : "success"}`} title="Perda por sujeira">
       {formatPerda(perda)}{limpar ? " · limpar" : ""}

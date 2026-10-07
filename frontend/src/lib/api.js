@@ -115,9 +115,33 @@ export function deleteCleaning(id) {
   return unwrap(supabase.from("limpezas").delete().eq("id", id));
 }
 
-// A RLS só devolve a linha do próprio usuário logado.
+// A RLS só devolve a linha do próprio usuário logado. Limiares em fração (0,10 = 10 %).
 export function getCurrentUser() {
-  return unwrap(supabase.from("usuarios").select("id, nome, email, role, criadoEm:criado_em").single());
+  return unwrap(
+    supabase
+      .from("usuarios")
+      .select(
+        "id, nome, email, role, criadoEm:criado_em, alertaLimpeza:alerta_limpeza, alertaPrevisao:alerta_previsao, " +
+          "alertaDesempenho:alerta_desempenho, limiarLimpeza:limiar_limpeza, limiarPrevisao:limiar_previsao, " +
+          "tarifaPadrao:tarifa_padrao, custoLimpezaPadrao:custo_limpeza_padrao"
+      )
+      .single()
+  );
+}
+
+// Nome e preferências do usuário logado; só os campos informados mudam. O banco recusa role e email (grant por coluna).
+export function salvarPerfil(id, perfil) {
+  const colunas = {
+    nome: perfil.nome?.trim(),
+    alerta_limpeza: perfil.alertaLimpeza,
+    alerta_previsao: perfil.alertaPrevisao,
+    alerta_desempenho: perfil.alertaDesempenho,
+    limiar_limpeza: perfil.limiarLimpeza,
+    limiar_previsao: perfil.limiarPrevisao,
+    tarifa_padrao: perfil.tarifaPadrao,
+    custo_limpeza_padrao: perfil.custoLimpezaPadrao
+  };
+  return unwrap(supabase.from("usuarios").update(colunas).eq("id", id));
 }
 
 export function getDashboardSummary() {
@@ -221,7 +245,8 @@ export function marcarAlertasLidos(id = null) {
 const MENSAGENS = {
   "Invalid login credentials": "Credenciais inválidas.",
   "User already registered": "Já existe um usuário cadastrado com este email.",
-  "Email not confirmed": "Confirme seu e-mail antes de entrar."
+  "Email not confirmed": "Confirme seu e-mail antes de entrar.",
+  "New password should be different from the old password.": "A nova senha deve ser diferente da atual."
 };
 
 export function extractErrorMessage(error) {

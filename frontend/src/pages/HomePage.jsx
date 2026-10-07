@@ -4,7 +4,7 @@ import StatCard from "../components/StatCard";
 import PrevisaoSemana from "../components/PrevisaoSemana";
 import RecomendacoesLimpeza from "../components/RecomendacoesLimpeza";
 import StatusBadge from "../components/StatusBadge";
-import { useAuth } from "../context/AuthContext";
+import { useAuth, useLimiarLimpeza } from "../context/AuthContext";
 import {
   extractErrorMessage,
   getDashboardMetrics,
@@ -14,7 +14,7 @@ import {
   listPanels
 } from "../lib/api";
 import { TIME_ZONE, rangeFor, toSaoPaulo } from "../lib/periodo";
-import { LIMPAR_A_PARTIR, formatPerda, perdaMedia, potenciaInstalada } from "../lib/placas";
+import { formatPerda, perdaMedia, potenciaInstalada } from "../lib/placas";
 import { formatEnergy, formatPower } from "../lib/power";
 import { titleCase } from "../lib/text";
 
@@ -25,6 +25,7 @@ const hoje = () => new Date().toLocaleDateString("pt-BR", { timeZone: TIME_ZONE,
 
 export default function HomePage() {
   const { user } = useAuth();
+  const limiar = useLimiarLimpeza();
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
 
@@ -44,7 +45,7 @@ export default function HomePage() {
   const { summary, groups = [], panels = [], cleanings = [], today = [] } = data ?? {};
   const ativas = panels.filter((panel) => panel.status === "ATIVA").length;
   const perda = perdaMedia(panels);
-  const sujas = panels.filter((panel) => panel.perdaSujeira >= LIMPAR_A_PARTIR).length;
+  const sujas = panels.filter((panel) => panel.perdaSujeira >= limiar).length;
   // Real x estimado nas mesmas horas (o real só existe até a última hora completa).
   const desempenho = summary?.estimadoAteAgora > 0 ? Math.round((summary.totalGeradoHoje / summary.estimadoAteAgora) * 100) : null;
 
@@ -83,7 +84,7 @@ export default function HomePage() {
           value={data ? formatPerda(perda) : "—"}
           subtitle={data ? (sujas ? `${sujas} ${sujas === 1 ? "placa precisa" : "placas precisam"} de limpeza` : "Nenhuma placa precisa de limpeza") : null}
           icon="bi-droplet-half"
-          tone={perda >= LIMPAR_A_PARTIR ? "accent" : "success"}
+          tone={perda >= limiar ? "accent" : "success"}
         />
         <StatCard
           title="Placas ativas"

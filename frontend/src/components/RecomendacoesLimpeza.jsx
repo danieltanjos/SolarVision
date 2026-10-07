@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getRecomendacoesLimpeza } from "../lib/api";
-import { LIMPAR_A_PARTIR } from "../lib/placas";
+import { useLimiarLimpeza } from "../context/AuthContext";
 
 function useRecomendacoes() {
   const [recomendacoes, setRecomendacoes] = useState(null);
@@ -20,8 +20,9 @@ export function MotivoLimpeza({ placaId }) {
 // Home: placas para limpar agora e as sujas em que a chuva prevista adia a limpeza.
 export default function RecomendacoesLimpeza({ panels }) {
   const recomendacoes = useRecomendacoes();
+  const limiar = useLimiarLimpeza();
   const itens = (recomendacoes ?? [])
-    .filter((item) => item.limpar || (item.perda >= LIMPAR_A_PARTIR && item.chuvaPrevistaEm))
+    .filter((item) => item.limpar || (item.perda >= limiar && item.chuvaPrevistaEm))
     .map((item) => ({ ...item, panel: panels.find((panel) => panel.id === item.placaId) }))
     .filter((item) => item.panel);
 

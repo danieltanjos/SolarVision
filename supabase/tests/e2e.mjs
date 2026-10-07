@@ -48,6 +48,21 @@ test("perfil criado pelo trigger", async () => {
   assert.equal(perfil.role, "USER");
 });
 
+test("salva nome e preferências; o próprio papel não muda", async () => {
+  const antes = await api.getCurrentUser();
+  await api.salvarPerfil(antes.id, { nome: " E2E Editado ", alertaPrevisao: false, limiarLimpeza: 0.05, tarifaPadrao: 0.95, custoLimpezaPadrao: 30 });
+  const depois = await api.getCurrentUser();
+  assert.deepEqual(
+    [depois.nome, depois.alertaPrevisao, depois.alertaLimpeza, depois.limiarLimpeza, depois.tarifaPadrao, depois.custoLimpezaPadrao],
+    ["E2E Editado", false, antes.alertaLimpeza, 0.05, 0.95, 30]
+  );
+  assert.equal(await api.salvarPerfil(antes.id, { limiarLimpeza: 0.5 }).catch(api.extractErrorMessage), "Dados inválidos.");
+  const { error } = await supabase.from("usuarios").update({ role: "ADMIN" }).eq("id", antes.id);
+  assert.ok(error, "o usuário não pode mudar o próprio papel");
+  assert.equal((await api.getCurrentUser()).role, "USER");
+  await api.salvarPerfil(antes.id, antes); // a conta de teste é fixa: volta ao que era
+});
+
 test("cadastra grupo, placa e limpeza no formato da API antiga", async () => {
   await api.createGroup({ nome: `  Grupo E2E ${sufixo} `, status: "ATIVO", latitude: -27.59, longitude: -48.55 });
   grupo = (await api.listGroups()).find((g) => g.nome === `Grupo E2E ${sufixo}`);
