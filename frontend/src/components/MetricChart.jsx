@@ -6,8 +6,8 @@ import { formatPower, powerUnit } from "../lib/power";
 
 // medida = real (simulado, até a última hora completa); estimada = pelo clima, com a previsão do tempo.
 const SERIES = [
-  { key: "medida", name: "Real", color: "#3b7197", dash: 0 },
-  { key: "estimada", name: "Estimada (previsão do tempo)", color: "#e8a317", dash: 5 }
+  { key: "medida", name: "Real", type: "area", color: "#3b7197", dash: 0 },
+  { key: "estimada", name: "Estimada (previsão do tempo)", type: "area", color: "#e8a317", dash: 5 }
 ];
 
 const TOOLTIP_FORMAT = { dia: "dd/MM HH:mm", ano: "MMMM 'de' yyyy" };
