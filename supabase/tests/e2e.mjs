@@ -78,6 +78,8 @@ test("outro usuário não vê nem apaga o grupo (RLS por dono)", async () => {
   assert.deepEqual(visiveis, []);
   await outro.from("grupos_solares").delete().eq("id", grupo.id);
   assert.ok((await api.listGroups()).some((g) => g.id === grupo.id), "o grupo foi apagado por outro usuário");
+  const leitura = await outro.from("leituras_energia").insert({ placa_id: placa.id, data_hora: new Date().toISOString(), wats_gerados: 1 });
+  assert.ok(leitura.error, "outro usuário não deve gravar leituras na placa");
   await outro.auth.signOut();
 });
 
@@ -135,6 +137,21 @@ test("pg_cron carrega 5 anos de clima da placa nova e o dashboard estima a gera�
   assert.ok(resumo.placasAtivas >= 1);
   assert.ok(resumo.previsaoAmanha > 0, "sem previsão para amanhã");
   assert.ok(resumo.totalGeradoHoje >= 0);
+
+  // Leituras importadas viram o real medido da hora: 2 leituras de 1200 W espaçadas de 30 min = 1200 Wh.
+  // Importar de novo (upsert) não duplica.
+  const hora = new Date(Date.now() - 2 * 864e5);
+  hora.setUTCHours(15, 0, 0, 0); // 12h em São Paulo
+  const leituras = [0, 30].map((min) => ({ dataHora: new Date(hora.getTime() + min * 6e4).toISOString(), watts: 1200 }));
+  await api.salvarLeituras(placa.id, leituras);
+  await api.salvarLeituras(placa.id, leituras);
+  const intervalo = { granularidade: "hora", dataInicio: hora.toISOString(), dataFim: hora.toISOString(), placaId: placa.id };
+  const [medida] = await api.getDashboardMetrics(intervalo);
+  assert.equal(medida.medidaWh, 1200);
+  assert.equal(medida.medidaSensorWh, 1200);
+  const [ranking] = await api.getRankingPlacas({ ...intervalo, grupoId: grupo.id });
+  assert.equal(ranking.kwhKwp, 0.4); // 1200 Wh ÷ 3000 Wp
+  assert.equal(ranking.anomalia, false); // grupo de uma placa só
 });
 
 test("média de 5 anos alinhada ao gráfico e acerto da previsão", async () => {
@@ -150,8 +167,6 @@ test("erros chegam traduzidos", async () => {
   assert.match(granularidade, /Granularidade inválida/);
   const nomeEmBranco = await api.createGroup({ nome: "   ", status: "ATIVO" }).catch(api.extractErrorMessage);
   assert.equal(nomeEmBranco, "Dados inválidos.");
-  const leitura = await supabase.from("leituras_energia").insert({ placa_id: placa.id, data_hora: new Date().toISOString(), wats_gerados: 1 });
-  assert.ok(leitura.error, "usuário comum não deve inserir leituras");
 });
 
 test("edita e exclui grupo, placa e limpeza", async () => {

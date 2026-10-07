@@ -1,12 +1,21 @@
 import { Suspense, lazy, startTransition, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import Financeiro from "../components/Financeiro";
+import ImportarLeituras from "../components/ImportarLeituras";
 import MetricChart from "../components/MetricChart";
 import { MotivoLimpeza } from "../components/RecomendacoesLimpeza";
 import PrevisaoSemana from "../components/PrevisaoSemana";
 import StatCard from "../components/StatCard";
 import StatusBadge, { SujeiraBadge } from "../components/StatusBadge";
-import { extractErrorMessage, getDashboardHistorico, getDashboardMetrics, listCleanings, listGroups, listPanels } from "../lib/api";
+import {
+  extractErrorMessage,
+  getDashboardHistorico,
+  getDashboardMetrics,
+  getRankingPlacas,
+  listCleanings,
+  listGroups,
+  listPanels
+} from "../lib/api";
 import { comparacaoClima } from "../lib/historico";
 import { formatRangeLabel, rangeFor, shiftDate, toSaoPaulo } from "../lib/periodo";
 import { LIMPAR_A_PARTIR, climaStatus, formatPerda, orientacao, perdaMedia, potenciaInstalada } from "../lib/placas";
@@ -27,6 +36,7 @@ const linkGrupo = (grupoId) => `${ROTA}?grupo=${grupoId}`;
 const linkPlaca = (panel) => `${ROTA}?grupo=${panel.grupoId}&placa=${panel.id}`;
 const soma = (points, key) => points.reduce((total, point) => total + (Number(point[key]) || 0), 0);
 const plural = (n, singular, pluralForm) => `${n} ${n === 1 ? singular : pluralForm}`;
+const pct = (fracao) => `${Math.round(fracao * 100)}%`;
 
 export default function MonitoringPage() {
   const [params] = useSearchParams();
@@ -44,6 +54,9 @@ export default function MonitoringPage() {
   const [historico, setHistorico] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [ranking, setRanking] = useState({}); // por placaId: kWh/kWp e desempenho na janela do gráfico
+  const [importando, setImportando] = useState(false);
+  const [versao, setVersao] = useState(0); // muda depois de importar leituras: recarrega o gráfico
 
   const config = VIEWS.find((item) => item.value === view);
 
@@ -77,7 +90,21 @@ export default function MonitoringPage() {
     return () => {
       ativo = false;
     };
-  }, [config.bucket, view, referenceDate, grupoParam, placaId]);
+  }, [config.bucket, view, referenceDate, grupoParam, placaId, versao]);
+
+  // Ranking da tabela de placas (que só aparece sem placa selecionada), na mesma janela do gráfico.
+  useEffect(() => {
+    if (placaId) return undefined;
+    let ativo = true;
+    setRanking({});
+    getRankingPlacas({ ...rangeFor(view, referenceDate), grupoId: grupoParam }).then(
+      (data) => ativo && setRanking(Object.fromEntries(data.map((linha) => [linha.placaId, linha]))),
+      (err) => ativo && setError(extractErrorMessage(err))
+    );
+    return () => {
+      ativo = false;
+    };
+  }, [view, referenceDate, grupoParam, placaId]);
 
   const panel = panels.find((item) => item.id === placaId);
   const grupoId = panel?.grupoId ?? grupoParam;
@@ -100,6 +127,8 @@ export default function MonitoringPage() {
     : `${group ? "" : `${plural(groups.length, "grupo", "grupos")} · `}${plural(selecionadas.length, "placa", "placas")} · ${formatPower(potenciaInstalada(selecionadas))}p instalados`;
 
   const temReal = points.some((point) => point.medidaWh != null);
+  // Parte do real que veio de leituras importadas (o resto é simulado).
+  const fracaoSensor = soma(points, "medidaSensorWh") / (soma(points, "medidaWh") || 1);
   const futuro = points.some((point) => new Date(point.x) > new Date());
   const clima = comparacaoClima(points, historico);
   const ultimaLimpeza = panel ? cleanings.find((item) => item.placaId === panel.id) : null;
@@ -220,7 +249,12 @@ export default function MonitoringPage() {
               <StatCard
                 title="Energia real"
                 value={loading ? "…" : temReal ? formatEnergy(soma(points, "medidaWh")) : "—"}
-                subtitle={temReal ? "Simulada, até a última hora completa" : "Período ainda não começou"}
+                subtitle={
+                  !temReal ? "Período ainda não começou"
+                    : fracaoSensor >= 0.99 ? "Medida (sensor)"
+                    : fracaoSensor > 0 ? `${pct(fracaoSensor)} medida (sensor), o resto simulada`
+                    : "Simulada, até a última hora completa"
+                }
                 icon="bi-lightning"
                 tone="primary"
               />
@@ -263,6 +297,7 @@ export default function MonitoringPage() {
           </section>
 
           <Financeiro
+            key={versao} // recarrega depois de importar leituras
             {...rangeFor(view, referenceDate)}
             grupoId={placaId ? null : grupoParam}
             placaId={placaId}
@@ -279,9 +314,14 @@ export default function MonitoringPage() {
             <section className="card">
               <div className="sv-card-head">
                 <h2>Detalhes da placa</h2>
-                <Link to={`/app/limpeza?placa=${panel.id}`} className="btn btn-sm btn-outline-primary">
-                  <i className="bi bi-droplet me-1" /> Registrar limpeza
-                </Link>
+                <div className="d-flex flex-wrap gap-2">
+                  <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => setImportando((aberto) => !aberto)}>
+                    <i className="bi bi-upload me-1" /> Importar leituras (CSV)
+                  </button>
+                  <Link to={`/app/limpeza?placa=${panel.id}`} className="btn btn-sm btn-outline-primary">
+                    <i className="bi bi-droplet me-1" /> Registrar limpeza
+                  </Link>
+                </div>
               </div>
               <dl className="sv-details">
                 <div><dt>Grupo</dt><dd><Link to={linkGrupo(panel.grupoId)}>{panel.grupoNome}</Link></dd></div>
@@ -307,6 +347,7 @@ export default function MonitoringPage() {
                   <dd>{ultimaLimpeza ? new Date(ultimaLimpeza.dataLimpeza).toLocaleDateString("pt-BR") : "Nenhuma"}</dd>
                 </div>
               </dl>
+              {importando ? <ImportarLeituras key={panel.id} placaId={panel.id} onImportado={() => setVersao((v) => v + 1)} /> : null}
             </section>
           ) : (
             <section className="card">
@@ -325,6 +366,8 @@ export default function MonitoringPage() {
                       <th>Orientação</th>
                       <th>Clima</th>
                       <th>Sujeira</th>
+                      <th title="Energia real no período do gráfico ÷ potência instalada">kWh/kWp</th>
+                      <th title="Real ÷ estimado nas horas com real, no período do gráfico">Desempenho</th>
                       <th>Status</th>
                     </tr>
                   </thead>
@@ -338,12 +381,28 @@ export default function MonitoringPage() {
                         <td>{p.azimute != null ? orientacao(p.azimute) : "—"}</td>
                         <td className="sv-muted">{climaStatus(p).texto}</td>
                         <td><SujeiraBadge perda={p.perdaSujeira} /></td>
+                        <td className="text-nowrap">
+                          {ranking[p.id]?.kwhKwp != null
+                            ? Number(ranking[p.id].kwhKwp).toLocaleString("pt-BR", { maximumFractionDigits: 1 })
+                            : "—"}
+                        </td>
+                        <td className="text-nowrap">
+                          {ranking[p.id]?.desempenho != null ? pct(ranking[p.id].desempenho) : "—"}
+                          {ranking[p.id]?.anomalia ? (
+                            <span
+                              className="sv-badge sv-badge-warning ms-1"
+                              title={`Mais de 10 p.p. abaixo da mediana do grupo (${pct(ranking[p.id].desempenhoGrupo)}): sombra, defeito ou sujeira`}
+                            >
+                              abaixo do grupo
+                            </span>
+                          ) : null}
+                        </td>
                         <td><StatusBadge status={p.status} /></td>
                       </tr>
                     ))}
                     {selecionadas.length === 0 ? (
                       <tr>
-                        <td colSpan="8" className="sv-muted">Nenhuma placa por aqui.</td>
+                        <td colSpan="10" className="sv-muted">Nenhuma placa por aqui.</td>
                       </tr>
                     ) : null}
                   </tbody>
