@@ -81,7 +81,8 @@ export function getDashboardSummary() {
   return unwrap(supabase.rpc("dashboard_resumo"));
 }
 
-// medida = real (simulado: estimado menos a sujeira). grupoId/placaId opcionais: sem eles, soma todas as placas.
+// medida = real: leituras importadas nas horas que as têm (medidaSensorWh), senão simulado (estimado menos a sujeira).
+// grupoId/placaId opcionais: sem eles, soma todas as placas.
 export function getDashboardMetrics({ granularidade, dataInicio, dataFim, grupoId = null, placaId = null }) {
   return unwrap(
     supabase.rpc("dashboard_metricas", {
@@ -90,7 +91,26 @@ export function getDashboardMetrics({ granularidade, dataInicio, dataFim, grupoI
       data_fim: dataFim,
       grupo: grupoId,
       placa: placaId
-    }).select("x, medida, estimada, medidaWh:medida_wh, estimadaWh:estimada_wh")
+    }).select("x, medida, estimada, medidaWh:medida_wh, estimadaWh:estimada_wh, medidaSensorWh:medida_sensor_wh")
+  );
+}
+
+// Grava um lote de leituras { dataHora, watts } de uma placa; reimportar o mesmo instante atualiza em vez de duplicar.
+export function salvarLeituras(placaId, leituras) {
+  return unwrap(
+    supabase.from("leituras_energia").upsert(
+      leituras.map(({ dataHora, watts }) => ({ placa_id: placaId, data_hora: dataHora, wats_gerados: watts })),
+      { onConflict: "placa_id,data_hora" }
+    )
+  );
+}
+
+// kWh/kWp e desempenho (real ÷ estimado) de cada placa no período; anomalia = mais de 10 p.p. abaixo da mediana do grupo.
+export function getRankingPlacas({ dataInicio, dataFim, grupoId = null }) {
+  return unwrap(
+    supabase.rpc("ranking_placas", { data_inicio: dataInicio, data_fim: dataFim, grupo: grupoId }).select(
+      "placaId:placa_id, realWh:real_wh, estimadaWh:estimada_wh, kwhKwp:kwh_kwp, desempenho, desempenhoGrupo:desempenho_grupo, anomalia"
+    )
   );
 }
 
