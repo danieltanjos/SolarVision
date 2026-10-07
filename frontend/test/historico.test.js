@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { calendarioAno, comparacaoClima, erroPrevisao } from '../src/lib/historico.js';
+import { baldesComMedia, calendarioAno, comparacaoClima, erroPrevisao } from '../src/lib/historico.js';
 
 const x = (dia) => `2026-${dia}T03:00:00+00:00`; // meia-noite em SP, como o banco devolve
 const historico = ['01-01', '02-01', '03-01'].map((dia) => ({ x: x(dia), mediaWh: 100, anos: 4 }));
@@ -8,6 +8,7 @@ const historico = ['01-01', '02-01', '03-01'].map((dia) => ({ x: x(dia), mediaWh
 test('FE-HIS: clima x média só nos baldes comuns, sem o último pela metade', () => {
   // fevereiro está pela metade (a previsão acaba nele) e o período continua: só janeiro conta
   assert.equal(comparacaoClima([{ x: x('01-01'), estimadaWh: 88 }, { x: x('02-01'), estimadaWh: 40 }], historico), 'Clima 12% abaixo da média de 4 anos');
+  assert.deepEqual(baldesComMedia([{ x: x('01-01'), estimadaWh: '88' }, { x: x('02-01'), estimadaWh: 40 }], historico), [{ x: x('01-01'), wh: 88, media: 100 }]);
   const completo = historico.map((h) => ({ x: h.x, estimadaWh: 100.4 }));
   assert.equal(comparacaoClima(completo, historico), 'Clima na média de 4 anos');
   assert.equal(comparacaoClima(completo, [{ ...historico[0], anos: 1 }]), 'Clima na média de 1 ano');

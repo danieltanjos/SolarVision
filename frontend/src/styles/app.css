@@ -8,6 +8,7 @@
     --sv-accent: #e8a317;
     --sv-success: #2f9461;
     --sv-warning: #b07b05;
+    --sv-danger: #c4423c;
     --sv-sidebar: linear-gradient(180deg, #234159 0%, #274b66 45%, #315b78 100%);
     --sv-bg: #f3f6f9;
     --sv-surface: #fff;
@@ -45,6 +46,7 @@
         --sv-sidebar: linear-gradient(180deg, #111a23 0%, #182633 48%, #1f3444 100%);
         --sv-success: #5cc495;
         --sv-warning: #f0b84a;
+        --sv-danger: #f08a84;
         --sv-bg: #111820;
         --sv-surface: #18222d;
         --sv-surface-2: #1d2834;
@@ -1242,12 +1244,52 @@ h1, h2, h3 {
 
 /* ---------- Relatório mensal ---------- */
 
-/* Na tela, a largura útil da folha A4 (210 mm − 2 × 10 mm de margem): o ApexCharts desenha o gráfico em px
-   e não redesenha ao imprimir, então ele já nasce na largura do papel. */
+/* Painel denso: as grades se ajustam à largura (KPIs 4 por linha na tela e 2 no A4; cartões em 3 ou 2 colunas;
+   gráficos lado a lado na tela e um embaixo do outro no A4). */
 .sv-relatorio {
-    width: 100%;
-    max-width: 190mm;
+    gap: 1rem;
+}
+
+/* O painel usa a tela toda (as outras páginas param em 1440 px). */
+.sv-content:has(.sv-relatorio) {
+    max-width: none;
+}
+
+.sv-relatorio .card {
+    padding: 0.9rem 1rem;
+}
+
+.sv-relatorio .sv-card-head {
+    margin-bottom: 0.6rem;
+}
+
+.sv-relatorio .sv-card-head p {
+    font-size: 0.78rem;
+}
+
+/* Ao imprimir, a largura útil da folha A4 (210 mm − 2 × 10 mm de margem): o ApexCharts desenha em px
+   e não redesenha sozinho, então o botão estreita a página antes de abrir a impressão. */
+.sv-relatorio.is-imprimindo {
+    width: 190mm;
     margin: 0 auto;
+}
+
+/* No papel (2 colunas), o 3º cartão da linha ocupa a largura toda e os gráficos ficam lado a lado. */
+.is-imprimindo .sv-relatorio-linha > :nth-child(3) {
+    grid-column: 1 / -1;
+}
+
+.is-imprimindo .sv-relatorio-linha > :nth-child(3) .sv-itens {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1.5rem;
+}
+
+.is-imprimindo .sv-relatorio-graficos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sv-relatorio-head h1 {
+    font-size: 1.35rem;
 }
 
 .sv-relatorio-filtros {
@@ -1259,20 +1301,263 @@ h1, h2, h3 {
 .sv-relatorio-filtros .form-control,
 .sv-relatorio-filtros .form-select {
     width: auto;
-}
-
-.sv-relatorio-capa h2 {
-    margin: 0.75rem 0 0.25rem;
-    font-size: 1.3rem;
-    font-weight: 700;
+    max-width: 280px;
 }
 
 .sv-relatorio-marca {
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+    color: var(--sv-link);
+    font-weight: 700;
+}
+
+.sv-kpis,
+.sv-relatorio-linha {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+    gap: 1rem;
+}
+
+.sv-relatorio-linha {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+}
+
+.sv-relatorio-graficos {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+}
+
+.sv-kpi {
+    gap: 0.35rem;
+}
+
+.sv-kpi-titulo {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--sv-muted);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.sv-kpi-titulo i {
+    color: var(--sv-link);
+    font-size: 0.85rem;
+}
+
+.sv-kpi-valor {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: var(--sv-link);
+}
+
+.sv-kpi-valor strong {
+    font-size: 1.4rem;
     font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.15;
+    white-space: nowrap;
+}
+
+/* Encolhe (em vez de quebrar a linha) quando o número e o selo ocupam o cartão. */
+.sv-barrinhas {
+    flex: 0 1 72px;
+    min-width: 0;
+    height: 28px;
+    margin-left: auto;
+    fill: var(--sv-primary-light);
+}
+
+.sv-kpi small {
+    color: var(--sv-muted);
+    font-size: 0.72rem;
+}
+
+/* Selo de variação (seta + %): verde melhora, vermelho piora. */
+.sv-delta {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.05rem 0.45rem 0.05rem 0.2rem;
+    border-radius: 999px;
+    background: rgba(107, 125, 142, 0.14);
+    color: var(--sv-muted);
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.sv-delta.is-bom {
+    background: rgba(47, 148, 97, 0.13);
+    color: var(--sv-success);
+}
+
+.sv-delta.is-ruim {
+    background: rgba(196, 66, 60, 0.13);
+    color: var(--sv-danger);
+}
+
+/* Listas compactas dos cartões: bolinha, texto, selo e valor. */
+.sv-itens {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.sv-itens li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--sv-border);
+    font-size: 0.82rem;
+}
+
+.sv-itens li:last-child {
+    border-bottom: 0;
+}
+
+.sv-itens li > div {
+    flex: 1;
+    min-width: 0;
+}
+
+.sv-itens small {
+    color: var(--sv-muted);
+    font-size: 0.74rem;
+}
+
+.sv-itens li > div > small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sv-itens strong,
+.sv-itens time {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.sv-itens time {
+    color: var(--sv-muted);
+}
+
+.sv-itens .sv-dot {
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.sv-empilhada {
+    display: flex;
+    height: 14px;
+    margin-bottom: 0.4rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--sv-surface-2);
+}
+
+.sv-perda-dia {
+    margin: 0.5rem 0 0.75rem;
+}
+
+.sv-perda-dia small {
+    color: var(--sv-muted);
+    font-size: 0.72rem;
+}
+
+.sv-perda-dia .sv-barrinhas {
+    display: block;
+    width: 100%;
+    height: 36px;
+    margin-top: 0.25rem;
+    fill: var(--sv-accent);
+}
+
+.sv-mini {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin: auto 0 0;
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--sv-border);
+}
+
+.sv-mini dt {
+    color: var(--sv-muted);
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.sv-mini dd {
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+/* Quebras (por placa, por grupo): barra horizontal fina, valor e % do total. */
+.sv-quebra {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.6rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.sv-quebra-linha {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.82rem;
+}
+
+.sv-quebra-linha strong {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sv-quebra-linha span {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.sv-quebra-linha small {
+    width: 2.4rem;
+    color: var(--sv-muted);
+    text-align: right;
+}
+
+.sv-quebra-barra {
+    height: 6px;
+    margin: 0.25rem 0 0.2rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--sv-surface-2);
+}
+
+.sv-quebra-barra > div {
+    height: 100%;
+    border-radius: inherit;
+    background: var(--sv-primary);
+}
+
+.sv-quebra li > small {
+    color: var(--sv-muted);
+    font-size: 0.72rem;
 }
 
 .sv-relatorio-marca img {
