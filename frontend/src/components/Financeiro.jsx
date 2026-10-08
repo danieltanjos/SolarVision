@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import StatCard from "./StatCard";
 import { getFinanceiro } from "../lib/api";
-import { formatCo2, formatReais } from "../lib/financeiro";
+import { formatReais } from "../lib/financeiro";
 import { formatEnergy } from "../lib/power";
 
 const cadastro = <Link to="/app/cadastro">informe no cadastro</Link>;
 
-// Economia, perda por sujeira e CO₂ evitado da seleção no mesmo período do gráfico.
+// Economia e perda por sujeira da seleção no mesmo período do gráfico.
 export default function Financeiro({ dataInicio, dataFim, grupoId = null, placaId = null, totalPlacas }) {
   const [valores, setValores] = useState(null);
 
@@ -53,13 +53,6 @@ export default function Financeiro({ dataInicio, dataFim, grupoId = null, placaI
           subtitle={nenhumaTarifa ? "Estimado − real" : `${formatReais(valores?.perdaSujeira)} deixados de economizar`}
           icon="bi-droplet-half"
           tone="accent"
-        />
-        <StatCard
-          title="CO₂ evitado"
-          value={valor(formatCo2(valores?.co2EvitadoKg))}
-          subtitle="Fator médio do SIN (MCTI)"
-          icon="bi-tree"
-          tone="primary"
         />
       </div>
     </section>

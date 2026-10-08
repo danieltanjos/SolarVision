@@ -181,7 +181,7 @@ export function getRankingPlacas({ dataInicio, dataFim, grupoId = null }) {
   );
 }
 
-// Valores do período: realWh, economia (R$), perdaSujeiraWh, perdaSujeira (R$), co2EvitadoKg e placasSemTarifa.
+// Valores do período: realWh, economia (R$), perdaSujeiraWh, perdaSujeira (R$) e placasSemTarifa.
 export function getFinanceiro({ dataInicio, dataFim, grupoId = null, placaId = null }) {
   return unwrap(
     supabase.rpc("dashboard_financeiro", { data_inicio: dataInicio, data_fim: dataFim, grupo: grupoId, placa: placaId })

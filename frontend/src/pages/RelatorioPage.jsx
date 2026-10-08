@@ -13,7 +13,7 @@ import {
   listGroups,
   listPanels
 } from "../lib/api";
-import { formatCo2, formatReais } from "../lib/financeiro";
+import { formatReais } from "../lib/financeiro";
 import { baldesComMedia, comparacaoClima, textoAnos } from "../lib/historico";
 import { TIME_ZONE, formatRangeLabel, janelasRelatorio, mesRelatorio, rangeFor } from "../lib/periodo";
 import { formatPerda, orientacao, perdaMedia, potenciaInstalada } from "../lib/placas";
@@ -380,8 +380,6 @@ export default function RelatorioPage() {
               delta={nenhumaTarifa ? null : variacao(valoresAntes.economia, valores.economia)}
               comparacao={comparacao}
             >
-              <span title="Fator médio do SIN (MCTI)">{formatCo2(valores.co2EvitadoKg)} evitados</span>
-              {" · "}
               {nenhumaTarifa ? <>sem tarifa: <Link to="/app/cadastro">informe no cadastro</Link></>
                 : semTarifa ? `${plural(semTarifa, "placa", "placas")} sem tarifa` : "energia real × tarifa"}
             </Kpi>

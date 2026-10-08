@@ -94,7 +94,7 @@ Responsabilidades:
 - **`AuthContext`** - escuta `onAuthStateChange`, expõe `login`, `register`, `logout` e o perfil do usuário.
 - **RLS** - substitui o filtro de segurança: toda consulta passa pelas políticas da tabela.
 - **View `geracao_horaria`** - fonte única da geração por hora e por placa (estimado pelo clima e real medido ou simulado); `security_invoker`, então respeita a RLS de quem consulta.
-- **Funções SQL (RPC)** - substituem o `DashboardService`: agregações por período, cards da Home e as análises (valores em R$/CO₂, média de 5 anos, ranking de placas, recomendação de limpeza e acerto da previsão), todas sobre `geracao_horaria`.
+- **Funções SQL (RPC)** - substituem o `DashboardService`: agregações por período, cards da Home e as análises (valores em R$, média de 5 anos, ranking de placas, recomendação de limpeza e acerto da previsão), todas sobre `geracao_horaria`.
 
 ---
 
@@ -191,7 +191,7 @@ Todas sobre `geracao_horaria`, executáveis só por `authenticated` e filtradas 
 
 | Função | O que devolve |
 |---|---|
-| `dashboard_financeiro(data_inicio, data_fim, grupo, placa)` | Energia real, economia em R$ (real × `tarifa_kwh`, só grupos com tarifa), perda por sujeira em kWh e R$ (estimado − real nas horas com real), CO₂ evitado (real × 0,0385 kgCO₂/kWh, fator médio do SIN de 2023, MCTI) e quantas placas estão sem tarifa |
+| `dashboard_financeiro(data_inicio, data_fim, grupo, placa)` | Energia real, economia em R$ (real × `tarifa_kwh`, só grupos com tarifa), perda por sujeira em kWh e R$ (estimado − real nas horas com real) e quantas placas estão sem tarifa |
 | `recomendacoes_limpeza()` | Por placa: perda atual, kWh e R$ perdidos na próxima semana sem limpar (estimado da previsão × perda atual), chuva que lava prevista, em quantos dias a limpeza (`custo_limpeza`) se paga e a decisão: limpar se perda ≥ o `limiar_limpeza` do dono (padrão 10 %), sem chuva que lava nos próximos 3 dias e sem custo informado ou pagando-se em até 30 dias; `motivo` em texto |
 | `dashboard_historico(granularidade, data_inicio, data_fim, grupo, placa)` | Média, mínimo e máximo do **estimado** (só o clima) da mesma janela nos 5 anos anteriores, com os mesmos `x` do `dashboard_metricas`; um ano só entra se todas as placas têm clima na janela inteira (o 5º costuma ser parcial) |
 | `acerto_previsao(dias, grupo, placa)` | Por dia encerrado: a previsão guardada na véspera em `previsoes_diarias` (job `guardar-previsao`, 21:00 de São Paulo) x o estimado com o clima que aconteceu |

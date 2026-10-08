@@ -70,7 +70,6 @@ Lista de funcionalidades que estão **referenciadas/parcialmente implementadas**
 - Cadastro, Limpeza, Configurações e a importação de leituras mostram mensagem de sucesso; todas as telas têm indicador de carregamento.
 
 ### 12. Limitações das análises
-- **Fator de CO₂ fixo:** 0,0385 kgCO₂/kWh (fator médio anual do SIN de 2023, MCTI) dentro de `dashboard_financeiro`; conferir e trocar pelo do ano mais recente publicado pelo MCTI (ou pelo fator mensal).
 - **Limpeza pela chuva:** dia com ≥ 5 mm (limiar fixo) lava a placa por completo; vira limpeza parcial, proporcional à chuva, quando houver dado para calibrar. A sujeira continua com taxa (0,2 %/dia) e limite (20 %) fixos.
 - **Recomendação de limpeza:** supõe a perda constante na semana (na verdade cresce 0,2 %/dia) e a chuva em até 3 dias e o retorno em até 30 dias são fixos; o limiar de perda (padrão 10 %) e o da previsão baixa (padrão 60 %) são preferências do dono. Um ADMIN vendo o grupo de outro dono recebe a recomendação com 10 % (a RLS de `usuarios` não mostra a linha do outro dono); o alerta usa o limiar do dono certo.
 - **Média de 5 anos recalculada a cada chamada:** `dashboard_historico` refaz até 5 anos × placas (~1,2 s na visão Ano com 4 placas; cresce com o número de placas). Pré-agregar o estimado por placa e dia numa tabela se a visão Ano ficar lenta.
@@ -104,7 +103,7 @@ Polimentos resolvidos: o status do grupo na Home usa o selo (`StatusBadge`, desd
 | 8 | Envio real de e-mail | Média | Supabase (Edge Function) | Pendente |
 | 9 | "Meu perfil" x "Configurações" | Média | Front | Resolvido |
 | 10 | Loading + feedback de sucesso | Média | Front | Resolvido |
-| 12 | Limitações das análises (CO₂, chuva, histórico, acerto) | Média | Banco | Pendente |
+| 12 | Limitações das análises (chuva, histórico, acerto) | Média | Banco | Pendente |
 | 11 | Testes ausentes | Baixa | Front + Banco | Pendente |
 
 ## Resolvidos na rodada de análises (`feat/analises`)

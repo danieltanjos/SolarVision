@@ -57,7 +57,6 @@ Distinção conceitual usada no projeto:
 
 ### Legal / Normativa
 - **LGPD**: o sistema trata dados pessoais (nome, e-mail, senha). A senha fica apenas como hash no Supabase Auth e não existe em tabela da aplicação; cada usuário só lê o próprio perfil e as próprias usinas. Os dados ficam na região **São Paulo**.
-- **Fator de emissão de CO₂**: o CO₂ evitado usa o fator médio anual do Sistema Interligado Nacional publicado pelo MCTI (2023: 0,0385 tCO₂/MWh); é uma estimativa, não um crédito de carbono certificado.
 - **Licenças open-source**: React (MIT), PostgreSQL (licença PostgreSQL) e os componentes do Supabase (Apache 2.0/MIT) - compatíveis com uso acadêmico e comercial.
 - **Dados do Open-Meteo**: licença CC BY 4.0, com a atribuição no rodapé do app. A API gratuita é para uso não comercial; um uso comercial exige o plano pago.
 - **Boas práticas de segurança**: HTTPS em todo o tráfego (Vercel e Supabase), consultas parametrizadas pelo PostgREST e apenas a chave publicável no frontend.
@@ -140,7 +139,6 @@ Rodada da branch `feat/analises` (migrations `20261008090000` a `20261008140000`
 | View `geracao_horaria` (`security_invoker`) como fonte única da geração por hora | Cada função recalcular estimado e real | Gráfico, cards e análises somam a mesma coisa; a view respeita a RLS de quem consulta e as colunas não usadas não são calculadas |
 | `perda_sujeira_em` security definer com a regra do dono repetida | Deixar a RLS filtrar | Roda por hora e por placa; com RLS a visão Ano de todas as placas levava 14 s. O custo é manter a regra em dois lugares |
 | Tabela `chuvas_que_lavam` (≥ 5 mm/dia) | Somar a chuva do dia a cada hora calculada | A última chuva vira uma busca no índice; limiar fixo e limpeza total até haver dado para calibrar |
-| CO₂ com o fator médio anual do SIN de 2023 (0,0385 kgCO₂/kWh, MCTI) | Fator mensal ou de outro ano | Valor oficial mais recente na data; fixo na função, a trocar quando o MCTI publicar o próximo |
 | Média de 5 anos só do **estimado** | Média do real | O real carrega a sujeira; a média do clima separa "o clima foi ruim" de "a placa está ruim" |
 | `previsoes_diarias` + job `guardar-previsao` | Comparar com `clima_horario` | O clima da previsão é sobrescrito de hora em hora pelo observado; a previsão precisa ser guardada antes |
 | Importação de CSV lida no navegador e gravada por upsert | Edge Function ou upload de arquivo | Sem deploy à parte; a RLS já garante que só o dono grava; reimportar não duplica |

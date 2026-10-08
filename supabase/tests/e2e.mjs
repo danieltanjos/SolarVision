@@ -130,11 +130,11 @@ test("pg_cron carrega 5 anos de clima da placa nova e o dashboard estima a gera�
   placa = (await api.listPanels()).find((p) => p.id === placa.id);
   assert.ok(placa.perdaSujeira < 0.001, "placa recém-limpa deveria estar sem perda");
 
-  // Valores do mês: grupo sem tarifa (R$ 0, conta a placa sem tarifa), CO₂ pela energia real.
+  // Valores do mês: grupo sem tarifa (R$ 0, conta a placa sem tarifa).
   const financeiro = await api.getFinanceiro({ dataInicio: mes.dataInicio, dataFim: mes.dataFim, placaId: placa.id });
   assert.equal(financeiro.placasSemTarifa, 1);
   assert.equal(financeiro.economia, 0);
-  assert.ok(financeiro.realWh > 0 && financeiro.co2EvitadoKg > 0 && financeiro.perdaSujeiraWh >= 0);
+  assert.ok(financeiro.realWh > 0 && financeiro.perdaSujeiraWh >= 0);
   const recomendacao = (await api.getRecomendacoesLimpeza()).find((r) => r.placaId === placa.id);
   assert.equal(recomendacao.limpar, false, "placa recém-limpa não precisa de limpeza");
   assert.match(recomendacao.motivo, /ainda não precisa limpar/);
