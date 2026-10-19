@@ -9,6 +9,7 @@
 | [FUNCIONALIDADES.md](FUNCIONALIDADES.md) | Compilado das funcionalidades por módulo, com as tabelas e funções RPC usadas por cada tela. |
 | [DECISOES-TECNICAS.md](DECISOES-TECNICAS.md) | Justificativa das escolhas (plataforma, framework x ferramenta x biblioteca, dimensões técnica/legal/institucional/ética, migração para Supabase + Vercel, clima pelo Open-Meteo, análises e trade-offs). |
 | [FEATURES-INCOMPLETAS.md](FEATURES-INCOMPLETAS.md) | Funcionalidades parciais ou ainda não implementadas (perfil/senha, tela de ADMIN, QA separado, sensor/inversor, limites do modelo e das análises, alertas etc.), priorizadas, e o que a rodada de análises resolveu. |
+| [PREDICAO-E-SENSORES.md](PREDICAO-E-SENSORES.md) | De onde vem cada dado (datasheet, inversor, estação), o que cada camada permite afirmar, o cenário com estação solarimétrica (normas, composição, integração, schema proposto, qualidade do sensor, piloto) e o resumo do plano de predição sem estação. |
 | [validacao/RESULTADO.md](validacao/RESULTADO.md) | Validação do modelo de geração estimada contra 5 anos de leituras reais (Fotovoltaica-UFSC), com o script `validar-modelo.mjs`. |
 
 ## Histórico (versão Spring Boot/Docker)

@@ -42,6 +42,7 @@ Lista de funcionalidades que estão **referenciadas/parcialmente implementadas**
   - sem fuso no arquivo, o horário é São Paulo com UTC−3 fixo (sem horário de verão);
   - com leituras, a "perda por sujeira" do período (estimado − real em `dashboard_financeiro`) passa a incluir toda a diferença entre o modelo e o medido (PR, sombra, defeito), não só a sujeira.
 - **Onde:** dispositivo/integração externa, `supabase/migrations/20261008130000_leituras_reais.sql`, `frontend/src/lib/leituras.js`.
+- **Ver:** [PREDICAO-E-SENSORES.md](PREDICAO-E-SENSORES.md) (o que cada fabricante e cada camada de dado permite afirmar, célula de referência caseira com ESP32 e ingestão por token de estação).
 
 ---
 
@@ -53,7 +54,9 @@ Lista de funcionalidades que estão **referenciadas/parcialmente implementadas**
 - **Recarga do clima após edição:** resolvida (triggers da migration `20261008100000`); horas fora da nova janela de 5 anos ficam com o clima antigo (apagar o clima da placa antes de recarregar, se isso aparecer nas análises).
 - **Uma série por placa:** ~3,5 MB por placa a cada 5 anos em `clima_horario`; deduplicar por local + inclinação + azimute se houver muitas placas.
 - **Uso não comercial:** a API gratuita do Open-Meteo não cobre uso comercial.
+- **PR e sujeira contados duas vezes:** o PR 0,82 é o padrão do PVWatts (que já inclui 2 % de sujeira) e a sujeira simulada é aplicada por cima dele em `geracao_horaria`.
 - **Onde:** `supabase/migrations/20261007120000_clima_open_meteo.sql`, `20261008100000_cadastro_edicao.sql`.
+- **Ver:** [PREDICAO-E-SENSORES.md](PREDICAO-E-SENSORES.md) (plano de predição sem estação, seção 9, e o cenário com estação solarimétrica).
 
 ### 7. Alertas - resolvido
 - **Estado atual:** tabela `alertas` com RLS, `gerar_alertas()` no job `gerar-alertas` (07:00 de São Paulo) e sino no cabeçalho (ver [FUNCIONALIDADES.md](FUNCIONALIDADES.md#alertas)).
