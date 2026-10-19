@@ -1,6 +1,27 @@
-# pipeline/ — o seu datalake
+# pipeline/ — o datalake de uso do SolarVision
 
-Seu código vai aqui: um job por camada, como pede o [enunciado](../docs/ENUNCIADO.md) (R1 a R11).
+Um job por camada, como pede o [enunciado](../docs/ENUNCIADO.md) (R1 a R11). A base (`comum.py`, o `bronze.py` e este guia de acesso ao S3) veio do projeto-modelo do professor.
+
+## Os jobs
+
+| Job | Lê | Grava |
+| --- | --- | --- |
+| `bronze.py` | `landing/` (JSON, schema explícito) | `bronze/event_name=…/year=…/month=…/day=…`, append-only, com `arquivo_origem` e `ingerido_em` (R4) |
+| `silver.py` | `bronze/` | `silver/event_name=…` (dedup R5, params tipados R6, sessões R8, pessoa R9), `silver/eventos_rejeitados/` com o motivo (R7) e `silver/itens/` (R10) |
+| `gold_funil.py` | `silver/` | `gold/funil_ativacao`, `gold/funil_login` |
+| `gold_engajamento.py` | `silver/` | `gold/sessoes`, `gold/uso_telas`, `gold/buscas_seletor`, `gold/saidas_downloads` |
+| `gold_aquisicao.py` | `silver/` | `gold/ativacao_diaria`, `gold/retencao`, `gold/taxa_abandono`, `gold/cadastro_para_ativacao` |
+| `gold_ml.py` | `silver/` | `gold/propensao_ativacao`, `gold/metricas_modelo`, `gold/segmentos_usuarios` (Spark ML) |
+| `gold_mapa_calor.py` | `silver/` | `gold/mapa_calor_cliques`, `gold/mapa_calor_rolagem` (nomes de coluna do R11) |
+| `exportar_bi.py` | as 15 Golds | `frontend/public/bi/mapa_calor.js` e `bi.js` (montado em `/projeto/app-bi`) |
+| `rodar_tudo.py` | — | roda os oito em ordem e para no primeiro que falhar (R3); `--limpar` recomeça do zero |
+
+```bash
+docker compose run --rm app python pipeline/rodar_tudo.py --limpar   # reconstrói o datalake inteiro
+docker compose run --rm app pytest                                    # gerador, coletor, jobs e explorador
+```
+
+Cada job tem as transformações em funções puras de DataFrame (`deduplicar`, `validar`, `sessionizar`, `funil_ativacao`, `base_propensao`…) e um `main()` que só lê, chama e grava. Os testes em `tests/pipeline/` montam DataFrames pequenos (`tests/pipeline/fabrica.py`) e conferem as funções sem o S3. O workflow `workflows/medalhao.json` roda o mesmo grafo no explorador, com as Golds em paralelo.
 
 Um **job** é um script Python que faz uma etapa do trabalho do começo ao fim: lê uma camada, transforma os dados e grava a camada seguinte. Por exemplo, o job Bronze lê a `landing/` e grava a `bronze/`.
 
@@ -26,12 +47,12 @@ Veja [explorador/README.md](../explorador/README.md#glue--workflows).
 
 ## Falando com o S3
 
-O pipeline acessa o bucket **só pelo Spark**, com caminhos `s3a://datalake-tracking/...`. Nada de `boto3` aqui.
+O pipeline acessa o bucket **só pelo Spark**, com caminhos `s3a://solarvision-datalake/...`. Nada de `boto3` aqui.
 
 - `s3a://` é o prefixo que diz ao Spark "este caminho está num S3". É o conector `s3a` (biblioteca `hadoop-aws`) que faz a conversa com o floci.
 - `boto3` é o SDK da AWS para Python. O gerador usa `boto3`, mas o seu pipeline não pode usar (requisito R1).
 
-> **Pense assim:** `s3a://datalake-tracking/silver/` é um **endereço com CEP**: o `s3a://` diz "isto fica no S3", `datalake-tracking` é a cidade (o bucket) e o resto é a rua e o número (a pasta). O conector `s3a` é o carteiro que sabe entregar nesse endereço.
+> **Pense assim:** `s3a://solarvision-datalake/silver/` é um **endereço com CEP**: o `s3a://` diz "isto fica no S3", `solarvision-datalake` é a cidade (o bucket) e o resto é a rua e o número (a pasta). O conector `s3a` é o carteiro que sabe entregar nesse endereço.
 
 ## `comum.py`: as peças prontas
 
@@ -40,14 +61,14 @@ A parte repetitiva já vem pronta em [`comum.py`](comum.py), nesta mesma pasta. 
 | Função | Para que serve |
 | --- | --- |
 | `criar_sessao("bronze")` | a `SparkSession` configurada para o floci (s3a) e para manter `month=09` com dois dígitos. A `SparkSession` é o objeto de entrada do Spark: todo `spark.read` e todo `df.write` passam por ela |
-| `caminho("silver/itens")` | `s3a://datalake-tracking/silver/itens`. Para outro bucket do floci: `caminho("notas", bucket="rascunho-turma")` dá `s3a://rascunho-turma/notas` (a mesma `SparkSession` lê e grava em qualquer bucket) |
+| `caminho("silver/itens")` | `s3a://solarvision-datalake/silver/itens`. Para outro bucket do floci: `caminho("notas", bucket="rascunho-turma")` dá `s3a://rascunho-turma/notas` (a mesma `SparkSession` lê e grava em qualquer bucket) |
 | `glob_eventos("bronze")` | `bronze/event_name=*`: só as pastas de eventos da camada |
 | `ler_eventos(spark, "bronze")` | lê as pastas `event_name=…` da camada, com `event_name`, `year`, `month` e `day` como colunas. Para a landing: `ler_eventos(spark, "landing", "json", schema=SEU_SCHEMA)` |
 | `gravar_eventos(df, "silver", "overwrite")` | grava particionado por `event_name/year/month/day` na raiz da camada, sem apagar as pastas vizinhas |
 | `exigir_camada(spark, glob_eventos("bronze"), "python pipeline/bronze.py")` | para o job com "… não existe. Rode antes: …" se a camada anterior não existe (R2) |
 | `apagar_camada(spark, "gold")` | apaga a pasta inteira, para recomeçar do zero |
 | `titulo("Bronze")` | imprime um título destacado na saída |
-| `arquivo_do_projeto("site/mapa_calor.js")` | um arquivo do repositório, fora do S3 (`/projeto/site/mapa_calor.js`). Funciona igual no terminal e no explorador |
+| `arquivo_do_projeto("app-bi/mapa_calor.js")` | um arquivo do repositório, fora do S3 (`/projeto/app-bi/mapa_calor.js`, que é o `frontend/public/bi` montado pelo docker-compose). Funciona igual no terminal e no explorador |
 
 Um job Bronze fica assim:
 
@@ -88,7 +109,7 @@ Só a caixa do meio é trabalho seu; as outras são uma linha cada, vindas do `c
 Ele usa o `FileSystem` do Hadoop pela JVM do Spark:
 
 ```python
-caminho = spark._jvm.org.apache.hadoop.fs.Path("s3a://datalake-tracking/silver/event_name=*")
+caminho = spark._jvm.org.apache.hadoop.fs.Path("s3a://solarvision-datalake/silver/event_name=*")
 existe = bool(caminho.getFileSystem(spark._jsc.hadoopConfiguration()).globStatus(caminho))
 ```
 
@@ -134,10 +155,10 @@ Ao ler pastas `k=v`, o Spark descobre `event_name`, `year`, `month` e `day` como
 
 ### Ler só os eventos (o que `ler_eventos` faz)
 
-Se você ler a raiz `s3a://datalake-tracking/silver/` direto, o Spark encontra `event_name=…` ao lado de `itens/` e `eventos_rejeitados/` e para com o erro *Conflicting directory structures*. Leia só as pastas `event_name=` com um glob e diga ao Spark onde fica a raiz das partições (`basePath`), para ele devolver `event_name` como coluna:
+Se você ler a raiz `s3a://solarvision-datalake/silver/` direto, o Spark encontra `event_name=…` ao lado de `itens/` e `eventos_rejeitados/` e para com o erro *Conflicting directory structures*. Leia só as pastas `event_name=` com um glob e diga ao Spark onde fica a raiz das partições (`basePath`), para ele devolver `event_name` como coluna:
 
 ```python
-raiz = "s3a://datalake-tracking/silver"
+raiz = "s3a://solarvision-datalake/silver"
 eventos = spark.read.option("basePath", raiz).parquet(f"{raiz}/event_name=*")
 ```
 
@@ -155,7 +176,7 @@ Cuidado com o `mode("overwrite")` na Silver: por padrão ele **apaga a pasta int
 (silver.write.mode("overwrite")
     .option("partitionOverwriteMode", "dynamic")
     .partitionBy("event_name", "year", "month", "day")
-    .parquet("s3a://datalake-tracking/silver"))
+    .parquet("s3a://solarvision-datalake/silver"))
 ```
 
 Na Bronze, que é append-only (R4), use `mode("append")` com o mesmo `partitionBy`.
@@ -201,31 +222,17 @@ Rode estes três comandos, nesta ordem:
 2. `docker compose run --rm app python gerador/gerar_eventos.py` (grava os eventos na landing)
 3. `docker compose run --rm app python infra/verificar_ambiente.py`, que precisa mostrar três linhas `[ok]`
 
-## Exportar um resultado pequeno para o site
+## Exportar um resultado pequeno para o app (R11)
 
-O requisito R11 pede um arquivo `site/mapa_calor.js` com os números do mapa de calor. Esse arquivo não fica no S3: o site lê do disco. Então o job lê a Gold pelo Spark e, no fim, grava um arquivo comum com Python.
+O `exportar_bi.py` lê as Golds pelo Spark e, no fim, grava dois arquivos comuns com Python, cada um numa linha `window.<VARIÁVEL> = {...};`:
 
-- **Trazer o resultado para o Python:** `collect()` traz as linhas de um DataFrame do Spark para uma lista do Python. Use só com tabelas pequenas, como as duas do mapa de calor, que têm poucas dezenas de linhas. **Nunca** faça isso com a Bronze ou a Silver: são dezenas de milhares de linhas e o job fica lento ou estoura a memória.
+- `app-bi/mapa_calor.js` → `window.MAPA_CALOR = {"gerado_em", "cliques", "rolagem"}`, com os nomes de coluna exatos das duas Golds do mapa de calor. O botão **Mapa de calor** do app (ADMIN) pinta os elementos `data-heat` da tela atual.
+- `app-bi/bi.js` → `window.SOLARVISION_BI = {...}`: KPIs, as tabelas pequenas da Gold, a propensão por faixa de probabilidade e o perfil médio dos segmentos, para a página **Uso da plataforma**. Só agregados: nenhuma linha por pessoa ou por sessão sai do datalake.
 
-  > **Pense assim:** o Spark é um **armazém** com muitos funcionários trabalhando em paralelo; o Python do seu script é a **sua mesa**. O `collect()` traz tudo do armazém para a sua mesa. Um envelope com 30 linhas cabe; um caminhão com 60 mil, não.
-- **Onde gravar:** o contêiner enxerga o repositório em `/projeto`, então `site/` é `/projeto/site/`. Use `arquivo_do_projeto("site/mapa_calor.js")`, do `comum.py`: ele parte da pasta do projeto, que é sempre a pasta atual quando um job roda. Não use `Path(__file__)`: no explorador, o script roda de uma cópia baixada do floci, numa pasta temporária, e o `__file__` aponta para lá.
+`app-bi/` é o `frontend/public/bi` do repositório, montado pelo docker-compose; o Vite serve a pasta em `/bi/`. Os arquivos são resultado gerado (dados de negócio) e ficam fora do git.
 
-```python
-import json
-from datetime import datetime, timezone
-from comum import arquivo_do_projeto
+- **Trazer o resultado para o Python:** `collect()` só em tabelas pequenas, como as Golds. **Nunca** na Bronze ou na Silver: são dezenas de milhares de linhas.
+- **Onde gravar:** `arquivo_do_projeto(...)`, do `comum.py`, e não `Path(__file__)`: no explorador o script roda de uma cópia baixada do floci, numa pasta temporária.
+- Datas e `Decimal` viram texto e número antes do `json.dumps` (`exportar_bi.linhas`).
 
-cliques = [linha.asDict() for linha in spark.read.parquet("s3a://datalake-tracking/gold/mapa_calor_cliques").collect()]
-rolagem = [linha.asDict() for linha in spark.read.parquet("s3a://datalake-tracking/gold/mapa_calor_rolagem").collect()]
-agora = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-dados = {"gerado_em": agora, "cliques": cliques, "rolagem": rolagem}
-
-destino = arquivo_do_projeto("site/mapa_calor.js")
-texto = json.dumps(dados, ensure_ascii=False, default=float)
-destino.write_text("window.MAPA_CALOR = " + texto + ";\n", encoding="utf-8")
-```
-
-- `default=float` cuida das colunas do tipo `Decimal` (por exemplo, quando você usa `cast("decimal(…)")`): o `json.dumps` não sabe escrever `Decimal` e daria `TypeError`. Prefira gravar as taxas da Gold como `double`.
-- Se o mapa sair sem cliques, a sua landing provavelmente foi gerada antes do campo `element_id` existir. Rode de novo `python gerador/gerar_eventos.py` e o pipeline inteiro.
-
-Depois, abra `site/index.html` no navegador e clique em **Mapa de calor**, no painel lateral. Se você rodar o job de novo, recarregue a página para ver os números novos.
+Depois, com o app rodando (`npm run dev` no `frontend`), entre como ADMIN, abra **Uso da plataforma** e ligue o **Mapa de calor** no cabeçalho. Rodou o job de novo? Recarregue a página.

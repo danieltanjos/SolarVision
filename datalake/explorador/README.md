@@ -88,8 +88,8 @@ flowchart LR
 
 ### S3 · Buckets
 
-- **Lista de buckets:** a tabela mostra **todos os buckets** do floci, com a região, quantos objetos cada um tem, o tamanho total e quem usa o bucket. O `datalake-tracking` vem primeiro: é o do projeto. O `glue-assets` guarda os scripts e workflows dos jobs (veja Jobs ETL) e fica fora do Data Catalog. Os outros (por exemplo, um bucket que você criou para testar) também entram no Data Catalog e no Athena, cada um como um banco com o nome dele. Clique no nome para entrar. Se o `datalake-tracking` estiver vazio ou ainda não existir, um aviso lembra de rodar o gerador.
-- **Caminho no topo (breadcrumb):** `Buckets › datalake-tracking › silver › event_name=purchase`. Clique em qualquer parte para voltar até ela.
+- **Lista de buckets:** a tabela mostra **todos os buckets** do floci, com a região, quantos objetos cada um tem, o tamanho total e quem usa o bucket. O `solarvision-datalake` vem primeiro: é o do projeto. O `glue-assets` guarda os scripts e workflows dos jobs (veja Jobs ETL) e fica fora do Data Catalog. Os outros (por exemplo, um bucket que você criou para testar) também entram no Data Catalog e no Athena, cada um como um banco com o nome dele. Clique no nome para entrar. Se o `solarvision-datalake` estiver vazio ou ainda não existir, um aviso lembra de rodar o gerador.
+- **Caminho no topo (breadcrumb):** `Buckets › solarvision-datalake › silver › event_name=purchase`. Clique em qualquer parte para voltar até ela.
 - **Aba Objetos:** as pastas (📁) e os arquivos (📄) da pasta atual, com tipo, última modificação e tamanho. Clique numa pasta para entrar; clique num `.parquet` ou `.jsonl` para ver as primeiras 100 linhas logo abaixo.
 - **Aba Partições:** escolha um dataset e veja uma linha por partição (`event_name`, `year`, `month`, `day`) com quantos arquivos e quantos bytes ela tem. Quando o dataset não tem uma dessas partições, a coluna mostra `—`. O botão "Contar linhas por partição" conta as linhas de cada uma.
 - **Aba Propriedades:** nome, região, endpoint, total de objetos, tamanho, quantos datasets e quem usa o bucket.
@@ -101,7 +101,7 @@ O **Data Catalog** é a lista de "o que existe no lake": quais bancos, quais tab
 
 > **Pense assim:** é o **catálogo de uma biblioteca**. Os livros (os arquivos) estão nas estantes (o bucket); o catálogo diz em que estante está cada livro, de que assunto ele é e como ele é organizado, sem você precisar andar pelos corredores.
 
-- **Bancos de dados:** um por camada do medalhão: `landing`, `bronze`, `silver` e `gold`, cada um com a sua localização `s3://datalake-tracking/<banco>/`. Depois deles vem **um banco para cada outro bucket** do floci, com o nome do bucket (`rascunho-turma` vira o banco `rascunho_turma`, em `s3://rascunho-turma/`). A coluna **Bucket** diz de onde vem cada banco.
+- **Bancos de dados:** um por camada do medalhão: `landing`, `bronze`, `silver` e `gold`, cada um com a sua localização `s3://solarvision-datalake/<banco>/`. Depois deles vem **um banco para cada outro bucket** do floci, com o nome do bucket (`rascunho-turma` vira o banco `rascunho_turma`, em `s3://rascunho-turma/`). A coluna **Bucket** diz de onde vem cada banco.
 - Se uma tabela de algum bucket não puder ser lida (um arquivo estragado, por exemplo), ela fica de fora e um aviso no topo diz qual e por quê; o resto do catálogo continua funcionando.
 - **Tabelas do banco:** nome, formato (Parquet ou JSON), localização, quantas partições e quantas colunas.
 - **Detalhe da tabela:** no topo, o painel **Visão geral da tabela** (banco, localização, classificação, chaves de partição, quantos arquivos e o nome para usar no Athena); embaixo, duas abas:
@@ -130,7 +130,7 @@ Você continua escrevendo os arquivos em `pipeline/`, no seu editor. Para eles c
 flowchart LR
     pasta["pipeline/<br/>*.py e workflows/*.json<br/>(o seu editor)"] -->|⟳ Sincronizar| assets[("s3://glue-assets/<br/>scripts/ e workflows/")]
     assets -->|baixa uma cópia e roda| spark["Spark<br/>(contêiner do explorador)"]
-    spark -->|lê e grava| lake[("s3://datalake-tracking/")]
+    spark -->|lê e grava| lake[("s3://solarvision-datalake/")]
 ```
 
 > **Pense assim (o forno):** cada job é uma receita; você aperta **Executar**, acompanha pela janelinha (o log) e, no fim, o painel diz se deu certo (**Sucesso**) ou não (**Falhou**) e quanto tempo levou.
@@ -140,7 +140,7 @@ flowchart LR
   - **Executar:** baixa os scripts do floci para uma pasta temporária e roda o job dali, no contêiner do explorador, que já tem o Spark. É o mesmo que `docker compose run --rm app python pipeline/<job>.py`, mas com a cópia que está no floci. Enquanto o job roda, o botão fica desligado: um job por vez.
   - **Execuções:** status (**Em execução**, **Sucesso** ou **Falhou**), início, duração e código de saída de cada execução, com o **log** logo abaixo. Enquanto um job roda, o painel se atualiza sozinho a cada 3 segundos.
   - **Script:** o código que está no floci, só para leitura. Para mudar, edite o arquivo em `pipeline/` e sincronize.
-- Como o script roda de uma pasta temporária, um job que grava um arquivo do projeto (como o `site/mapa_calor.js`) deve usar `arquivo_do_projeto("site/mapa_calor.js")`, do `comum.py`, e não `Path(__file__)`. Veja o [pipeline/README.md](../pipeline/README.md#exportar-um-resultado-pequeno-para-o-site).
+- Como o script roda de uma pasta temporária, um job que grava um arquivo do projeto (como o `app-bi/mapa_calor.js`) deve usar `arquivo_do_projeto("app-bi/mapa_calor.js")`, do `comum.py`, e não `Path(__file__)`. Veja o [pipeline/README.md](../pipeline/README.md#exportar-um-resultado-pequeno-para-o-app-r11).
 - O floci guarda tudo na memória: se ele reiniciar, o `glue-assets` some junto com o datalake. É só clicar em Sincronizar de novo.
 - O histórico de execuções fica dentro do contêiner do explorador, com as 30 execuções mais recentes de cada job (as mais antigas saem sozinhas). Se o contêiner for recriado (`docker compose down` ou depois de um `build`), o histórico zera; os dados gravados no bucket continuam lá.
 - As primeiras linhas de todo log são o Spark ligando e são normais: `Using incubator modules`, `Using Spark's default log4j profile`, `Setting default log level to "WARN"` e `WARN NativeCodeLoader: Unable to load native-hadoop library`. O que importa vem depois delas.

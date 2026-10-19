@@ -1,5 +1,7 @@
 # Setup — o que instalar e configurar
 
+> No SolarVision, todos os comandos deste guia rodam dentro da pasta `datalake/` do repositório.
+
 Só é preciso o **Docker**. Python, Java, PySpark e o conector do Spark para S3 vêm dentro da imagem do projeto, e o S3 é emulado pelo floci. Nenhuma conta de nuvem é necessária.
 
 Tempo total: **cerca de 20 minutos** na primeira vez, a maior parte baixando o que vai dentro da imagem (Spark, Java e o conector para o S3). Reserve uns **5 GB livres** no disco: a imagem do projeto tem perto de 3,5 GB.
@@ -27,7 +29,7 @@ Se você nunca usou Docker, leia esta seção. Ela explica as quatro palavras qu
 
 E mais dois termos do projeto:
 
-- **S3** é o serviço de armazenamento de arquivos da AWS. Os arquivos ficam dentro de um **bucket** (um "disco" com nome). Aqui o bucket se chama `datalake-tracking`.
+- **S3** é o serviço de armazenamento de arquivos da AWS. Os arquivos ficam dentro de um **bucket** (um "disco" com nome). Aqui o bucket se chama `solarvision-datalake`.
 - **floci** é um programa que imita o S3 na sua máquina. Para o Spark, ele parece um S3 de verdade, mas tudo fica local e é gratuito.
 
 > **Pense assim:** o floci é um **simulador de voo** do S3. O piloto (o seu código) usa os mesmos comandos de um avião de verdade, mas ninguém sai do chão e nada custa dinheiro. Como num simulador, ao desligar tudo volta ao começo: o floci guarda os arquivos **na memória**, então, se o Docker reiniciar, o bucket fica vazio e é preciso rodar o gerador (Passo 3) de novo.
@@ -94,9 +96,9 @@ docker compose up -d floci
 - `docker compose build app` monta a imagem do serviço `app` seguindo o `Dockerfile`. Na primeira vez ele baixa Python, Java e Spark, por isso demora alguns minutos. Nas próximas vezes é rápido, porque o Docker reaproveita o que já baixou.
 - `docker compose up -d floci` liga o contêiner do S3 emulado. O `-d` significa "em segundo plano": o terminal fica livre e o floci continua rodando sozinho, até você pará-lo ou fechar o Docker.
 
-**O que você deve ver:** o `build` imprime muitas linhas de progresso e termina sem mensagem de erro. O `up -d floci` mostra o contêiner `floci-datalake-tracking` como iniciado (`Started` ou `Running`).
+**O que você deve ver:** o `build` imprime muitas linhas de progresso e termina sem mensagem de erro. O `up -d floci` mostra o contêiner `floci-solarvision` como iniciado (`Started` ou `Running`).
 
-O floci leva uns 20 segundos para ficar pronto. Antes do Passo 3, confira com `docker compose ps`: a coluna de status do `floci-datalake-tracking` precisa mostrar `(healthy)`. Enquanto aparecer `(health: starting)`, espere e rode de novo. Se o gerador rodar antes disso, ele falha.
+O floci leva uns 20 segundos para ficar pronto. Antes do Passo 3, confira com `docker compose ps`: a coluna de status do `floci-solarvision` precisa mostrar `(healthy)`. Enquanto aparecer `(health: starting)`, espere e rode de novo. Se o gerador rodar antes disso, ele falha.
 
 ## Passo 3 — Popular a landing do datalake
 
@@ -164,7 +166,7 @@ Se algo der errado, procure a mensagem na primeira coluna.
 | `[erro]` no `verificar_ambiente.py` lendo a landing | o gerador ainda não rodou, ou o Docker reiniciou e o floci perdeu os arquivos (ele guarda tudo na memória) | Passo 3 |
 | o gerador falha logo depois de `docker compose up -d floci` | o floci ainda não terminou de ligar | espere `docker compose ps` mostrar `(healthy)` e rode o gerador de novo |
 | um job ou workflow falha logo no começo com um erro longo do S3 (`listObjectsV2`, `AmazonS3Client`) | o bucket ainda não existe: o floci acabou de ligar (ou reiniciou) e o gerador ainda não rodou | Passo 3, depois rode de novo |
-| no explorador, a tela S3 avisa que o `datalake-tracking` está vazio ou ainda não existe | mesmo motivo: o floci começou vazio | Passo 3 e clique em **Recarregar** |
+| no explorador, a tela S3 avisa que o `solarvision-datalake` está vazio ou ainda não existe | mesmo motivo: o floci começou vazio | Passo 3 e clique em **Recarregar** |
 | a tela **Jobs ETL** está vazia, um job novo não aparece ou roda a versão antiga do código | os jobs rodam da cópia no bucket `glue-assets` do floci, e ela ainda não foi atualizada (ou o floci reiniciou e perdeu a cópia) | clique em **⟳ Sincronizar**, nas telas Jobs ETL ou Workflows |
 
 Dica: para ver quais contêineres estão ligados, use `docker compose ps`.
@@ -175,8 +177,8 @@ Quando terminar o projeto, estes comandos limpam tudo:
 
 ```bash
 docker compose down -v
-docker image rm datalake-tracking-app
+docker image rm solarvision-datalake-app
 ```
 
 - `docker compose down -v` desliga e apaga os contêineres do projeto. **Atenção:** os eventos e as camadas gravadas no floci se perdem.
-- `docker image rm datalake-tracking-app` apaga a imagem do `app` para liberar espaço em disco.
+- `docker image rm solarvision-datalake-app` apaga a imagem do `app` para liberar espaço em disco.
