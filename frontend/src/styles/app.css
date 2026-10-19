@@ -1800,3 +1800,62 @@ h1, h2, h3 {
         break-inside: avoid;
     }
 }
+
+/* Mapa de calor do datalake de uso (ADMIN): manchas por cima dos elementos data-heat, sem receber cliques. */
+.sv-icon-btn.is-ativo {
+    background: #b91c1c;
+    color: #fff;
+}
+
+.sv-calor {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    pointer-events: none;
+}
+
+.sv-calor-mancha {
+    position: fixed;
+    border-radius: 6px;
+    opacity: 0.45;
+    mix-blend-mode: multiply;
+}
+
+.sv-calor-painel {
+    position: fixed;
+    right: 1rem;
+    bottom: 4.5rem;
+    max-width: min(380px, calc(100vw - 2rem));
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    background: rgba(15, 20, 26, 0.88);
+    color: #fff;
+    font-size: 0.75rem;
+}
+
+.sv-calor-painel ol {
+    margin: 0.4rem 0;
+    padding-left: 1.1rem;
+}
+
+.sv-calor-cor {
+    display: inline-block;
+    width: 0.65rem;
+    height: 0.65rem;
+    margin-right: 0.35rem;
+    border-radius: 2px;
+    vertical-align: middle;
+}
+
+.sv-calor-aviso {
+    position: fixed;
+    right: 1rem;
+    top: 4.5rem;
+    z-index: 2000;
+    max-width: 360px;
+    padding: 0.6rem 0.9rem;
+    border-radius: 8px;
+    background: var(--sv-surface, #fff);
+    box-shadow: 0 6px 24px rgba(15, 20, 26, 0.18);
+    font-size: 0.8rem;
+}

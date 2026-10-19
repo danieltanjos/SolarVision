@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { applyTheme, getInitialTheme } from "../lib/theme";
 import { titleCase } from "../lib/text";
 import Alertas from "./Alertas";
+import MapaCalor from "./MapaCalor";
 import MobileNav from "./MobileNav";
 import Sidebar from "./Sidebar";
 import logo from "../../img/logo.png";
@@ -39,6 +40,7 @@ export default function AppShell() {
         logo={logo}
         isCollapsed={isSidebarCollapsed}
         onToggle={() => setIsSidebarCollapsed((current) => !current)}
+        isAdmin={user?.role === "ADMIN"}
       />
 
       <div className="sv-main">
@@ -49,6 +51,7 @@ export default function AppShell() {
           </Link>
 
           <div className="sv-header-actions">
+            {user?.role === "ADMIN" ? <MapaCalor /> : null}
             <Alertas />
 
             <button

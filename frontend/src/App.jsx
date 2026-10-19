@@ -13,6 +13,7 @@ const MonitoringPage = lazy(() => import("./pages/MonitoringPage"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
 const RelatorioPage = lazy(() => import("./pages/RelatorioPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const UsoPlataformaPage = lazy(() => import("./pages/UsoPlataformaPage"));
 
 function RouteFallback() {
   return (
@@ -100,6 +101,14 @@ export default function App() {
           element={(
             <LazyPage>
               <CadastroPage />
+            </LazyPage>
+          )}
+        />
+        <Route
+          path="uso"
+          element={(
+            <LazyPage>
+              <UsoPlataformaPage />
             </LazyPage>
           )}
         />

@@ -9,7 +9,10 @@ export const NAV_ITEMS = [
   { to: "/app/configuracoes", label: "Configurações", short: "Config", icon: "bi-gear" }
 ];
 
-export default function Sidebar({ logo, isCollapsed, onToggle }) {
+// Só para ADMIN: o BI do datalake de uso.
+export const NAV_ADMIN = { to: "/app/uso", label: "Uso da plataforma", short: "Uso", icon: "bi-bar-chart-line" };
+
+export default function Sidebar({ logo, isCollapsed, onToggle, isAdmin = false }) {
   return (
     <aside className="sv-sidebar d-none d-lg-flex">
       <Link to="/app/home" className="sv-brand">
@@ -18,7 +21,7 @@ export default function Sidebar({ logo, isCollapsed, onToggle }) {
       </Link>
 
       <nav className="sv-sidebar-nav" aria-label="Menu principal">
-        {NAV_ITEMS.map((item) => (
+        {(isAdmin ? [...NAV_ITEMS, NAV_ADMIN] : NAV_ITEMS).map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
