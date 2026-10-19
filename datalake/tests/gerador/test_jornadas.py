@@ -1,8 +1,6 @@
 from collections import defaultdict
-from datetime import timedelta
 
 from gerador import catalogo as cat
-from gerador.eventos import ler_iso
 
 
 def _por_pseudo(eventos):
@@ -14,9 +12,24 @@ def _por_pseudo(eventos):
     return grupos
 
 
+def _por_usuario(eventos):
+    grupos = defaultdict(list)
+    for e in eventos:
+        if e["user_id"]:
+            grupos[e["user_id"]].append(e)
+    for evs in grupos.values():
+        evs.sort(key=lambda e: e["event_ts"])
+    return grupos
+
+
 def test_todos_os_eventos_do_catalogo_aparecem(simulacao):
     eventos, _ = simulacao
     assert {e["event_name"] for e in eventos} == set(cat.EVENTOS)
+
+
+def test_catalogo_tem_20_eventos_e_o_funil_esta_nele():
+    assert len(cat.EVENTOS) == len(set(cat.EVENTOS)) == 20
+    assert set(cat.FUNIL_ATIVACAO) <= set(cat.EVENTOS)
 
 
 def test_toda_jornada_comeca_com_page_view(simulacao):
@@ -24,41 +37,80 @@ def test_toda_jornada_comeca_com_page_view(simulacao):
         assert evs[0]["event_name"] == "page_view"
 
 
-def test_frete_so_em_carrinho_premium(simulacao):
+def test_paginas_sao_as_telas_do_app(simulacao):
+    telas = set(cat.PAGINAS.values())
+    for e in simulacao[0]:
+        assert e["page"]["location"] in telas
+
+
+def test_user_id_so_aparece_a_partir_do_sign_up_ou_login(simulacao):
+    """Num navegador novo, o primeiro evento com user_id é sign_up ou login (ou a volta já logado)."""
+    casos = 0
+    for evs in _por_pseudo(simulacao[0]).values():
+        logados = [i for i, e in enumerate(evs) if e["user_id"]]
+        if not logados or logados[0] == 0:
+            continue
+        casos += 1
+        primeiro = evs[logados[0]]
+        assert primeiro["event_name"] in ("sign_up", "login")
+        assert all(e["user_id"] is None for e in evs[:logados[0]])
+    assert casos > 0
+
+
+def test_mesma_pessoa_aparece_em_mais_de_um_navegador(simulacao):
+    """O identity stitching (R9) tem o que costurar: user_id com dois user_pseudo_id."""
+    pseudos = defaultdict(set)
+    for e in simulacao[0]:
+        if e["user_id"]:
+            pseudos[e["user_id"]].add(e["user_pseudo_id"])
+    assert any(len(p) > 1 for p in pseudos.values())
+
+
+def test_placa_criada_cita_um_grupo_criado_antes_ou_antigo(simulacao):
+    grupos = {}
+    for evs in _por_usuario(simulacao[0]).values():
+        for e in evs:
+            if e["event_name"] == "create_group":
+                grupos[e["params"]["group_id"]] = e["event_ts"]
+            elif e["event_name"] == "create_panel":
+                g = e["params"]["group_id"]
+                assert g < cat.ID_INICIAL_NOVOS or grupos[g] <= e["event_ts"]
+                assert e["params"]["potencia_wp"] in cat.POTENCIAS_WP
+                assert e["items"][0]["item_id"] == f"placa-{e['params']['panel_id']}"
+
+
+def test_exclusoes_de_placas_antigas_existem_e_nao_tem_create(simulacao):
+    """Armadilha: usuários antigos excluem placas criadas antes do rastreamento (exclusão "órfã" legítima)."""
+    criadas = {e["params"]["panel_id"] for e in simulacao[0] if e["event_name"] == "create_panel"}
+    excluidas = [e["params"]["panel_id"] for e in simulacao[0] if e["event_name"] == "delete_panel"]
+    assert excluidas
+    assert all(p >= cat.ID_INICIAL_NOVOS for p in criadas)
+    assert any(p < cat.ID_INICIAL_NOVOS and p not in criadas for p in excluidas)
+
+
+def test_ativacao_e_maior_por_indicacao_que_pelo_instagram(simulacao):
     eventos, _ = simulacao
-    fretes = [e for e in eventos if e["event_name"] == "add_shipping_info"]
-    assert fretes
-    for e in fretes:
-        assert any(i["item_id"] == cat.PREMIUM for i in e["items"])
+    canal_do_cadastro, ativados = {}, set()
     for e in eventos:
-        if e["event_name"] == "purchase" and e["params"]["shipping"] > 0:
-            assert any(i["item_id"] == cat.PREMIUM for i in e["items"])
+        if e["event_name"] == "sign_up":
+            canal_do_cadastro[e["user_id"]] = (e["traffic"]["source"], e["traffic"]["medium"])
+        elif e["event_name"] == "create_panel":
+            ativados.add(e["user_id"])
+    n, a = defaultdict(int), defaultdict(int)
+    for uid, canal in canal_do_cadastro.items():
+        n[canal] += 1
+        a[canal] += uid in ativados
+    indicacao, insta = ("indicacao", "referral"), ("instagram", "social")
+    assert n[indicacao] and n[insta]
+    assert a[indicacao] / n[indicacao] > a[insta] / n[insta]
 
 
-def test_compra_tem_id_valor_e_imposto_coerentes(simulacao):
-    compras = [e for e in simulacao[0] if e["event_name"] == "purchase"]
-    assert compras
-    for e in compras:
-        p = e["params"]
-        assert p["transaction_id"].startswith("T-")
-        bruto = round(sum(i["price"] * i["quantity"] for i in e["items"]), 2)
-        esperado = round(bruto - round(bruto * 0.05, 2), 2) if p["payment_type"] == "pix" else bruto
-        assert p["value"] == esperado
-        assert p["tax"] == round(p["value"] * 0.05, 2)
-        assert p["currency"] == "BRL"
-        assert p["coupon"] == ("PIX5" if p["payment_type"] == "pix" else None)
-
-
-def test_reembolso_referencia_compra_de_1_a_7_dias_antes(simulacao):
-    eventos, _ = simulacao
-    compras = {e["params"]["transaction_id"]: e for e in eventos if e["event_name"] == "purchase"}
-    reembolsos = [e for e in eventos if e["event_name"] == "refund"]
-    assert reembolsos
-    for r in reembolsos:
-        c = compras[r["params"]["transaction_id"]]
-        assert timedelta(days=1) <= ler_iso(r["event_ts"]) - ler_iso(c["event_ts"]) <= timedelta(days=7)
-        assert r["params"]["value"] == c["params"]["value"]
-        assert r["items"] == c["items"]
+def test_funil_de_ativacao_afunila(simulacao):
+    pessoas = {nome: {e["user_id"] for e in simulacao[0] if e["event_name"] == nome}
+               for nome in cat.FUNIL_ATIVACAO}
+    novos = pessoas["sign_up"]
+    contagens = [len(pessoas[nome] & novos) for nome in cat.FUNIL_ATIVACAO]
+    assert contagens[0] > contagens[2] > contagens[-1] > 0
 
 
 def test_session_hint_muda_mais_vezes_que_as_sessoes(simulacao):
@@ -66,82 +118,22 @@ def test_session_hint_muda_mais_vezes_que_as_sessoes(simulacao):
     assert len({e["session_hint"] for e in eventos}) > sessoes
 
 
-def test_session_hint_distintos_passam_de_1_2_vezes_as_sessoes(simulacao):
-    eventos, sessoes = simulacao
-    assert len({e["session_hint"] for e in eventos}) >= 1.2 * sessoes
-
-
-def test_reembolso_e_mais_frequente_no_instagram_que_no_organico(simulacao):
-    eventos, _ = simulacao
-    compras = {e["params"]["transaction_id"]: e for e in eventos if e["event_name"] == "purchase"}
-    reembolsados = {e["params"]["transaction_id"] for e in eventos if e["event_name"] == "refund"}
-    n, r = defaultdict(int), defaultdict(int)
-    for tid, c in compras.items():
-        canal = (c["traffic"]["source"], c["traffic"]["medium"])
-        n[canal] += 1
-        r[canal] += tid in reembolsados
-    insta, organico = ("instagram", "paid_social"), ("google", "organic")
-    assert n[insta] and n[organico]
-    assert r[insta] / n[insta] > r[organico] / n[organico]
-    outros = [c for c in n if c != insta]
-    assert r[insta] / n[insta] > sum(r[c] for c in outros) / sum(n[c] for c in outros)
-
-
-def test_user_id_so_aparece_a_partir_do_sign_up(simulacao):
-    casos = 0
-    for evs in _por_pseudo(simulacao[0]).values():
-        logados = [i for i, e in enumerate(evs) if e["user_id"]]
-        if not logados:
-            continue
-        casos += 1
-        primeiro = logados[0]
-        assert evs[primeiro]["event_name"] == "sign_up"
-        assert all(e["user_id"] is None for e in evs[:primeiro])
-    assert casos > 0
-
-
-def test_login_so_depois_de_sign_up_do_mesmo_user_id(simulacao):
-    logins = 0
-    for evs in _por_pseudo(simulacao[0]).values():
-        for i, e in enumerate(evs):
-            if e["event_name"] == "login":
-                logins += 1
-                assert any(a["event_name"] == "sign_up" and a["user_id"] == e["user_id"] for a in evs[:i])
-    assert logins > 0
-
-
-def test_existe_lead_que_volta_outro_dia_e_compra(simulacao):
-    achou = False
-    for evs in _por_pseudo(simulacao[0]).values():
-        leads = [e for e in evs if e["event_name"] == "generate_lead"]
-        compras = [e for e in evs if e["event_name"] == "purchase"]
-        if leads and compras and compras[0]["event_ts"][:10] > leads[0]["event_ts"][:10]:
-            achou = True
-            break
-    assert achou
-
-
-def test_order_bump_e_troca_de_plano_geram_remove_from_cart(simulacao):
-    removidos = {e["items"][0]["item_category"] for e in simulacao[0] if e["event_name"] == "remove_from_cart"}
-    assert removidos == {"plano", "order_bump"}
-
-
-def test_marcos_de_scroll_e_video_sao_os_do_contrato(simulacao):
+def test_marcos_de_scroll_sao_os_do_contrato(simulacao):
     for e in simulacao[0]:
         if e["event_name"] == "scroll":
             assert e["params"]["percent_scrolled"] in (25, 50, 75, 90)
-        elif e["event_name"] == "video_start":
-            assert e["params"]["video_percent"] == 0
-        elif e["event_name"] == "video_progress":
-            assert e["params"]["video_percent"] in (10, 25, 50, 75)
-        elif e["event_name"] == "video_complete":
-            assert e["params"]["video_percent"] == 100
 
 
 def test_busca_sem_resultado_existe(simulacao):
     buscas = [e for e in simulacao[0] if e["event_name"] == "site_search"]
     assert any(e["params"]["search_results"] == 0 for e in buscas)
     assert any(e["params"]["search_results"] > 0 for e in buscas)
+
+
+def test_nenhum_dado_pessoal_nos_eventos(simulacao):
+    proibidas = {"email", "nome", "latitude", "longitude", "tarifa_kwh", "senha"}
+    for e in simulacao[0]:
+        assert not proibidas & set(e["params"])
 
 
 def test_simular_e_deterministico():
