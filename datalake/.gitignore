@@ -13,4 +13,6 @@ spark-warehouse/
 # ponto de montagem de frontend/public/bi (resultado do exportar_bi.py)
 app-bi/
 .explorador/
+# estado do coletor (último id levado do Supabase)
+.coletor/
 dist/

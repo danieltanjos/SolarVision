@@ -17,6 +17,10 @@ services:
     build: .
     image: solarvision-datalake-app
     working_dir: /projeto
+    # SUPABASE_URL e SUPABASE_SERVICE_KEY do coletor (coletor/coletar_supabase.py); opcional, fora do git
+    env_file:
+      - path: .env
+        required: false
     volumes:
       - .:/projeto
       # exportar_bi.py grava aqui o mapa de calor e o BI que o app lê (frontend/public/bi, fora do git)
