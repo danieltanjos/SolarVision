@@ -1,8 +1,11 @@
 """Job Bronze (R1, R2, R4): landing JSON -> bronze Parquet, append-only, com proveniência.
 
     docker compose run --rm app python pipeline/bronze.py
+
+Base: o bronze.py do projeto-modelo do professor; só o schema muda (contrato do SolarVision).
 """
 
+from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 from pyspark.sql.types import (ArrayType, DoubleType, LongType, MapType, StringType,
                                StructField, StructType, TimestampType)
@@ -14,8 +17,9 @@ def texto(*nomes):
     return StructType([StructField(n, StringType()) for n in nomes])
 
 
-# Schema explícito do contrato. params fica map<string,string>: as chaves variam por evento
-# e o Spark guarda número/booleano como texto; a Silver tipa (R6).
+# Schema explícito do contrato (docs/CONTRATO_EVENTO.md). params fica map<string,string>: as chaves
+# variam por evento e o Spark guarda número/booleano como texto; a Silver tipa (R6).
+# items são as placas envolvidas no evento.
 SCHEMA = StructType([
     StructField("event_id", StringType()),
     StructField("event_name", StringType()),
@@ -29,22 +33,29 @@ SCHEMA = StructType([
     StructField("params", MapType(StringType(), StringType())),
     StructField("items", ArrayType(StructType([
         StructField("item_id", StringType()),
-        StructField("item_name", StringType()),
         StructField("item_category", StringType()),
-        StructField("price", DoubleType()),
+        StructField("potencia_wp", DoubleType()),
         StructField("quantity", LongType()),
     ]))),
 ])
 
-spark = criar_sessao("bronze")
-exigir_camada(spark, glob_eventos("landing"), "python gerador/gerar_eventos.py")
 
-# event_name, year, month e day já vêm do caminho da landing (dia de coleta)
-bronze = (ler_eventos(spark, "landing", "json", schema=SCHEMA)
-          .withColumn("arquivo_origem", F.col("_metadata.file_path"))
-          .withColumn("ingerido_em", F.current_timestamp()))
+def com_proveniencia(landing: DataFrame) -> DataFrame:
+    """Arquivo de origem e instante da ingestão (R4). event_name, year, month e day já vêm do caminho."""
+    return (landing
+            .withColumn("arquivo_origem", F.col("_metadata.file_path"))
+            .withColumn("ingerido_em", F.current_timestamp()))
 
-gravar_eventos(bronze, "bronze", "append")
-titulo("Bronze")
-print(f"{bronze.count()} eventos gravados em bronze/")
-spark.stop()
+
+def main() -> None:
+    spark = criar_sessao("bronze")
+    exigir_camada(spark, glob_eventos("landing"), "python gerador/gerar_eventos.py")
+    bronze = com_proveniencia(ler_eventos(spark, "landing", "json", schema=SCHEMA))
+    gravar_eventos(bronze, "bronze", "append")
+    titulo("Bronze")
+    print(f"{bronze.count()} eventos gravados em bronze/")
+    spark.stop()
+
+
+if __name__ == "__main__":
+    main()
