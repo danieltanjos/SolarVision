@@ -1,6 +1,6 @@
-"""Simula o coletor de tracking da landing DadosPro e grava na landing do datalake.
+"""Simula o coletor de eventos de uso do SolarVision e grava na landing do datalake.
 
-    python gerador/gerar_eventos.py                       # 6000 visitantes, 14 dias, no S3 (floci)
+    python gerador/gerar_eventos.py                       # 3000 usuários, 28 dias, no S3 (floci)
     python gerador/gerar_eventos.py --seed 7 --sujeira 0.05
     python gerador/gerar_eventos.py --saida-local saida   # numa pasta, sem S3
 
@@ -28,7 +28,7 @@ from gerador.sujeira import aplicar_sujeira
 DATA_PADRAO = "2026-09-01"
 
 
-def gerar(seed: int = 42, dias: int = 14, visitantes: int = 6000, sujeira: float = 0.03,
+def gerar(seed: int = 42, dias: int = 28, visitantes: int = 3000, sujeira: float = 0.03,
           data_inicial: datetime = datetime(2026, 9, 1, tzinfo=timezone.utc)) -> tuple[dict[str, str], dict]:
     """Devolve ({chave: conteúdo JSONL}, resumo)."""
     eventos, sessoes, rng = simular(seed, dias, visitantes, data_inicial)
@@ -59,7 +59,7 @@ def gerar(seed: int = 42, dias: int = 14, visitantes: int = 6000, sujeira: float
 def imprimir_resumo(r: dict, destino: str) -> None:
     print(f"Destino:            {destino}")
     print(f"Período:            {r['periodo']}   seed: {r['seed']}")
-    print(f"visitantes          {r['visitantes']:>8}")
+    print(f"usuários            {r['visitantes']:>8}")
     print(f"sessões simuladas   {r['sessoes_simuladas']:>8}")
     print(f"eventos limpos      {r['eventos_limpos']:>8}")
     print(f"duplicatas (lote)   {r['duplicatas_reenvio']:>8}")
@@ -74,8 +74,8 @@ def imprimir_resumo(r: dict, destino: str) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--dias", type=int, default=14)
-    ap.add_argument("--visitantes", type=int, default=6000)
+    ap.add_argument("--dias", type=int, default=28)
+    ap.add_argument("--visitantes", type=int, default=3000, help="usuários simulados")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--sujeira", type=float, default=0.03, help="fração de eventos com defeito (0 a 0.5)")
     ap.add_argument("--data-inicial", default=DATA_PADRAO, help="AAAA-MM-DD, em UTC")

@@ -22,7 +22,7 @@ def test_seeds_diferentes_geram_conteudo_diferente():
 def test_resumo_bate_com_as_linhas_gravadas():
     arquivos, r = _gerar(5)
     linhas = sum(len(v.splitlines()) for v in arquivos.values())
-    inseridos = r["sujeira"]["refund_orfao"] + r["sujeira"]["evento_fora_catalogo"]
+    inseridos = r["sujeira"]["exclusao_orfa"] + r["sujeira"]["evento_fora_catalogo"]
     assert linhas == r["linhas_gravadas"] == r["eventos_limpos"] + inseridos + r["duplicatas_reenvio"]
     assert r["visitantes"] == 200
     assert r["arquivos"] == len(arquivos)

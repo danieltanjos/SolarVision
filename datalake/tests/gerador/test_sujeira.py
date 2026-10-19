@@ -3,7 +3,7 @@ import math
 import random
 from collections import Counter
 
-from gerador.sujeira import TIPOS, aplicar_sujeira
+from gerador.sujeira import ID_DA_ACAO, TIPOS, aplicar_sujeira
 
 
 def test_total_de_defeitos_respeita_a_fracao_e_todos_os_tipos_aparecem(simulacao):
@@ -13,47 +13,42 @@ def test_total_de_defeitos_respeita_a_fracao_e_todos_os_tipos_aparecem(simulacao
     assert set(contagem) == set(TIPOS)
     assert sum(contagem.values()) == round(n * 0.03)
     assert all(contagem[t] > 0 for t in TIPOS)
-    assert len(eventos) == n + contagem["refund_orfao"] + contagem["evento_fora_catalogo"]
+    assert len(eventos) == n + contagem["exclusao_orfa"] + contagem["evento_fora_catalogo"]
 
 
-def test_compras_sem_id_ficam_limitadas_a_5_por_cento(simulacao):
+def test_exclusoes_orfas_ficam_limitadas_a_5_por_cento_dos_cadastros_de_placa(simulacao):
     eventos = copy.deepcopy(simulacao[0])
-    compras = sum(1 for e in eventos if e["event_name"] == "purchase")
+    placas = sum(1 for e in eventos if e["event_name"] == "create_panel")
     contagem = aplicar_sujeira(random.Random(1), eventos, 0.03)
-    assert contagem["purchase_sem_id"] <= -(-compras * 5 // 100)
-
-
-def test_reembolsos_orfaos_ficam_limitados_a_5_por_cento_das_compras(simulacao):
-    eventos = copy.deepcopy(simulacao[0])
-    compras = sum(1 for e in eventos if e["event_name"] == "purchase")
-    contagem = aplicar_sujeira(random.Random(1), eventos, 0.03)
-    assert contagem["refund_orfao"] <= -(-compras * 5 // 100)
-    assert contagem["refund_orfao"] > 0
+    assert 0 < contagem["exclusao_orfa"] <= -(-placas * 5 // 100)
 
 
 def test_cada_defeito_e_visivel_no_dado(simulacao):
     eventos = copy.deepcopy(simulacao[0])
-    ids_compra = {e["params"]["transaction_id"] for e in eventos if e["event_name"] == "purchase"}
+    criadas = {e["params"]["panel_id"] for e in eventos if e["event_name"] == "create_panel"}
     aplicar_sujeira(random.Random(1), eventos, 0.03)
     assert any(e["event_ts"] is None for e in eventos)
     assert any(e["event_ts"] is not None and e["event_ts"] > "2030" for e in eventos)
-    assert any(e["event_name"] == "purchase" and e["params"]["transaction_id"] is None for e in eventos)
-    assert any(isinstance(e["params"].get("value"), float) and e["params"]["value"] < 0 for e in eventos)
-    assert any(e["params"].get("currency") == "USD" for e in eventos)
+    assert any(e["event_name"] in ID_DA_ACAO and e["params"][ID_DA_ACAO[e["event_name"]]] is None for e in eventos)
+    assert any(e["event_name"] == "import_readings" and e["params"]["rows"] < 0 for e in eventos)
+    assert any(e["event_name"] == "create_panel" and e["params"]["potencia_wp"] == 0 for e in eventos)
     assert any(e["event_name"] == "scroll" and e["params"]["percent_scrolled"] == 33 for e in eventos)
-    assert any(e["event_name"] == "add_to_wishlist" for e in eventos)
-    assert any(e["event_name"] == "refund" and e["params"]["transaction_id"] not in ids_compra for e in eventos)
+    assert any(e["event_name"] == "share_report" for e in eventos)
+    assert any(e["event_name"] == "delete_panel" and (e["params"]["panel_id"] or 0) >= 900000
+               and e["params"]["panel_id"] not in criadas for e in eventos)
 
 
 def test_um_evento_recebe_no_maximo_um_defeito(simulacao):
     eventos = copy.deepcopy(simulacao[0])
     aplicar_sujeira(random.Random(1), eventos, 0.03)
     for e in eventos:
+        p = e["params"]
         defeitos = [
             e["event_ts"] is None,
             e["event_ts"] is not None and e["event_ts"] > "2030",
-            e["params"].get("currency") == "USD",
-            isinstance(e["params"].get("value"), float) and e["params"]["value"] < 0,
+            e["event_name"] == "create_panel" and p.get("potencia_wp") == 0,
+            e["event_name"] == "import_readings" and (p.get("rows") or 0) < 0,
+            e["event_name"] in ID_DA_ACAO and p.get(ID_DA_ACAO[e["event_name"]]) is None,
         ]
         assert sum(defeitos) <= 1
 
