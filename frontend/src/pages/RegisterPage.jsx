@@ -114,13 +114,13 @@ export default function RegisterPage() {
 
           {error ? <div className="alert alert-danger">{error}</div> : null}
 
-          <button type="submit" className="btn btn-primary btn-lg w-100" disabled={loading}>
+          <button type="submit" className="btn btn-primary btn-lg w-100" disabled={loading} data-heat="btn-signup">
             {loading ? "Criando conta..." : "Registrar-se"}
           </button>
         </form>
 
         <p className="sv-auth-foot">
-          Já possui uma conta? <Link to="/login">Entrar</Link>
+          Já possui uma conta? <Link to="/login" data-link-id="cta_entrar" data-heat="cta-entrar">Entrar</Link>
         </p>
       </div>
     </div>

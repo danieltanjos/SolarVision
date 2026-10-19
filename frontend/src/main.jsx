@@ -8,9 +8,11 @@ import "./styles/app.css";
 import App from "./App";
 import { AuthProvider } from "./context/AuthContext";
 import { applyTheme, getInitialTheme } from "./lib/theme";
+import { iniciarRastreamento } from "./lib/tracking";
 
 // Antes do 1º render: evita piscar o tema claro e vale também para login/registro.
 applyTheme(getInitialTheme());
+iniciarRastreamento();
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

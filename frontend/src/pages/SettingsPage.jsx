@@ -3,6 +3,11 @@ import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { extractErrorMessage, salvarPerfil } from "../lib/api";
 import { titleCase } from "../lib/text";
+import { track } from "../lib/tracking";
+
+// Seção de Configurações -> o "setting" do evento change_settings (o element_id é cfg-<setting>).
+const SETTING = { perfil: "perfil", seguranca: "senha", aparencia: "tema", alertas: "alertas", limpeza: "limpeza", padroes: "cadastro" };
+const configurou = (secao) => track("change_settings", { setting: SETTING[secao], element_id: `cfg-${SETTING[secao]}` });
 
 const SECOES = [
   ["perfil", "Perfil"],
@@ -53,7 +58,7 @@ function Secao({ id, icone, titulo, descricao, status, onSubmit, botao = "Salvar
           {children}
           {status?.erro ? <div className="alert alert-danger mb-0">{status.erro}</div> : null}
           <div className="d-flex align-items-center gap-3">
-            <button type="submit" className="btn btn-primary" disabled={status?.salvando}>
+            <button type="submit" className="btn btn-primary" disabled={status?.salvando} data-heat={`cfg-${SETTING[id]}`}>
               {status?.salvando ? "Salvando..." : botao}
             </button>
             {status?.ok ? (
@@ -118,6 +123,7 @@ function Configuracoes({ user }) {
     setStatus((current) => ({ ...current, [secao]: { salvando: true } }));
     try {
       await acao();
+      configurou(secao);
       setStatus((current) => ({ ...current, [secao]: { ok: mensagem } }));
     } catch (err) {
       setStatus((current) => ({ ...current, [secao]: { erro: extractErrorMessage(err) } }));
@@ -247,7 +253,11 @@ function Configuracoes({ user }) {
                 type="button"
                 className={isDark === escuro ? "active" : ""}
                 aria-pressed={isDark === escuro}
-                onClick={() => setIsDark(escuro)}
+                data-heat="cfg-tema"
+                onClick={() => {
+                  if (escuro !== isDark) configurou("aparencia");
+                  setIsDark(escuro);
+                }}
               >
                 <i className={`bi ${icone} me-2`} />
                 {label}

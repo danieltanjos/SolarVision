@@ -82,7 +82,7 @@ export default function AppShell() {
                 </li>
                 <li><hr className="dropdown-divider" /></li>
                 <li>
-                  <button className="dropdown-item text-danger" onClick={handleLogout}>
+                  <button className="dropdown-item text-danger" onClick={handleLogout} data-heat="btn-sair">
                     <i className="bi bi-box-arrow-right me-2" />
                     Sair
                   </button>
@@ -98,7 +98,9 @@ export default function AppShell() {
 
         <footer className="sv-footer">
           © 2026 SolarVision · Dados meteorológicos:{" "}
-          <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo.com</a> (CC BY 4.0)
+          <a href="https://open-meteo.com/" target="_blank" rel="noreferrer" data-saida data-heat="saida-open-meteo">
+            Open-Meteo.com
+          </a> (CC BY 4.0)
         </footer>
       </div>
 

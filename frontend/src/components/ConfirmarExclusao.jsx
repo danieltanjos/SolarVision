@@ -32,14 +32,15 @@ export default function ConfirmarExclusao({ texto, onConfirmar, onCancelar }) {
   );
 }
 
-// Célula com os botões de editar e excluir de uma linha de tabela.
-export function AcoesLinha({ nome, onEditar, onExcluir }) {
+// Célula com os botões de editar e excluir de uma linha de tabela; heat = data-heat do excluir (mapa de calor).
+export function AcoesLinha({ nome, onEditar, onExcluir, heat }) {
   return (
     <td className="text-end text-nowrap">
       <button type="button" className="btn btn-sm btn-outline-secondary me-1" title="Editar" aria-label={`Editar ${nome}`} onClick={onEditar}>
         <i className="bi bi-pencil" />
       </button>
-      <button type="button" className="btn btn-sm btn-outline-danger" title="Excluir" aria-label={`Excluir ${nome}`} onClick={onExcluir}>
+      <button type="button" className="btn btn-sm btn-outline-danger" title="Excluir" aria-label={`Excluir ${nome}`} onClick={onExcluir}
+        data-heat={heat}>
         <i className="bi bi-trash" />
       </button>
     </td>

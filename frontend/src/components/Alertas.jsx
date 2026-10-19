@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { quando } from "../lib/alertas";
 import { listAlertas, marcarAlertasLidos } from "../lib/api";
+import { track } from "../lib/tracking";
 
 const ICONES = { LIMPEZA: "bi-droplet-half", PREVISAO_BAIXA: "bi-cloud-drizzle", DESEMPENHO: "bi-graph-down-arrow" };
 
@@ -30,6 +31,13 @@ export default function Alertas() {
         aria-expanded="false"
         aria-label={naoLidos ? `Alertas: ${naoLidos} não lidos` : "Alertas"}
         title="Alertas"
+        data-heat="btn-alertas"
+        onClick={(event) => {
+          // abriu o sino (o Bootstrap marca aria-expanded="true" antes do clique chegar aqui)
+          if (event.currentTarget.getAttribute("aria-expanded") === "true") {
+            track("view_alerts", { unread: naoLidos, element_id: "btn-alertas" });
+          }
+        }}
       >
         <i className={`bi ${naoLidos ? "bi-bell-fill" : "bi-bell"}`} />
         {naoLidos ? (

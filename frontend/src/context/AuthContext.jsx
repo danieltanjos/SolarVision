@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { getCurrentUser, supabase } from "../lib/api";
+import { definirUsuario, track } from "../lib/tracking";
 
 const AuthContext = createContext(null);
 
@@ -15,6 +16,11 @@ export function AuthProvider({ children }) {
   }, []);
 
   const userId = session?.user?.id;
+
+  // Eventos de uso levam o id pseudonimizado de quem está logado (inclusive ao reabrir com a sessão salva).
+  useEffect(() => {
+    definirUsuario(userId ?? null);
+  }, [userId]);
 
   useEffect(() => {
     if (!userId) {
@@ -35,8 +41,10 @@ export function AuthProvider({ children }) {
   }, [userId]);
 
   async function login({ email, senha }) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha });
     if (error) throw error;
+    definirUsuario(data.user.id); // o login já sai com o user_id
+    track("login", { method: "email", element_id: "btn-login" });
   }
 
   async function register({ nome, email, senha }) {
@@ -46,12 +54,17 @@ export function AuthProvider({ children }) {
       options: { data: { nome: nome.trim() } }
     });
     if (error) throw error;
+    if (data.user) {
+      definirUsuario(data.user.id);
+      track("sign_up", { method: "email", element_id: "btn-signup" });
+    }
     // Sem sessão = "Confirm email" ligado no Supabase Auth.
     if (!data.session) throw new Error("Conta criada. Confirme seu e-mail para entrar.");
   }
 
   // "local": só esta sessão; "global": todos os dispositivos (o padrão do supabase-js).
   function logout(scope = "local") {
+    track("logout", { scope, element_id: "btn-sair" });
     return supabase.auth.signOut({ scope });
   }
 

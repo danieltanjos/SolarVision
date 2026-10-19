@@ -90,8 +90,9 @@ export function deleteGroup(id) {
 }
 
 // Com local (no grupo), potência, inclinação e azimute, o pg_cron carrega 5 anos de clima em ~1 min.
+// Devolve { id } da placa criada.
 export function createPanel(placa) {
-  return unwrap(supabase.from("placas").insert(colunasPlaca(placa)));
+  return unwrap(supabase.from("placas").insert(colunasPlaca(placa)).select("id").single());
 }
 
 // Mudar inclinação, azimute ou grupo faz o pg_cron recarregar o clima da placa (trigger no banco).
@@ -103,8 +104,9 @@ export function deletePanel(id) {
   return unwrap(supabase.from("placas").delete().eq("id", id));
 }
 
+// Devolve { id } da limpeza registrada.
 export function createCleaning(limpeza) {
-  return unwrap(supabase.from("limpezas").insert(colunasLimpeza(limpeza)));
+  return unwrap(supabase.from("limpezas").insert(colunasLimpeza(limpeza)).select("id").single());
 }
 
 export function updateCleaning(id, limpeza) {

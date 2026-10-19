@@ -22,6 +22,8 @@ export default function Sidebar({ logo, isCollapsed, onToggle }) {
           <NavLink
             key={item.to}
             to={item.to}
+            data-link-id={`nav_${item.to.split("/").pop()}`}
+            data-heat={`nav-${item.to.split("/").pop()}`}
             title={isCollapsed ? item.label : undefined}
             className={({ isActive }) => `sv-nav-item ${isActive ? "active" : ""}`}
           >

@@ -2,6 +2,7 @@ import { Suspense, lazy } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import AppShell from "./components/AppShell";
 import ProtectedRoute from "./components/ProtectedRoute";
+import RastreadorDeTelas from "./components/RastreadorDeTelas";
 import { useAuth } from "./context/AuthContext";
 
 const CadastroPage = lazy(() => import("./pages/CadastroPage"));
@@ -32,6 +33,8 @@ function LandingRedirect() {
 
 export default function App() {
   return (
+    <>
+    <RastreadorDeTelas />
     <Routes>
       <Route path="/" element={<LandingRedirect />} />
       <Route
@@ -112,5 +115,6 @@ export default function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   );
 }
