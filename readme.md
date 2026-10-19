@@ -13,6 +13,7 @@ SolarVision/
 │   ├── migrations/        # schema, RLS, triggers, view e funções RPC, clima (Open-Meteo) e jobs pg_cron
 │   ├── seed/              # CSV de leituras do Fotovoltaica-UFSC (não é carregado; usado na validação do modelo)
 │   └── tests/             # teste de ponta a ponta (e2e.mjs)
+├── datalake/              # datalake de uso (BI): coletor, gerador, PySpark medalhão, Spark ML, explorador (Docker)
 └── docs/                  # documentação técnica
     └── validacao/         # validação do modelo de geração contra leituras reais
 ```
@@ -110,6 +111,20 @@ Os dois ambientes usam **o mesmo projeto Supabase** (`skfguameoeklepcjnqth`): QA
 Para reproduzir, em `frontend`: `npm ci`, `npm test` e `npm run build`. Ponta a ponta, na raiz: `node --env-file=frontend/.env.local --test supabase/tests/e2e.mjs`.
 
 **Histórico (versão Spring Boot/Docker):** a estratégia de qualidade, os 38 testes do backend (21 deles adicionados nessa etapa), os 6 roteiros funcionais integrados (`docs/testes-integrados.cjs`) e as evidências foram produzidos antes da migração e ficam como registro em [estratégia e casos de teste](docs/QUALIDADE-E-TESTES.md), [resultados](docs/evidencias/resultado.json) e no [PDF de qualidade e testes](SolarVision_Qualidade_e_Testes.pdf). Os testes Java saíram junto com o backend.
+
+## Datalake de uso (BI do produto)
+
+O app registra como é usado (`frontend/src/lib/tracking.js`, 20 eventos, com opt-out em Configurações) numa tabela que só aceita insert (`eventos_coletados`). Em `datalake/`, um datalake medalhão em PySpark (Docker, S3 emulado), baseado no projeto-modelo do professor, responde ao funil de ativação, ao engajamento, à aquisição e retenção e à previsão de ativação (Spark ML), e devolve o resultado ao app: página **Uso da plataforma** e **mapa de calor**, só para ADMIN.
+
+```bash
+cd datalake
+docker compose up -d floci
+docker compose run --rm app python gerador/gerar_eventos.py        # uso sintético
+docker compose run --rm app python coletor/coletar_supabase.py     # eventos reais (datalake/.env)
+docker compose run --rm app python pipeline/rodar_tudo.py --limpar # Bronze → Silver → Golds → frontend/public/bi
+```
+
+Detalhes: [datalake/README.md](datalake/README.md), [relatório](datalake/RELATORIO.md) e [viabilidade do MVP](docs/VIABILIDADE-MVP.md).
 
 ## Documentação técnica
 

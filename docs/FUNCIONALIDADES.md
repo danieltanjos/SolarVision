@@ -132,6 +132,15 @@ Todas as chamadas passam por `frontend/src/lib/api.js` e `frontend/src/context/A
 
 ---
 
+## 9. Rastreamento de uso e BI
+
+O app registra como é usado e um datalake transforma isso em indicadores (detalhes em [ARQUITETURA.md](ARQUITETURA.md#8-datalake-de-uso-bi-do-produto) e [datalake/](../datalake/README.md)):
+
+- **Eventos:** `page_view` de cada tela, marcos de scroll (25/50/75/90), cliques no menu, nos atalhos e na saída para o Open-Meteo, e os eventos das telas: `sign_up`, `login`, `logout`, `create_group`, `create_panel`, `delete_group`, `delete_panel`, `view_monitoring`, `select_content` (visão do gráfico, grupo ou placa), `site_search` (seletor de usinas), `view_cleaning_recommendation`, `import_readings`, `register_cleaning`, `generate_report`, `file_download` (Imprimir/PDF), `change_settings` e `view_alerts`. Cada clique leva o `element_id` (o `data-heat` do elemento).
+- **Privacidade:** sem e-mail, nome, coordenadas ou valores; `user_id` é um hash do id. **Configurações > Privacidade** desliga o rastreamento (fica na conta).
+- **Uso da plataforma** (`/app/uso`, só ADMIN): KPIs de sessões e ativação, funil de ativação, modelo de propensão (métricas e taxa real por faixa), aquisição por canal (ativação, retenção D1/D7/D14 e abandono), uso das telas, buscas sem resultado e perfis de uso (K-Means). **Exportar JSONL** baixa os eventos da sessão para o `gerador/importar_site.py` do datalake.
+- **Mapa de calor** (botão no cabeçalho, só ADMIN): pinta os elementos clicáveis da tela atual pela intensidade de cliques e mostra até onde as sessões rolam.
+
 ## Resumo do acesso aos dados
 
 "Dono" = o usuário em `grupos_solares.dono_id` do grupo da linha; um ADMIN tem o mesmo acesso em todos os grupos.
@@ -149,3 +158,4 @@ Todas as chamadas passam por `frontend/src/lib/api.js` e `frontend/src/context/A
 | view `geracao_horaria` | select (com a RLS de quem consulta) | Autenticado |
 | `rpc dashboard_metricas`, `dashboard_resumo`, `dashboard_financeiro`, `dashboard_historico`, `ranking_placas`, `recomendacoes_limpeza`, `acerto_previsao` | execute (somam só as placas visíveis) | Autenticado |
 | `/graphql/v1` | conforme as políticas acima | Autenticado |
+| `eventos_coletados` | só insert (ninguém lê pela API; o coletor do datalake lê com a service key) | Público e autenticado |

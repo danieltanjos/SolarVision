@@ -231,3 +231,38 @@ Todas sobre `geracao_horaria`, executáveis só por `authenticated` e filtradas 
 - **Integração externa dentro do banco.** O clima é buscado pelo próprio PostgreSQL (`http` + pg_cron), então continua tudo em migrations aplicadas pelo CI (ver [DECISOES-TECNICAS.md](DECISOES-TECNICAS.md#7-geração-estimada-pelo-clima-open-meteo)).
 - **Formato JSON preservado.** `lib/api.js` usa aliases para que as telas recebam os mesmos campos da API antiga.
 - **Um projeto Supabase para QA e produção.** Simplifica o ambiente acadêmico; o custo é dado compartilhado entre os ambientes (ver [DECISOES-TECNICAS.md](DECISOES-TECNICAS.md)).
+
+---
+
+## 8. Datalake de uso (BI do produto)
+
+Além do monitoramento solar, o SolarVision mede o próprio uso: o app gera eventos (20 no catálogo de [datalake/docs/CONTRATO_EVENTO.md](../datalake/docs/CONTRATO_EVENTO.md)), um datalake medalhão em PySpark os transforma em indicadores e um modelo de ML, e o resultado volta para o app. É a aplicação do projeto-modelo de engenharia de dados do professor ao nosso produto; viabilidade e impacto em [VIABILIDADE-MVP.md](VIABILIDADE-MVP.md).
+
+```mermaid
+flowchart LR
+    subgraph prod["Produção"]
+        spa["SPA<br/>lib/tracking.js"] -->|insert em lotes| tab[("eventos_coletados<br/>só insert")]
+    end
+    subgraph local["datalake/ (Docker, em lote)"]
+        col["coletor/coletar_supabase.py<br/>(service key)"] --> land[("landing<br/>floci S3")]
+        ger["gerador/ (sintético)"] --> land
+        land --> bronze["Bronze"] --> silver["Silver"] --> gold["15 Golds + Spark ML"]
+        gold --> exp["exportar_bi.py"]
+    end
+    tab --> col
+    exp -->|frontend/public/bi| painel["/app/uso e mapa de calor<br/>(ADMIN)"]
+```
+
+| Peça | Onde | Papel |
+|---|---|---|
+| Tracker | `frontend/src/lib/tracking.js`, `components/RastreadorDeTelas.jsx` | `page_view`, scroll, cliques com `data-heat` e os eventos de cada tela; `user_id` pseudonimizado (hash); fila enviada a cada 5 s; opt-out |
+| Tabela coletora | `supabase/migrations/20261020090000_coletor_eventos.sql` | `eventos_coletados` (jsonb): insert para `anon` e `authenticated`, sem select; `usuarios.rastreamento` (opt-out) |
+| Coletor | `datalake/coletor/coletar_supabase.py` | Lê os eventos novos com a service key e grava na landing no layout do contrato |
+| Datalake | `datalake/pipeline/` | Bronze (proveniência), Silver (dedup, validação com motivo, sessões, identity stitching, itens), Golds de funil, engajamento, aquisição/retenção, ML e mapa de calor |
+| Console | `datalake/explorador/` | S3, catálogo, jobs, workflows e SQL sobre a Gold (http://localhost:8501) |
+| Painel | `frontend/src/pages/UsoPlataformaPage.jsx`, `components/MapaCalor.jsx` | KPIs, funil, retenção por canal, uso das telas, buscas sem resultado, modelo e segmentos; manchas de calor sobre a tela |
+
+Decisões:
+- **O banco não valida o conteúdo do evento.** Só barra o que não é evento ou passa de 8 KB; validar é trabalho da Silver, que separa o inválido com motivo.
+- **Só agregados saem do datalake.** O `bi.js` não tem linha por pessoa nem por sessão, e os arquivos ficam fora do git.
+- **O pipeline não importa o gerador.** Os dois compartilham só o contrato, como no projeto-modelo.
