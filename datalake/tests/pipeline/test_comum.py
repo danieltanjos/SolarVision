@@ -59,4 +59,4 @@ def test_ler_eventos_aceita_schema_explicito_para_a_landing(spark, tmp_path, mon
 
 def test_arquivo_do_projeto_parte_da_pasta_atual(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    assert comum.arquivo_do_projeto("site/mapa_calor.js") == tmp_path / "site" / "mapa_calor.js"
+    assert comum.arquivo_do_projeto("app-bi/mapa_calor.js") == tmp_path / "app-bi" / "mapa_calor.js"

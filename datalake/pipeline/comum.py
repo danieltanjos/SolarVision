@@ -49,7 +49,7 @@ def criar_sessao(nome: str) -> SparkSession:
 
 
 def arquivo_do_projeto(relativo: str) -> Path:
-    """Um arquivo do repositório, fora do S3: arquivo_do_projeto("site/mapa_calor.js") -> /projeto/site/mapa_calor.js.
+    """Um arquivo do repositório, fora do S3: arquivo_do_projeto("app-bi/mapa_calor.js") -> /projeto/app-bi/mapa_calor.js.
 
     Os jobs rodam sempre com a pasta do projeto como diretório atual: no terminal (docker compose run)
     e no explorador, mesmo quando o script vem do floci e roda de uma pasta temporária. Por isso

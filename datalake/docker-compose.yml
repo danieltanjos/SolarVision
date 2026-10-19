@@ -19,6 +19,8 @@ services:
     working_dir: /projeto
     volumes:
       - .:/projeto
+      # exportar_bi.py grava aqui o mapa de calor e o BI que o app lê (frontend/public/bi, fora do git)
+      - ../frontend/public/bi:/projeto/app-bi
     environment: *ambiente-s3
     depends_on:
       - floci
@@ -28,6 +30,8 @@ services:
     working_dir: /projeto
     volumes:
       - .:/projeto
+      # exportar_bi.py grava aqui o mapa de calor e o BI que o app lê (frontend/public/bi, fora do git)
+      - ../frontend/public/bi:/projeto/app-bi
     environment:
       <<: *ambiente-s3
     command: streamlit run explorador/app.py --server.port 8501 --server.address 0.0.0.0 --server.headless true --browser.gatherUsageStats false --client.showErrorDetails none

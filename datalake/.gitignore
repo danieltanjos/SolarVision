@@ -10,7 +10,7 @@ spark-warehouse/
 *.zip
 .env
 .tmp/
-site/mapa_calor.js
-site/mapa_calor.js.tmp
+# ponto de montagem de frontend/public/bi (resultado do exportar_bi.py)
+app-bi/
 .explorador/
 dist/
