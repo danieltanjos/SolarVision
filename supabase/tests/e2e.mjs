@@ -194,6 +194,28 @@ test("erros chegam traduzidos", async () => {
   assert.equal(nomeEmBranco, "Dados inválidos.");
 });
 
+test("eventos de uso: o app só grava, ninguém lê pela API, e o opt-out fica no perfil", async () => {
+  // event_name fora do catálogo de propósito: se o coletor levar este evento, a Silver o rejeita.
+  const evento = { event_id: `e2e-${sufixo}`, event_name: "e2e_teste", event_ts: new Date().toISOString(), params: {}, items: [] };
+  await api.enviarEventos([evento]);
+  const lidos = await supabase.from("eventos_coletados").select("id").limit(1);
+  assert.ok(lidos.error || lidos.data.length === 0);
+
+  const anonimo = await fetch(`${process.env.VITE_SUPABASE_URL}/rest/v1/eventos_coletados`, {
+    method: "POST",
+    headers: { apikey: process.env.VITE_SUPABASE_PUBLISHABLE_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
+    body: JSON.stringify([{ evento: { ...evento, event_id: `e2e-anon-${sufixo}` } }])
+  });
+  assert.equal(anonimo.status, 201); // as telas de login e de criar conta enviam sem sessão
+  await assert.rejects(api.enviarEventos([{ event_name: "page_view" }])); // sem event_id: não é evento
+
+  const perfil = await api.getCurrentUser();
+  assert.equal(perfil.rastreamento, true);
+  await api.salvarPerfil(perfil.id, { rastreamento: false });
+  assert.equal((await api.getCurrentUser()).rastreamento, false);
+  await api.salvarPerfil(perfil.id, { rastreamento: true });
+});
+
 test("edita e exclui grupo, placa e limpeza", async () => {
   // Update parcial: só os campos informados mudam (o local continua).
   await api.updateGroup(grupo.id, { nome: ` Grupo E2E ${sufixo} editado `, tarifaKwh: 0.95, custoLimpeza: 30 });

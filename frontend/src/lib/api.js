@@ -125,7 +125,7 @@ export function getCurrentUser() {
       .select(
         "id, nome, email, role, criadoEm:criado_em, alertaLimpeza:alerta_limpeza, alertaPrevisao:alerta_previsao, " +
           "alertaDesempenho:alerta_desempenho, limiarLimpeza:limiar_limpeza, limiarPrevisao:limiar_previsao, " +
-          "tarifaPadrao:tarifa_padrao, custoLimpezaPadrao:custo_limpeza_padrao"
+          "tarifaPadrao:tarifa_padrao, custoLimpezaPadrao:custo_limpeza_padrao, rastreamento"
       )
       .single()
   );
@@ -141,9 +141,16 @@ export function salvarPerfil(id, perfil) {
     limiar_limpeza: perfil.limiarLimpeza,
     limiar_previsao: perfil.limiarPrevisao,
     tarifa_padrao: perfil.tarifaPadrao,
-    custo_limpeza_padrao: perfil.custoLimpezaPadrao
+    custo_limpeza_padrao: perfil.custoLimpezaPadrao,
+    rastreamento: perfil.rastreamento
   };
   return unwrap(supabase.from("usuarios").update(colunas).eq("id", id));
+}
+
+// Lote de eventos de uso (lib/tracking.js) para a tabela coletora; o datalake lê de lá. Só insert:
+// nem o próprio usuário lê os eventos pela API.
+export function enviarEventos(lote) {
+  return unwrap(supabase.from("eventos_coletados").insert(lote.map((evento) => ({ evento }))));
 }
 
 export function getDashboardSummary() {

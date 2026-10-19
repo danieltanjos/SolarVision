@@ -3,10 +3,13 @@ import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { extractErrorMessage, salvarPerfil } from "../lib/api";
 import { titleCase } from "../lib/text";
-import { track } from "../lib/tracking";
+import { definirRastreamento, track } from "../lib/tracking";
 
 // Seção de Configurações -> o "setting" do evento change_settings (o element_id é cfg-<setting>).
-const SETTING = { perfil: "perfil", seguranca: "senha", aparencia: "tema", alertas: "alertas", limpeza: "limpeza", padroes: "cadastro" };
+const SETTING = {
+  perfil: "perfil", seguranca: "senha", aparencia: "tema", alertas: "alertas", limpeza: "limpeza", padroes: "cadastro",
+  privacidade: "rastreamento"
+};
 const configurou = (secao) => track("change_settings", { setting: SETTING[secao], element_id: `cfg-${SETTING[secao]}` });
 
 const SECOES = [
@@ -15,7 +18,8 @@ const SECOES = [
   ["aparencia", "Aparência"],
   ["alertas", "Alertas"],
   ["limpeza", "Limpeza"],
-  ["padroes", "Padrões do cadastro"]
+  ["padroes", "Padrões do cadastro"],
+  ["privacidade", "Privacidade"]
 ];
 
 const PAPEIS = { USER: "Usuário", ADMIN: "Administrador" };
@@ -28,6 +32,7 @@ const formDoUsuario = (user) => ({
   alertaLimpeza: user.alertaLimpeza,
   alertaPrevisao: user.alertaPrevisao,
   alertaDesempenho: user.alertaDesempenho,
+  rastreamento: user.rastreamento !== false,
   limiarLimpeza: Math.round(user.limiarLimpeza * 100),
   limiarPrevisao: Math.round(user.limiarPrevisao * 100),
   tarifaPadrao: user.tarifaPadrao ?? "",
@@ -391,6 +396,26 @@ function Configuracoes({ user }) {
             </div>
           </div>
           <div className="form-text mt-0">Vazio: o grupo novo começa sem tarifa ou sem custo de limpeza.</div>
+        </Secao>
+
+        <Secao
+          id="privacidade"
+          icone="bi-shield-check"
+          titulo="Privacidade"
+          descricao="Dados de uso que ajudam a melhorar a plataforma."
+          status={status.privacidade}
+          onSubmit={() => {
+            definirRastreamento(form.rastreamento);
+            return salvar("privacidade", { rastreamento: form.rastreamento });
+          }}
+        >
+          <Interruptor
+            id="rastreamento"
+            label="Compartilhar dados de uso"
+            descricao="Telas abertas e ações (como cadastrar uma placa), sem nome, e-mail, localização ou valores."
+            checked={form.rastreamento}
+            onChange={campo("rastreamento")}
+          />
         </Secao>
       </div>
     </div>

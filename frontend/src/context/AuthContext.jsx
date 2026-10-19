@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { getCurrentUser, supabase } from "../lib/api";
-import { definirUsuario, track } from "../lib/tracking";
+import { definirRastreamento, definirUsuario, track } from "../lib/tracking";
 
 const AuthContext = createContext(null);
 
@@ -29,7 +29,11 @@ export function AuthProvider({ children }) {
     }
     let ativo = true; // ignora a resposta se o usuário mudar (logout/login) antes dela chegar
     getCurrentUser().then(
-      (perfil) => ativo && setUser(perfil),
+      (perfil) => {
+        if (!ativo) return;
+        definirRastreamento(perfil.rastreamento !== false); // a escolha da conta vale em qualquer navegador
+        setUser(perfil);
+      },
       (error) => {
         console.error("Não foi possível carregar o perfil do usuário.", error);
         if (ativo) setUser(null);
