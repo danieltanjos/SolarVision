@@ -84,3 +84,52 @@ def test_exclusao_so_vale_com_criacao_valida_e_a_cascata_rejeita(spark):
         "exclui-antiga": silver.EXCLUSAO_ORFA,
         "exclui-g-antigo": silver.EXCLUSAO_ORFA,
     }
+
+
+def _silver(spark, eventos):
+    validos, _ = silver.validar(silver.tipar(bronze(spark, eventos)))
+    return silver.sessionizar(silver.costurar_identidade(validos))
+
+
+def test_sessao_nova_depois_de_30_minutos_sem_evento_e_sem_usar_session_hint(spark):
+    df = _silver(spark, [
+        evento("a", "page_view", 0), evento("b", "scroll", 5, params={"percent_scrolled": 25}),
+        evento("c", "page_view", 50),                        # 45 min depois: sessão nova
+        evento("d", "page_view", 80),                        # exatamente 30 min: mesma sessão
+        evento("x", "page_view", 1, pseudo="anon-2"),        # outro navegador
+    ])
+    sessoes = {r.event_id: r.sessao_id for r in df.collect()}
+    assert sessoes["a"] == sessoes["b"] != sessoes["c"] == sessoes["d"]
+    assert sessoes["x"] not in {sessoes["a"], sessoes["c"]}
+
+
+def test_canal_e_dispositivo_da_sessao_sao_os_do_primeiro_evento(spark):
+    df = _silver(spark, [
+        evento("a", "page_view", 0, source="indicacao", medium="referral", device="mobile"),
+        evento("b", "page_view", 3, source="direct", medium="(none)", device="desktop"),
+    ])
+    assert {(r.canal_sessao, r.dispositivo_sessao) for r in df.collect()} == {("indicacao / referral", "mobile")}
+
+
+def test_stitching_leva_o_user_id_para_os_eventos_antes_do_login(spark):
+    df = _silver(spark, [
+        evento("a", "page_view", 0, tela="/login"),
+        evento("b", "login", 1, user_id="u-1", params={"method": "email"}),
+        evento("c", "page_view", 2, user_id="u-1"),
+        evento("x", "page_view", 0, pseudo="anon-2"),        # nunca logou
+    ])
+    pessoa = {r.event_id: (r.user_id, r.user_id_resolvido, r.pessoa) for r in df.collect()}
+    assert pessoa["a"] == (None, "u-1", "u-1")
+    assert pessoa["c"] == ("u-1", "u-1", "u-1")
+    assert pessoa["x"] == (None, None, "anon-2")
+
+
+def test_itens_explodem_uma_linha_por_placa(spark):
+    placas = [{"item_id": "placa-10", "item_category": "placa", "potencia_wp": 550.0, "quantity": 1},
+              {"item_id": "placa-11", "item_category": "placa", "potencia_wp": 400.0, "quantity": 1}]
+    df = _silver(spark, [evento("a", "generate_report", tela="/app/relatorio",
+                                params={"report_month": "2026-08", "scope": "todas"}, items=placas),
+                         evento("b", "page_view")])
+    itens = silver.explodir_itens(df).collect()
+    assert sorted((r.event_id, r.item_id, r.potencia_wp) for r in itens) == [
+        ("a", "placa-10", 550.0), ("a", "placa-11", 400.0)]

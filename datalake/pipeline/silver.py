@@ -1,10 +1,11 @@
-"""Job Silver (R5 a R10): bronze -> silver limpa, sem duplicatas e com colunas tipadas.
+"""Job Silver (R5 a R10): bronze -> silver limpa, sem duplicatas, tipada, com sessões e identidades.
 
     docker compose run --rm app python pipeline/silver.py
 
 Grava:
     silver/event_name=…/year=…/month=…/day=…   eventos válidos
     silver/eventos_rejeitados/                 eventos inválidos, com o motivo (R7)
+    silver/itens/year=…/month=…/day=…          uma linha por placa por evento (R10)
 """
 
 from pyspark.sql import DataFrame, Window
@@ -25,6 +26,7 @@ CATALOGO = (
 ACOES_DE_GRUPO = ("create_group", "delete_group")
 ACOES_DE_PLACA = ("create_panel", "import_readings", "register_cleaning", "delete_panel")
 MARCOS_SCROLL = (25, 50, 75, 90)
+PAUSA_MAXIMA = 30 * 60          # segundos sem evento que abrem uma sessão nova (R8)
 
 FORA_DO_CATALOGO = "evento fora do catálogo"
 TIMESTAMP_INVALIDO = "timestamp ausente ou futuro"
@@ -133,20 +135,67 @@ def validar(eventos: DataFrame) -> tuple[DataFrame, DataFrame]:
     return validos, rejeitados
 
 
+def costurar_identidade(eventos: DataFrame) -> DataFrame:
+    """Identity stitching (R9): todo evento de um user_pseudo_id que em algum momento teve user_id
+    recebe esse user_id (o primeiro que apareceu), inclusive os eventos anteriores ao login.
+    `pessoa` é o user_id resolvido ou, sem ele, o próprio user_pseudo_id (enunciado 5.4.2)."""
+    navegador = (Window.partitionBy("user_pseudo_id").orderBy("event_ts", "event_id")
+                 .rowsBetween(Window.unboundedPreceding, Window.unboundedFollowing))
+    return (eventos
+            .withColumn("user_id_resolvido",
+                        F.coalesce("user_id", F.first("user_id", ignorenulls=True).over(navegador)))
+            .withColumn("pessoa", F.coalesce("user_id_resolvido", "user_pseudo_id")))
+
+
+def sessionizar(eventos: DataFrame) -> DataFrame:
+    """Sessões próprias (R8): nova sessão quando o mesmo user_pseudo_id fica mais de 30 min sem evento.
+    session_hint não é usado. Canal e dispositivo da sessão são os do primeiro evento (5.4.3)."""
+    ordem = Window.partitionBy("user_pseudo_id").orderBy("event_ts", "event_id")
+    anterior = F.lag("event_ts").over(ordem)
+    nova = anterior.isNull() | ((F.unix_seconds("event_ts") - F.unix_seconds(anterior)) > PAUSA_MAXIMA)
+    numerado = (eventos.withColumn("_nova", nova.cast("int"))
+                .withColumn("_n", F.sum("_nova").over(ordem.rowsBetween(Window.unboundedPreceding, 0))))
+    com_id = numerado.withColumn("sessao_id", F.concat_ws("#", "user_pseudo_id", F.col("_n").cast("string")))
+    sessao = (Window.partitionBy("sessao_id").orderBy("event_ts", "event_id")
+              .rowsBetween(Window.unboundedPreceding, Window.unboundedFollowing))
+    return (com_id
+            .withColumn("sessao_inicio", F.first("event_ts").over(sessao))
+            .withColumn("canal_sessao", F.first("canal").over(sessao))
+            .withColumn("dispositivo_sessao", F.first("device_category").over(sessao))
+            .drop("_nova", "_n"))
+
+
+def explodir_itens(eventos: DataFrame) -> DataFrame:
+    """Uma linha por placa por evento (R10)."""
+    return (eventos.select("event_id", "event_name", "event_ts", "sessao_id", "pessoa", "pagina",
+                           "year", "month", "day", F.explode("items").alias("item"))
+            .select("event_id", "event_name", "event_ts", "sessao_id", "pessoa", "pagina",
+                    F.col("item.item_id").alias("item_id"),
+                    F.col("item.item_category").alias("item_category"),
+                    F.col("item.potencia_wp").alias("potencia_wp"),
+                    F.col("item.quantity").alias("quantity"),
+                    "year", "month", "day"))
+
+
 def main() -> None:
     spark = criar_sessao("silver")
     exigir_camada(spark, glob_eventos("bronze"), "python pipeline/bronze.py")
     bronze = ler_eventos(spark, "bronze")
     unicos = deduplicar(bronze).cache()
     validos, rejeitados = validar(tipar(unicos))
+    eventos = sessionizar(costurar_identidade(validos)).cache()
 
-    gravar_eventos(validos, "silver", "overwrite")
+    gravar_eventos(eventos, "silver", "overwrite")
     rejeitados.write.mode("overwrite").parquet(caminho("silver/eventos_rejeitados"))
+    (explodir_itens(eventos).write.mode("overwrite").option("partitionOverwriteMode", "dynamic")
+     .partitionBy("year", "month", "day").parquet(caminho("silver/itens")))
 
     titulo("Silver")
     total, n_unicos = bronze.count(), unicos.count()
     print(f"bronze: {total} linhas · duplicatas descartadas: {total - n_unicos}")
-    print(f"silver: {validos.count()} eventos válidos")
+    print(f"silver: {eventos.count()} eventos válidos em "
+          f"{eventos.select('sessao_id').distinct().count()} sessões de "
+          f"{eventos.select('pessoa').distinct().count()} pessoas")
     print("rejeitados por motivo:")
     for linha in rejeitados.groupBy("motivo_rejeicao").count().orderBy(F.desc("count")).collect():
         print(f"  {linha.motivo_rejeicao:<30}{linha['count']:>8}")
