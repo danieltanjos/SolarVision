@@ -46,3 +46,24 @@ def bronze(spark, eventos: list[dict], arquivo: str = "s3a://b/landing/x.jsonl",
     return (df.withColumn("arquivo_origem", F.lit(arquivo))
               .withColumn("ingerido_em", F.lit(ingerido_em).cast("timestamp"))
               .withColumn("year", F.lit("2026")).withColumn("month", F.lit("09")).withColumn("day", F.lit("01")))
+
+
+def silver_de(spark, eventos: list[dict]):
+    """Os eventos válidos da Silver (tipados, com pessoa e sessão), como os jobs Gold leem."""
+    import silver
+
+    validos, _ = silver.validar(silver.tipar(bronze(spark, eventos)))
+    return silver.sessionizar(silver.costurar_identidade(validos))
+
+
+def jornada(pseudo: str, inicio: float, passos: list, **contexto) -> list[dict]:
+    """Eventos de um navegador: passos = [(nome, params)] a cada 1 min a partir de `inicio` (minutos).
+    O user_id passa a valer a partir do primeiro sign_up/login, como no app."""
+    eventos, user_id = [], None
+    for i, (nome, params) in enumerate(passos):
+        if nome in ("sign_up", "login"):
+            user_id = contexto.pop("user_id", None) or f"u-{pseudo}"
+        tela = (params or {}).pop("_tela", "/app/home") if params else "/app/home"
+        eventos.append(evento(f"{pseudo}-{inicio}-{i}", nome, inicio + i, pseudo=pseudo, user_id=user_id,
+                              tela=tela, params=params, **contexto))
+    return eventos
