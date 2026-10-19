@@ -58,11 +58,12 @@ def silver_de(spark, eventos: list[dict]):
 
 def jornada(pseudo: str, inicio: float, passos: list, **contexto) -> list[dict]:
     """Eventos de um navegador: passos = [(nome, params)] a cada 1 min a partir de `inicio` (minutos).
-    O user_id passa a valer a partir do primeiro sign_up/login, como no app."""
-    eventos, user_id = [], None
+    O user_id passa a valer a partir do primeiro sign_up/login, como no app; com `user_id=...` a
+    jornada já começa logada (sessão salva)."""
+    eventos, user_id = [], contexto.pop("user_id", None)
     for i, (nome, params) in enumerate(passos):
         if nome in ("sign_up", "login"):
-            user_id = contexto.pop("user_id", None) or f"u-{pseudo}"
+            user_id = user_id or f"u-{pseudo}"
         tela = (params or {}).pop("_tela", "/app/home") if params else "/app/home"
         eventos.append(evento(f"{pseudo}-{inicio}-{i}", nome, inicio + i, pseudo=pseudo, user_id=user_id,
                               tela=tela, params=params, **contexto))

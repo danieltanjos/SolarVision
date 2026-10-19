@@ -18,6 +18,7 @@ def spark():
         .appName("testes-comum")
         .config("spark.ui.enabled", "false")
         .config("spark.sql.shuffle.partitions", "2")
+        .config("spark.sql.session.timeZone", "UTC")                 # como a sessão dos jobs (comum.py)
         .config("spark.sql.sources.partitionColumnTypeInference.enabled", "false")
         .getOrCreate()
     )
