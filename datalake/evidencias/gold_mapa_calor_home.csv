@@ -1,0 +1,8 @@
+pagina,element_id,cliques,sessoes,sessoes_na_pagina,taxa_clique,intensidade
+/app/home,nav-monitoramento,2998,2998,5267,0.5692,1.0
+/app/home,nav-cadastro,942,942,5267,0.1788,0.3142
+/app/home,btn-alertas,868,868,5267,0.1648,0.2895
+/app/home,nav-relatorio,162,162,5267,0.0308,0.054
+/app/home,btn-sair,113,113,5267,0.0215,0.0377
+/app/home,nav-limpeza,93,93,5267,0.0177,0.031
+/app/home,nav-configuracoes,63,63,5267,0.012,0.021

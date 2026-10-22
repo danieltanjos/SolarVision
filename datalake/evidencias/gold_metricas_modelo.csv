@@ -1,0 +1,2 @@
+modelo,auc,f1,precisao,recall,sessoes_treino,sessoes_teste,positivos_teste
+regressao_logistica,0.9718,0.8132,0.6935,0.9829,5077,1373,175
