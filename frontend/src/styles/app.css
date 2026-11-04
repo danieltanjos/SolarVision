@@ -674,6 +674,11 @@ h1, h2, h3 {
     color: var(--sv-warning);
 }
 
+.sv-badge-danger {
+    background: rgba(196, 66, 60, 0.13);
+    color: var(--sv-danger);
+}
+
 .sv-badge-muted {
     background: rgba(107, 125, 142, 0.14);
     color: var(--sv-muted);

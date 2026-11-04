@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import Chart from "react-apexcharts";
 import { useAuth } from "../context/AuthContext";
-import { TODOS, buscasSemResultado, carregarBi, duracao, funilTotal, pct, retencaoPorCanal } from "../lib/bi";
+import {
+  CORES_SERIES, TODOS, atividadeAtual, buscasSemResultado, carregarBi, duracao, funilComparado, horas, pct,
+  recursosPorAdocao, retencaoPorCanal, situacaoQualidade
+} from "../lib/bi";
 import { eventosEmJsonl } from "../lib/tracking";
 
 const ETAPAS = {
@@ -61,6 +64,52 @@ function barras({ categorias, valores, formato, cor = "#3b7197", horizontal = fa
   };
 }
 
+const EIXOS = { borderColor: "rgba(127, 145, 163, 0.18)", strokeDashArray: 4 };
+
+// Duas séries do funil (qualquer momento × na ordem) em barras horizontais agrupadas, com legenda.
+function funilDuplo(linhas, topo) {
+  const formato = (valor) => `${numero(valor)} (${pct(valor / topo)})`;
+  return {
+    series: [
+      { name: "Em qualquer momento", data: linhas.map((linha) => linha.qualquer_momento) },
+      { name: "Na ordem do funil", data: linhas.map((linha) => linha.na_ordem) }
+    ],
+    options: {
+      chart: { type: "bar", toolbar: { show: false }, fontFamily: "inherit", background: "transparent", animations: { enabled: false } },
+      colors: CORES_SERIES.slice(0, 2),
+      plotOptions: { bar: { horizontal: true, borderRadius: 3, borderRadiusApplication: "end", barHeight: "76%" } },
+      stroke: { show: true, width: 2, colors: ["transparent"] },
+      dataLabels: { enabled: false },
+      xaxis: { categories: linhas.map((linha) => ETAPAS[linha.etapa] ?? linha.etapa), labels: { formatter: (v) => numero(v) } },
+      grid: EIXOS,
+      tooltip: { shared: true, intersect: false, y: { formatter: formato } },
+      legend: { show: true, position: "top", horizontalAlign: "left" }
+    }
+  };
+}
+
+// Pessoas ativas no dia (DAU) e nas janelas móveis de 7 (WAU) e 28 dias (MAU): mesma unidade, um eixo.
+function atividadeLinhas(dias) {
+  return {
+    series: [
+      { name: "No dia (DAU)", data: dias.map((dia) => dia.dau) },
+      { name: "Últimos 7 dias (WAU)", data: dias.map((dia) => dia.wau) },
+      { name: "Últimos 28 dias (MAU)", data: dias.map((dia) => dia.mau) }
+    ],
+    options: {
+      chart: { type: "line", toolbar: { show: false }, zoom: { enabled: false }, fontFamily: "inherit", background: "transparent", animations: { enabled: false } },
+      colors: CORES_SERIES,
+      stroke: { width: 2, curve: "straight" },
+      markers: { size: 0, hover: { size: 5 } },
+      xaxis: { categories: dias.map((dia) => dia.data.slice(5).split("-").reverse().join("/")), tickAmount: 7, labels: { rotate: 0 } },
+      yaxis: { labels: { formatter: (v) => numero(v) } },
+      grid: EIXOS,
+      tooltip: { shared: true, intersect: false, y: { formatter: (v) => `${numero(v)} pessoas` } },
+      legend: { show: true, position: "top", horizontalAlign: "left" }
+    }
+  };
+}
+
 // Exporta os eventos desta sessão no formato da landing (gerador/importar_site.py do datalake).
 function exportarJsonl() {
   const blob = new Blob([eventosEmJsonl()], { type: "application/x-ndjson" });
@@ -91,17 +140,16 @@ export default function UsoPlataformaPage() {
     );
   }
 
-  const funil = funilTotal(bi);
-  const topo = funil[0]?.pessoas || 1;
+  const funil = funilComparado(bi);
+  const topo = funil[0]?.qualquer_momento || 1;
+  const vazamento = funil.find((linha) => linha.maior_vazamento);
+  const atual = atividadeAtual(bi);
+  const qualidade = situacaoQualidade(bi);
+  const atividade = atividadeLinhas(bi?.atividade_diaria ?? []);
   const modelo = bi?.metricas_modelo?.[0];
   const ativacaoPorCanal = (bi?.cadastro_para_ativacao ?? []).filter((linha) => linha.canal !== TODOS);
   const abandono = Object.fromEntries((bi?.taxa_abandono ?? []).map((linha) => [linha.canal, linha]));
-  const funilGrafico = barras({
-    categorias: funil.map((linha) => ETAPAS[linha.etapa] ?? linha.etapa),
-    valores: funil.map((linha) => linha.pessoas),
-    formato: (valor) => `${numero(valor)} (${pct(valor / topo)})`,
-    horizontal: true
-  });
+  const funilGrafico = funilDuplo(funil, topo);
   const faixas = bi?.propensao_por_faixa ?? [];
   const propensaoGrafico = barras({
     categorias: faixas.map((linha) => `${Math.round(linha.faixa * 100)}–${Math.round(linha.faixa * 100) + 10}%`),
@@ -150,11 +198,23 @@ export default function UsoPlataformaPage() {
             <Kpi titulo="Ativação" icone="bi-lightning-charge" valor={pct(bi.kpis.taxa_ativacao)}>
               {numero(bi.kpis.ativados)} cadastraram uma placa · mediana de {numero(bi.kpis.mediana_dias_ativar, 1)} dias
             </Kpi>
+            <Kpi titulo="Aderência" icone="bi-arrow-repeat" valor={pct(atual?.aderencia_dau_mau)}>
+              DAU/MAU · {numero(atual?.dau)} no dia de {numero(atual?.mau)} no mês
+            </Kpi>
           </div>
 
           <div className="sv-relatorio-linha sv-relatorio-graficos">
-            <Cartao titulo="Funil de ativação" descricao="Pessoas que criaram a conta e chegaram a cada etapa (% do topo).">
-              <Chart options={funilGrafico.options} series={funilGrafico.series} type="bar" height={300} />
+            <Cartao titulo="Funil de ativação"
+              descricao="Pessoas que criaram a conta e chegaram a cada etapa: em qualquer momento ou passando pelas anteriores, na ordem.">
+              <Chart options={funilGrafico.options} series={funilGrafico.series} type="bar" height={340} />
+              {vazamento ? (
+                <p className="sv-muted mb-0 mt-2">
+                  <i className="bi bi-funnel me-1" />
+                  Maior vazamento: <strong>{ETAPAS[vazamento.etapa] ?? vazamento.etapa}</strong>.
+                  {" "}{numero(vazamento.perdidas)} pessoas não seguiram da etapa anterior
+                  {vazamento.mediana_horas != null ? `; quem seguiu levou ${horas(vazamento.mediana_horas)} (mediana)` : ""}.
+                </p>
+              ) : null}
             </Cartao>
             <Cartao titulo="Modelo de propensão" descricao="Regressão logística (Spark ML): chance de a sessão ativar.">
               {modelo ? (
@@ -167,6 +227,31 @@ export default function UsoPlataformaPage() {
               ) : null}
               <small className="sv-muted d-block mb-2">Taxa real de ativação por faixa de probabilidade (teste)</small>
               <Chart options={propensaoGrafico.options} series={propensaoGrafico.series} type="bar" height={210} />
+            </Cartao>
+          </div>
+
+          <div className="sv-relatorio-linha sv-relatorio-graficos">
+            <Cartao titulo="Pessoas ativas" descricao="Quem usou o SolarVision no dia, nos últimos 7 e nos últimos 28 dias.">
+              <Chart options={atividade.options} series={atividade.series} type="line" height={260} />
+              {atual && !atual.janela_completa ? (
+                <small className="sv-muted">O período ainda não fecha 28 dias: o MAU está subestimado.</small>
+              ) : null}
+            </Cartao>
+            <Cartao titulo="Adoção dos recursos" descricao="Das pessoas ativas, quantas usaram cada recurso e com que frequência.">
+              <ul className="sv-itens">
+                {recursosPorAdocao(bi).map((recurso) => (
+                  <li key={recurso.evento}>
+                    <div>
+                      <span>{recurso.recurso}</span>
+                      <small>
+                        {numero(recurso.pessoas_que_usaram)} pessoas · {numero(recurso.usos_por_pessoa, 1)} usos e
+                        {" "}{numero(recurso.dias_de_uso_por_pessoa, 1)} dias por pessoa
+                      </small>
+                    </div>
+                    <strong>{pct(recurso.taxa_adocao)}</strong>
+                  </li>
+                ))}
+              </ul>
             </Cartao>
           </div>
 
@@ -219,6 +304,25 @@ export default function UsoPlataformaPage() {
                   </li>
                 ))}
               </ul>
+            </Cartao>
+            <Cartao titulo="Qualidade do dado"
+              descricao={qualidade ? `Portão do workflow · ${dataHora(qualidade.executado_em)}` : "O portão de qualidade ainda não rodou."}>
+              {qualidade ? (
+                <ul className="sv-itens">
+                  {qualidade.regras.map((regra) => (
+                    <li key={regra.regra}>
+                      <div><span>{regra.regra}</span><small>valor {numero(regra.valor, 4)} · limite {regra.limite}</small></div>
+                      {regra.ok ? (
+                        <span className="sv-badge sv-badge-success">ok</span>
+                      ) : regra.bloqueante ? (
+                        <span className="sv-badge sv-badge-danger">bloqueou</span>
+                      ) : (
+                        <span className="sv-badge sv-badge-warning">alerta</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </Cartao>
             <Cartao titulo="Perfis de uso" descricao={`K-Means (K = ${bi.segmentos?.[0]?.k ?? "—"}, silhueta ${numero(bi.segmentos?.[0]?.silhueta, 2)}).`}>
               <ul className="sv-itens">
