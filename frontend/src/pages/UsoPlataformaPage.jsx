@@ -187,7 +187,7 @@ export default function UsoPlataformaPage() {
         </section>
       ) : (
         <>
-          <div className="sv-kpis">
+          <div className="sv-kpis sv-kpis-cinco">
             <Kpi titulo="Sessões" icone="bi-window-stack" valor={numero(bi.kpis.sessoes)}>
               {numero(bi.kpis.pessoas)} pessoas · {numero(bi.kpis.telas_por_sessao, 1)} telas por sessão
             </Kpi>
@@ -232,7 +232,7 @@ export default function UsoPlataformaPage() {
 
           <div className="sv-relatorio-linha sv-relatorio-graficos">
             <Cartao titulo="Pessoas ativas" descricao="Quem usou o SolarVision no dia, nos últimos 7 e nos últimos 28 dias (só dias já fechados).">
-              <Chart options={atividade.options} series={atividade.series} type="line" height={260} />
+              <Chart options={atividade.options} series={atividade.series} type="line" height={340} />
               {atual && !atual.janela_completa ? (
                 <small className="sv-muted">O período ainda não fecha 28 dias: o MAU está subestimado.</small>
               ) : null}

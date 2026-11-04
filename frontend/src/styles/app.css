@@ -1392,6 +1392,11 @@ h1, h2, h3 {
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
 }
 
+/* cinco KPIs numa linha no desktop (Uso da plataforma) */
+.sv-kpis-cinco {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+}
+
 .sv-relatorio-graficos {
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
 }
