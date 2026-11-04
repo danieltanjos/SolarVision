@@ -76,11 +76,12 @@ flowchart LR
     imp --> landing
     subgraph DL["Datalake (PySpark, s3a://)"]
         landing --> bronze["Bronze"] --> silver["Silver"]
-        silver --> g1["Gold funil"]
-        silver --> g2["Gold engajamento"]
-        silver --> g3["Gold aquisição e retenção"]
-        silver --> g4["Gold ML"]
-        silver --> g5["Gold mapa de calor"]
+        silver --> q{"portão de<br/>qualidade"}
+        q --> g1["Gold funil"]
+        q --> g2["Gold engajamento"]
+        q --> g3["Gold aquisição e retenção"]
+        q --> g4["Gold ML"]
+        q --> g5["Gold mapa de calor"]
     end
     g1 & g2 & g3 & g4 & g5 --> exp["exportar_bi.py"]
     exp --> bi["frontend/public/bi/*.js"]
@@ -94,8 +95,8 @@ Todas as camadas ficam no bucket `solarvision-datalake`, em Parquet: `landing/`,
 ### 5.1 Arquitetura (iguais ao projeto-modelo)
 
 - **R1.** PySpark lendo de `landing/` e gravando todas as camadas no mesmo bucket, em Parquet, **só pelo Spark com `s3a://`** (sem `boto3` no pipeline), no contêiner `app`.
-- **R2.** Um job por camada: Bronze, Silver, cinco Golds (funil, engajamento, aquisição e retenção, ML, mapa de calor) e a exportação para o app. Cada job confere a camada de que depende com `exigir_camada`.
-- **R3.** Um script que roda os oito jobs em sequência (`pipeline/rodar_tudo.py`). Ele não gera dados.
+- **R2.** Um job por camada: Bronze, Silver, cinco Golds (funil, engajamento, aquisição e retenção, ML, mapa de calor) e a exportação para o app; entre a Silver e as Golds, o job `qualidade` (portão do workflow, extensão nossa). Cada job confere a camada de que depende com `exigir_camada`.
+- **R3.** Um script que roda os jobs em sequência (`pipeline/rodar_tudo.py`), na ordem do grafo `pipeline/workflows/medalhao.json`: os oito do projeto-modelo mais o portão de qualidade. Ele não gera dados.
 - **R4.** Bronze append-only, schema explícito, particionada `event_name=/year=/month=/day=` (dia de coleta) e com proveniência (`arquivo_origem`, `ingerido_em`).
 
 ### 5.2 Silver
@@ -117,16 +118,19 @@ Todas as camadas ficam no bucket `solarvision-datalake`, em Parquet: `landing/`,
 - **R9.** Identity stitching: todo evento de um `user_pseudo_id` que em algum momento tenha `user_id` recebe esse `user_id`, inclusive os anteriores ao login.
 - **R10.** `silver/itens/`: `items[]` explodido, uma linha por placa por evento.
 
-### 5.3 Gold: as 15 tabelas
+### 5.3 Gold: as 19 tabelas
 
 | Job | Tabela | Conteúdo mínimo |
 | --- | --- | --- |
 | Funil | `funil_ativacao` | pessoas com `sign_up` que atingiram cada etapa de `sign_up → create_group → create_panel → view_monitoring → import_readings → register_cleaning → generate_report`, conversão sobre a etapa anterior e sobre o topo; total e por canal × dispositivo |
+| | `funil_ordenado` | o funil estrito: a pessoa só conta na etapa k se passou pelas anteriores **nessa ordem**; pessoas perdidas em cada etapa, mediana de horas desde a etapa anterior e `maior_vazamento`; total e por canal × dispositivo |
 | | `funil_login` | sessões com `page_view` de `/login` ou `/register` → sessões com `login` ou `sign_up`, por canal |
 | Engajamento | `sessoes` | uma linha por sessão: duração, eventos, telas distintas, scroll máximo, ativou (`create_panel`), canal, dispositivo |
 | | `uso_telas` | por página: visualizações, sessões, tempo médio na tela e scroll médio |
 | | `buscas_seletor` | termo, total de buscas, buscas sem resultado |
 | | `saidas_downloads` | cliques de saída por domínio; relatórios impressos por mês de referência |
+| | `adocao_recursos` | por recurso do produto: pessoas ativas, quantas usaram, taxa de adoção, usos e dias de uso por pessoa |
+| | `atividade_diaria` | por dia: DAU, WAU (7 dias), MAU (28 dias), aderência DAU/MAU e se a janela de 28 dias já está completa |
 | Aquisição e retenção | `ativacao_diaria` | por **data do sign_up** e canal: novos usuários, ativados, taxa de ativação |
 | | `retencao` | por canal do sign_up: pessoas elegíveis e retidas em D1, D7 e D14 |
 | | `taxa_abandono` | por canal: pessoas que ativaram e quantas abandonaram (excluíram todas as placas que criaram) |
@@ -134,6 +138,7 @@ Todas as camadas ficam no bucket `solarvision-datalake`, em Parquet: `landing/`,
 | ML | `propensao_ativacao` | probabilidade de ativação por sessão, com modelo de classificação |
 | | `metricas_modelo` | AUC, F1, precisão e recall no teste, e a lista de features |
 | | `segmentos_usuarios` | grupo de cada pessoa (K-Means) e o perfil médio de cada grupo |
+| Qualidade | `qualidade_dados` | gravada pelo job `qualidade` (portão do workflow), em append: por execução, cada regra com valor, limite, ok e se é bloqueante |
 | Mapa de calor | `mapa_calor_cliques` | por `pagina` e `element_id`: `cliques`, `sessoes`, `sessoes_na_pagina`, `taxa_clique`, `intensidade` (nomes exatos, R11) |
 | | `mapa_calor_rolagem` | por `pagina` e `marco` (0, 25, 50, 75, 90): `sessoes_que_chegaram`, `pct_sessoes` (nomes exatos, R11) |
 

@@ -29,6 +29,8 @@ Visão geral (`gold/sessoes` e `bi.js`): **6.450 sessões** de **2.997 pessoas**
 - **Entrada** (`gold/funil_login`): 74% das sessões que abrem `/login` ou `/register` entram; pelo Instagram, só 42%.
 - **Tempo até ativar:** a mediana é de 0,005 dia (~7 minutos). A ativação acontece na primeira visita ou não acontece.
 
+**Funil na ordem** (`gold/funil_ordenado`): exigindo que cada etapa venha depois da anterior, o maior vazamento continua em conta → usina (735 pessoas perdidas). Quem cadastra a usina leva 5 minutos (mediana); entre a placa e o primeiro monitoramento passam 2,6 dias. No fim do funil, 299 pessoas abrem o relatório, mas só 23 passaram por todas as etapas antes: depois da ativação a jornada deixa de ser linear e a leitura certa é a adoção de cada recurso. Detalhes em [docs/FUNIL-ENGAJAMENTO-WORKFLOW.md](docs/FUNIL-ENGAJAMENTO-WORKFLOW.md).
+
 **Recomendação:** atacar o passo conta → usina. Logo depois do cadastro, levar a pessoa para um assistente de primeira usina (coordenadas, potência e orientação numa tela só), com prioridade para o celular, onde a perda é o dobro. Revisar a campanha do Instagram, que traz o tráfego que menos entra e menos ativa.
 
 ## 2. Engajamento — o que é usado e o que falta?
@@ -50,6 +52,8 @@ Visão geral (`gold/sessoes` e `bi.js`): **6.450 sessões** de **2.997 pessoas**
 - **Mapa de calor** (`gold/mapa_calor_cliques`): na Início, o link do Monitoramento é o elemento mais clicado (intensidade 1, 57% das sessões); o sino de alertas é aberto em 16% e o Relatório pelo menu em só 3%. No Relatório, 60% das sessões passam da metade da página, mas só **14,7% chegam a 90%** (`gold/mapa_calor_rolagem`).
 - **Buscas sem resultado** (`gold/buscas_seletor`): **bateria** (47 buscas), **inversor** (42), **cliente** (35), **consumo** (33) e **fazenda** (33), 190 buscas que não acharam nada. As buscas por nome de usina (galpão, leste, norte, sítio, casa) sempre acham.
 - `gold/saidas_downloads`: 279 relatórios impressos (todos de agosto/2026, o mês anterior ao período) e 65 saídas para o Open-Meteo.
+
+- **Adoção e frequência** (`gold/adocao_recursos`, `gold/atividade_diaria`): o monitoramento é usado por 29,7% das pessoas ativas, 3,1 vezes em 3,1 dias diferentes; a importação de leituras, por 13,0%, quase sempre uma vez só. A aderência DAU/MAU no último dia fechado com o mês completo é de 10,4% (313 pessoas no dia, 2.997 no mês).
 
 **Recomendação:** as buscas sem resultado são o backlog que os usuários escreveram. **Inversor** é a integração automática de leituras (item 5 de `docs/FEATURES-INCOMPLETAS.md`); **bateria** e **consumo** pedem armazenamento e consumo da unidade; **cliente** indica integradores gerenciando usinas de terceiros (compartilhar grupos, item 2). No Relatório, subir para o topo o que está no fim da página.
 

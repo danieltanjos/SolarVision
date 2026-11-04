@@ -8,20 +8,21 @@ Um job por camada, como pede o [enunciado](../docs/ENUNCIADO.md) (R1 a R11). A b
 | --- | --- | --- |
 | `bronze.py` | `landing/` (JSON, schema explícito) | `bronze/event_name=…/year=…/month=…/day=…`, append-only, com `arquivo_origem` e `ingerido_em` (R4) |
 | `silver.py` | `bronze/` | `silver/event_name=…` (dedup R5, params tipados R6, sessões R8, pessoa R9), `silver/eventos_rejeitados/` com o motivo (R7) e `silver/itens/` (R10) |
-| `gold_funil.py` | `silver/` | `gold/funil_ativacao`, `gold/funil_login` |
-| `gold_engajamento.py` | `silver/` | `gold/sessoes`, `gold/uso_telas`, `gold/buscas_seletor`, `gold/saidas_downloads` |
+| `qualidade.py` | `bronze/`, `silver/` | `gold/qualidade_dados` (append, histórico): o **portão** do workflow; sai com código 1 se uma regra bloqueante falha e as Golds não rodam |
+| `gold_funil.py` | `silver/` | `gold/funil_ativacao` (qualquer momento), `gold/funil_ordenado` (na ordem, com perdas, tempo entre etapas e maior vazamento), `gold/funil_login` |
+| `gold_engajamento.py` | `silver/` | `gold/sessoes`, `gold/uso_telas`, `gold/buscas_seletor`, `gold/saidas_downloads`, `gold/adocao_recursos`, `gold/atividade_diaria` (DAU/WAU/MAU) |
 | `gold_aquisicao.py` | `silver/` | `gold/ativacao_diaria`, `gold/retencao`, `gold/taxa_abandono`, `gold/cadastro_para_ativacao` |
 | `gold_ml.py` | `silver/` | `gold/propensao_ativacao`, `gold/metricas_modelo`, `gold/segmentos_usuarios` (Spark ML) |
 | `gold_mapa_calor.py` | `silver/` | `gold/mapa_calor_cliques`, `gold/mapa_calor_rolagem` (nomes de coluna do R11) |
-| `exportar_bi.py` | as 15 Golds | `frontend/public/bi/mapa_calor.js` e `bi.js` (montado em `/projeto/app-bi`) |
-| `rodar_tudo.py` | — | roda os oito em ordem e para no primeiro que falhar (R3); `--limpar` recomeça do zero |
+| `exportar_bi.py` | as 19 Golds | `frontend/public/bi/mapa_calor.js` e `bi.js` (montado em `/projeto/app-bi`) |
+| `rodar_tudo.py` | `workflows/medalhao.json` | roda os nove na ordem do grafo e para no primeiro que falhar (R3); `--limpar` recomeça do zero; `--a-partir-de JOB` reprocessa um job e os que dependem dele |
 
 ```bash
 docker compose run --rm app python pipeline/rodar_tudo.py --limpar   # reconstrói o datalake inteiro
 docker compose run --rm app pytest                                    # gerador, coletor, jobs e explorador
 ```
 
-Cada job tem as transformações em funções puras de DataFrame (`deduplicar`, `validar`, `sessionizar`, `funil_ativacao`, `base_propensao`…) e um `main()` que só lê, chama e grava. Os testes em `tests/pipeline/` montam DataFrames pequenos (`tests/pipeline/fabrica.py`) e conferem as funções sem o S3. O workflow `workflows/medalhao.json` roda o mesmo grafo no explorador, com as Golds em paralelo.
+Cada job tem as transformações em funções puras de DataFrame (`deduplicar`, `validar`, `sessionizar`, `funil_ativacao`, `base_propensao`…) e um `main()` que só lê, chama e grava. Os testes em `tests/pipeline/` montam DataFrames pequenos (`tests/pipeline/fabrica.py`) e conferem as funções sem o S3. O workflow `workflows/medalhao.json` é a fonte única da ordem: o explorador roda esse grafo (com as Golds em paralelo) e o `rodar_tudo.py` lê o mesmo arquivo. Conceitos e decisões em [docs/FUNIL-ENGAJAMENTO-WORKFLOW.md](../docs/FUNIL-ENGAJAMENTO-WORKFLOW.md).
 
 Um **job** é um script Python que faz uma etapa do trabalho do começo ao fim: lê uma camada, transforma os dados e grava a camada seguinte. Por exemplo, o job Bronze lê a `landing/` e grava a `bronze/`.
 
