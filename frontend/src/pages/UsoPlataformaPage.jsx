@@ -145,7 +145,7 @@ export default function UsoPlataformaPage() {
   const vazamento = funil.find((linha) => linha.maior_vazamento);
   const atual = atividadeAtual(bi);
   const qualidade = situacaoQualidade(bi);
-  const atividade = atividadeLinhas(bi?.atividade_diaria ?? []);
+  const atividade = atividadeLinhas((bi?.atividade_diaria ?? []).filter((dia) => dia.dia_completo !== false));
   const modelo = bi?.metricas_modelo?.[0];
   const ativacaoPorCanal = (bi?.cadastro_para_ativacao ?? []).filter((linha) => linha.canal !== TODOS);
   const abandono = Object.fromEntries((bi?.taxa_abandono ?? []).map((linha) => [linha.canal, linha]));
@@ -231,7 +231,7 @@ export default function UsoPlataformaPage() {
           </div>
 
           <div className="sv-relatorio-linha sv-relatorio-graficos">
-            <Cartao titulo="Pessoas ativas" descricao="Quem usou o SolarVision no dia, nos últimos 7 e nos últimos 28 dias.">
+            <Cartao titulo="Pessoas ativas" descricao="Quem usou o SolarVision no dia, nos últimos 7 e nos últimos 28 dias (só dias já fechados).">
               <Chart options={atividade.options} series={atividade.series} type="line" height={260} />
               {atual && !atual.janela_completa ? (
                 <small className="sv-muted">O período ainda não fecha 28 dias: o MAU está subestimado.</small>

@@ -86,3 +86,4 @@ def test_atividade_diaria_com_janelas_moveis(spark):
     assert (linhas[8].wau, linhas[9].wau, linhas[9].mau) == (2, 3, 3)
     assert linhas[9].aderencia_dau_mau == round(1 / 3, 4)
     assert not any(r.janela_completa for r in linhas.values())      # só 9 dias: o mês ainda não fechou
+    assert [d for d in linhas if not linhas[d].dia_completo] == [9]   # o último dia ainda está em andamento

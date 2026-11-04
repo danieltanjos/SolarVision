@@ -127,10 +127,11 @@ def adocao_recursos(eventos: DataFrame) -> DataFrame:
 def atividade_diaria(eventos: DataFrame) -> DataFrame:
     """Por dia: pessoas ativas no dia (DAU), nos últimos 7 dias (WAU) e nos últimos 28 (MAU), e a
     aderência DAU/MAU (de quem usa no mês, que fração volta num dia qualquer). Nos primeiros dias
-    do período a janela ainda não está completa: a coluna janela_completa avisa."""
+    do período a janela ainda não está completa (janela_completa = falso), e o último dia ainda está
+    em andamento quando o pipeline roda (dia_completo = falso): os dois subestimam o uso."""
     pares = eventos.select("pessoa", F.to_date("event_ts").alias("dia_evento")).distinct()
     limites = pares.agg(F.min("dia_evento").alias("primeiro"), F.max("dia_evento").alias("ultimo"))
-    dias = limites.select(F.explode(F.sequence("primeiro", "ultimo")).alias("data"), "primeiro")
+    dias = limites.select(F.explode(F.sequence("primeiro", "ultimo")).alias("data"), "primeiro", "ultimo")
     ativos = (dias.join(pares, (pares.dia_evento <= dias.data)
                         & (pares.dia_evento > F.date_sub(dias.data, max(JANELAS.values()))))
               .groupBy("data", "primeiro")
@@ -138,9 +139,10 @@ def atividade_diaria(eventos: DataFrame) -> DataFrame:
                    *[F.countDistinct(F.when(F.col("dia_evento") > F.date_sub("data", n), F.col("pessoa"))).alias(nome)
                      for nome, n in JANELAS.items()]))
     return (dias.join(ativos, ["data", "primeiro"], "left").fillna(0, subset=["dau", *JANELAS])
+            .withColumn("dia_completo", F.col("data") < F.col("ultimo"))
             .withColumn("aderencia_dau_mau", F.round(F.try_divide(F.col("dau"), F.col("mau")), 4))
             .withColumn("janela_completa", F.date_diff("data", "primeiro") >= JANELAS["mau"] - 1)
-            .select("data", "dau", "wau", "mau", "aderencia_dau_mau", "janela_completa")
+            .select("data", "dau", "wau", "mau", "aderencia_dau_mau", "janela_completa", "dia_completo")
             .orderBy("data"))
 
 

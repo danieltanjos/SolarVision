@@ -114,10 +114,12 @@ export function recursosPorAdocao(bi) {
   return [...(bi?.adocao_recursos ?? [])].sort((a, b) => (b.taxa_adocao ?? 0) - (a.taxa_adocao ?? 0));
 }
 
-// O dia mais recente com a janela de 28 dias completa (o MAU de verdade); sem nenhum, o último dia.
+// O dia fechado mais recente com a janela de 28 dias completa (o MAU de verdade). O último dia do
+// período ainda está em andamento e subestimaria o DAU. Sem nenhum assim, o último dia fechado.
 export function atividadeAtual(bi) {
   const dias = [...(bi?.atividade_diaria ?? [])].sort((a, b) => a.data.localeCompare(b.data));
-  return dias.filter((dia) => dia.janela_completa).at(-1) ?? dias.at(-1) ?? null;
+  const fechados = dias.filter((dia) => dia.dia_completo !== false);
+  return fechados.filter((dia) => dia.janela_completa).at(-1) ?? fechados.at(-1) ?? dias.at(-1) ?? null;
 }
 
 // Situação do portão de qualidade na última execução.

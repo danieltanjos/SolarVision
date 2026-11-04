@@ -105,9 +105,10 @@ test("atividade atual prefere o último dia com a janela de 28 dias completa", a
   const dias = [
     { data: "2026-09-30", mau: 900, janela_completa: true },
     { data: "2026-10-01", mau: 950, janela_completa: true },
-    { data: "2026-09-01", mau: 10, janela_completa: false }
+    { data: "2026-09-01", mau: 10, janela_completa: false },
+    { data: "2026-10-02", mau: 960, janela_completa: true, dia_completo: false }
   ];
-  assert.equal(atividadeAtual({ atividade_diaria: dias }).data, "2026-10-01");
+  assert.equal(atividadeAtual({ atividade_diaria: dias }).data, "2026-10-01");     // o dia 2 ainda não fechou
   assert.equal(atividadeAtual({ atividade_diaria: [dias[2]] }).data, "2026-09-01");
   assert.equal(atividadeAtual({}), null);
 });
