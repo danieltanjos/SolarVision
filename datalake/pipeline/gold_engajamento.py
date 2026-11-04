@@ -1,8 +1,10 @@
-"""Job Gold de engajamento (enunciado 5.3): sessões, uso das telas, buscas e saídas/downloads.
+"""Job Gold de engajamento (enunciado 5.3): sessões, uso das telas, buscas, saídas/downloads,
+adoção dos recursos e atividade diária (DAU/WAU/MAU).
 
     docker compose run --rm app python pipeline/gold_engajamento.py
 
-Grava gold/sessoes, gold/uso_telas, gold/buscas_seletor e gold/saidas_downloads.
+Grava gold/sessoes, gold/uso_telas, gold/buscas_seletor, gold/saidas_downloads,
+gold/adocao_recursos e gold/atividade_diaria.
 """
 
 from pyspark.sql import DataFrame, Window
@@ -11,6 +13,20 @@ from pyspark.sql import functions as F
 from comum import caminho, criar_sessao, exigir_camada, glob_eventos, ler_eventos, titulo
 
 TEMPO_MAXIMO_NA_TELA = 30 * 60      # segundos: mais que isso é aba esquecida aberta, não uso
+# recurso do produto -> evento que mostra o uso dele
+RECURSOS = {
+    "monitoramento": "view_monitoring",
+    "troca de visão (dia/semana/mês/ano)": "select_content",
+    "busca no seletor": "site_search",
+    "importação de leituras": "import_readings",
+    "registro de limpeza": "register_cleaning",
+    "recomendação de limpeza": "view_cleaning_recommendation",
+    "relatório": "generate_report",
+    "impressão do relatório": "file_download",
+    "alertas": "view_alerts",
+    "configurações": "change_settings",
+}
+JANELAS = {"wau": 7, "mau": 28}     # dias da janela móvel de pessoas ativas
 
 
 def _tem(nome: str) -> F.Column:
@@ -87,12 +103,55 @@ def saidas_downloads(eventos: DataFrame) -> DataFrame:
     return saidas.unionByName(impressos).orderBy("tipo", F.desc("total"))
 
 
+def adocao_recursos(eventos: DataFrame) -> DataFrame:
+    """Para cada recurso do produto: das pessoas ativas (com algum evento no período), quantas usaram,
+    quantas vezes (por pessoa que usou) e em quantos dias diferentes. Um recurso que quase ninguém
+    adota, ou que é adotado mas usado num dia só, é candidato a ser revisto."""
+    ativas = eventos.select(F.countDistinct("pessoa").alias("pessoas_ativas"))
+    nomes = eventos.sparkSession.createDataFrame(list(RECURSOS.items()), "recurso string, evento string")
+    uso = (eventos.filter(F.col("event_name").isin(*RECURSOS.values()))
+           .groupBy(F.col("event_name").alias("evento"))
+           .agg(F.countDistinct("pessoa").alias("pessoas_que_usaram"), F.count("*").alias("usos"),
+                F.countDistinct("pessoa", F.to_date("event_ts")).alias("_pessoa_dias")))
+    return (nomes.join(uso, "evento", "left").fillna(0, subset=["pessoas_que_usaram", "usos", "_pessoa_dias"])
+            .crossJoin(ativas)
+            .withColumn("taxa_adocao", F.round(F.try_divide(F.col("pessoas_que_usaram"), F.col("pessoas_ativas")), 4))
+            .withColumn("usos_por_pessoa", F.round(F.try_divide(F.col("usos"), F.col("pessoas_que_usaram")), 2))
+            .withColumn("dias_de_uso_por_pessoa",
+                        F.round(F.try_divide(F.col("_pessoa_dias"), F.col("pessoas_que_usaram")), 2))
+            .select("recurso", "evento", "pessoas_ativas", "pessoas_que_usaram", "taxa_adocao", "usos",
+                    "usos_por_pessoa", "dias_de_uso_por_pessoa")
+            .orderBy(F.desc("taxa_adocao"), "recurso"))
+
+
+def atividade_diaria(eventos: DataFrame) -> DataFrame:
+    """Por dia: pessoas ativas no dia (DAU), nos últimos 7 dias (WAU) e nos últimos 28 (MAU), e a
+    aderência DAU/MAU (de quem usa no mês, que fração volta num dia qualquer). Nos primeiros dias
+    do período a janela ainda não está completa: a coluna janela_completa avisa."""
+    pares = eventos.select("pessoa", F.to_date("event_ts").alias("dia_evento")).distinct()
+    limites = pares.agg(F.min("dia_evento").alias("primeiro"), F.max("dia_evento").alias("ultimo"))
+    dias = limites.select(F.explode(F.sequence("primeiro", "ultimo")).alias("data"), "primeiro")
+    ativos = (dias.join(pares, (pares.dia_evento <= dias.data)
+                        & (pares.dia_evento > F.date_sub(dias.data, max(JANELAS.values()))))
+              .groupBy("data", "primeiro")
+              .agg(F.countDistinct(F.when(F.col("dia_evento") == F.col("data"), F.col("pessoa"))).alias("dau"),
+                   *[F.countDistinct(F.when(F.col("dia_evento") > F.date_sub("data", n), F.col("pessoa"))).alias(nome)
+                     for nome, n in JANELAS.items()]))
+    return (dias.join(ativos, ["data", "primeiro"], "left").fillna(0, subset=["dau", *JANELAS])
+            .withColumn("aderencia_dau_mau", F.round(F.try_divide(F.col("dau"), F.col("mau")), 4))
+            .withColumn("janela_completa", F.date_diff("data", "primeiro") >= JANELAS["mau"] - 1)
+            .select("data", "dau", "wau", "mau", "aderencia_dau_mau", "janela_completa")
+            .orderBy("data"))
+
+
 def calcular(eventos: DataFrame) -> dict[str, DataFrame]:
     return {
         "sessoes": sessoes(eventos),
         "uso_telas": uso_telas(eventos),
         "buscas_seletor": buscas_seletor(eventos),
         "saidas_downloads": saidas_downloads(eventos),
+        "adocao_recursos": adocao_recursos(eventos),
+        "atividade_diaria": atividade_diaria(eventos),
     }
 
 
