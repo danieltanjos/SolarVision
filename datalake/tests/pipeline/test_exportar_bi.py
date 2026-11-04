@@ -35,3 +35,16 @@ def test_resumo_dos_segmentos_nao_leva_pessoas(spark):
     linhas = exportar_bi.linhas(exportar_bi.resumo_segmentos(df))
     assert [r["segmento"] for r in linhas] == [0, 1]
     assert all("pessoa" not in r for r in linhas)
+
+
+def test_qualidade_exporta_so_a_execucao_mais_recente(spark):
+    from datetime import datetime
+    antiga, nova = datetime(2026, 10, 1), datetime(2026, 10, 2)
+    df = spark.createDataFrame(
+        [(antiga, "taxa de rejeição", 0.2, "<= 0.1", False, True),
+         (nova, "taxa de rejeição", 0.03, "<= 0.1", True, True),
+         (nova, "taxa de duplicatas", 0.08, "<= 0.05", False, False)],
+        "executado_em timestamp, regra string, valor double, limite string, ok boolean, bloqueante boolean")
+    linhas = exportar_bi.linhas(exportar_bi.ultima_qualidade(df))
+    assert [(r["regra"], r["ok"]) for r in linhas] == [("taxa de duplicatas", False), ("taxa de rejeição", True)]
+    assert {r["executado_em"][:10] for r in linhas} == {"2026-10-02"}

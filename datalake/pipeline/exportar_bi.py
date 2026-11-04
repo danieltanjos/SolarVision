@@ -25,16 +25,19 @@ from comum import arquivo_do_projeto, caminho, criar_sessao, exigir_camada, titu
 PASTA = "app-bi"
 # tabela Gold -> job que a grava (para a mensagem do exigir_camada, R2)
 GOLDS = {
-    "funil_ativacao": "gold_funil", "funil_login": "gold_funil",
+    "funil_ativacao": "gold_funil", "funil_ordenado": "gold_funil", "funil_login": "gold_funil",
     "sessoes": "gold_engajamento", "uso_telas": "gold_engajamento",
     "buscas_seletor": "gold_engajamento", "saidas_downloads": "gold_engajamento",
+    "adocao_recursos": "gold_engajamento", "atividade_diaria": "gold_engajamento",
+    "qualidade_dados": "qualidade",
     "ativacao_diaria": "gold_aquisicao", "retencao": "gold_aquisicao",
     "taxa_abandono": "gold_aquisicao", "cadastro_para_ativacao": "gold_aquisicao",
     "propensao_ativacao": "gold_ml", "metricas_modelo": "gold_ml", "segmentos_usuarios": "gold_ml",
     "mapa_calor_cliques": "gold_mapa_calor", "mapa_calor_rolagem": "gold_mapa_calor",
 }
-DIRETAS = ("funil_ativacao", "funil_login", "uso_telas", "buscas_seletor", "saidas_downloads",
-           "ativacao_diaria", "retencao", "taxa_abandono", "cadastro_para_ativacao", "metricas_modelo")
+DIRETAS = ("funil_ativacao", "funil_ordenado", "funil_login", "uso_telas", "buscas_seletor",
+           "saidas_downloads", "adocao_recursos", "atividade_diaria", "ativacao_diaria", "retencao",
+           "taxa_abandono", "cadastro_para_ativacao", "metricas_modelo")
 
 
 def _valor(v):
@@ -67,6 +70,12 @@ def resumo_segmentos(segmentos: DataFrame) -> DataFrame:
             .dropDuplicates(["segmento"]).orderBy("segmento"))
 
 
+def ultima_qualidade(qualidade: DataFrame) -> DataFrame:
+    """Só as regras da execução mais recente do portão de qualidade (a tabela guarda o histórico)."""
+    ultima = qualidade.agg(F.max("executado_em").alias("executado_em"))
+    return qualidade.join(ultima, "executado_em").orderBy(F.col("ok"), F.desc("bloqueante"), "regra")
+
+
 def kpis(sessoes: DataFrame, cadastro: DataFrame) -> dict:
     s = sessoes.agg(F.count("*").alias("sessoes"), F.countDistinct("pessoa").alias("pessoas"),
                     F.round(F.avg("duracao_seg"), 1).alias("duracao_media_seg"),
@@ -84,6 +93,7 @@ def montar_bi(tabelas: dict[str, DataFrame], gerado_em: str) -> dict:
         **{nome: linhas(tabelas[nome]) for nome in DIRETAS},
         "propensao_por_faixa": linhas(resumo_propensao(tabelas["propensao_ativacao"])),
         "segmentos": linhas(resumo_segmentos(tabelas["segmentos_usuarios"])),
+        "qualidade_dados": linhas(ultima_qualidade(tabelas["qualidade_dados"])),
     }
 
 
