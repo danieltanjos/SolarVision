@@ -73,3 +73,52 @@ test("BI-MAPA: filtra cliques e rolagem pela página do caminho", () => {
   assert.deepEqual(rolagemDaTela(mapa, "/app/home").map((l) => l.marco), [0, 25]);
   assert.deepEqual(cliquesDaTela(null, "/app/home"), []);
 });
+
+test("funil comparado junta qualquer momento e na ordem, por etapa", async () => {
+  const { funilComparado } = await import("../src/lib/bi.js");
+  const bi = {
+    funil_ativacao: [
+      { canal: TODOS, dispositivo: TODOS, ordem: 1, etapa: "sign_up", pessoas: 100 },
+      { canal: TODOS, dispositivo: TODOS, ordem: 2, etapa: "create_group", pessoas: 70 }
+    ],
+    funil_ordenado: [
+      { canal: TODOS, dispositivo: TODOS, ordem: 2, etapa: "create_group", pessoas: 60, perdidas: 40,
+        mediana_horas_desde_anterior: 0.5, maior_vazamento: true },
+      { canal: "x", dispositivo: "mobile", ordem: 2, etapa: "create_group", pessoas: 1 }
+    ]
+  };
+  const [cadastro, grupo] = funilComparado(bi);
+  assert.equal(cadastro.na_ordem, 0);
+  assert.deepEqual([grupo.qualquer_momento, grupo.na_ordem, grupo.perdidas, grupo.maior_vazamento], [70, 60, 40, true]);
+});
+
+test("horas legíveis: minutos, horas e dias", async () => {
+  const { horas } = await import("../src/lib/bi.js");
+  assert.equal(horas(0.25), "15 min");
+  assert.equal(horas(5.5), "5,5 h");
+  assert.equal(horas(72), "3 dias");
+  assert.equal(horas(null), "—");
+});
+
+test("atividade atual prefere o último dia com a janela de 28 dias completa", async () => {
+  const { atividadeAtual } = await import("../src/lib/bi.js");
+  const dias = [
+    { data: "2026-09-30", mau: 900, janela_completa: true },
+    { data: "2026-10-01", mau: 950, janela_completa: true },
+    { data: "2026-09-01", mau: 10, janela_completa: false }
+  ];
+  assert.equal(atividadeAtual({ atividade_diaria: dias }).data, "2026-10-01");
+  assert.equal(atividadeAtual({ atividade_diaria: [dias[2]] }).data, "2026-09-01");
+  assert.equal(atividadeAtual({}), null);
+});
+
+test("situação da qualidade separa falha bloqueante de alerta", async () => {
+  const { situacaoQualidade } = await import("../src/lib/bi.js");
+  const s = situacaoQualidade({ qualidade_dados: [
+    { regra: "taxa de duplicatas", ok: false, bloqueante: false, executado_em: "2026-10-02T00:00:00" },
+    { regra: "taxa de rejeição", ok: true, bloqueante: true, executado_em: "2026-10-02T00:00:00" }
+  ] });
+  assert.equal(s.ok, true);
+  assert.deepEqual(s.alertas.map((r) => r.regra), ["taxa de duplicatas"]);
+  assert.equal(situacaoQualidade({}), null);
+});

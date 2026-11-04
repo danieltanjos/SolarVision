@@ -77,3 +77,54 @@ export function rolagemDaTela(mapa, caminho) {
   const pagina = paginaDe(caminho);
   return (mapa?.rolagem ?? []).filter((linha) => linha.pagina === pagina).sort((a, b) => a.marco - b.marco);
 }
+
+// Cores das séries dos gráficos novos, nesta ordem fixa (validadas para daltonismo e contraste,
+// nos temas claro e escuro).
+export const CORES_SERIES = ["#2a6fb8", "#c98500", "#a1489f"];
+
+const doTotal = (linha) => linha.canal === TODOS && linha.dispositivo === TODOS;
+
+// Os dois funis lado a lado, por etapa: "em qualquer momento" (funil_ativacao) e "na ordem"
+// (funil_ordenado, com as perdas, a mediana de horas desde a etapa anterior e o maior vazamento).
+export function funilComparado(bi) {
+  const ordenado = new Map((bi?.funil_ordenado ?? []).filter(doTotal).map((linha) => [linha.etapa, linha]));
+  return funilTotal(bi).map((linha) => {
+    const estrito = ordenado.get(linha.etapa) ?? {};
+    return {
+      ordem: linha.ordem,
+      etapa: linha.etapa,
+      qualquer_momento: linha.pessoas,
+      na_ordem: estrito.pessoas ?? 0,
+      perdidas: estrito.perdidas ?? null,
+      mediana_horas: estrito.mediana_horas_desde_anterior ?? null,
+      maior_vazamento: Boolean(estrito.maior_vazamento)
+    };
+  });
+}
+
+export function horas(valor) {
+  if (valor == null) return "—";
+  const h = Number(valor);
+  if (h < 1) return `${Math.round(h * 60)} min`;
+  return h < 48 ? `${h.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} h` : `${Math.round(h / 24)} dias`;
+}
+
+// Recursos do produto do mais ao menos adotado.
+export function recursosPorAdocao(bi) {
+  return [...(bi?.adocao_recursos ?? [])].sort((a, b) => (b.taxa_adocao ?? 0) - (a.taxa_adocao ?? 0));
+}
+
+// O dia mais recente com a janela de 28 dias completa (o MAU de verdade); sem nenhum, o último dia.
+export function atividadeAtual(bi) {
+  const dias = [...(bi?.atividade_diaria ?? [])].sort((a, b) => a.data.localeCompare(b.data));
+  return dias.filter((dia) => dia.janela_completa).at(-1) ?? dias.at(-1) ?? null;
+}
+
+// Situação do portão de qualidade na última execução.
+export function situacaoQualidade(bi) {
+  const regras = bi?.qualidade_dados ?? [];
+  if (!regras.length) return null;
+  const falhas = regras.filter((r) => !r.ok && r.bloqueante);
+  const alertas = regras.filter((r) => !r.ok && !r.bloqueante);
+  return { executado_em: regras[0].executado_em, regras, falhas, alertas, ok: falhas.length === 0 };
+}
