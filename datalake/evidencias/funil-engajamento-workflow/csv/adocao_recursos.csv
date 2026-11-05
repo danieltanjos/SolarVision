@@ -1,0 +1,11 @@
+recurso,evento,pessoas_ativas,pessoas_que_usaram,taxa_adocao,usos,usos_por_pessoa,dias_de_uso_por_pessoa
+monitoramento,view_monitoring,2997,889,0.2966,2747,3.09,3.09
+troca de visão (dia/semana/mês/ano),select_content,2997,756,0.2523,2055,2.72,2.22
+alertas,view_alerts,2997,546,0.1822,868,1.59,1.59
+relatório,generate_report,2997,527,0.1758,838,1.59,1.59
+recomendação de limpeza,view_cleaning_recommendation,2997,436,0.1455,620,1.42,1.42
+registro de limpeza,register_cleaning,2997,416,0.1388,564,1.36,1.36
+importação de leituras,import_readings,2997,391,0.1305,431,1.1,1.1
+configurações,change_settings,2997,318,0.1061,345,1.08,1.08
+busca no seletor,site_search,2997,309,0.1031,391,1.27,1.27
+impressão do relatório,file_download,2997,242,0.0807,279,1.15,1.15

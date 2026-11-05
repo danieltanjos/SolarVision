@@ -1,0 +1,25 @@
+executado_em,regra,valor,limite,ok,bloqueante
+2026-11-04 23:30:23,event_id único na silver,0.0,= 0,True,True
+2026-11-04 23:30:23,pessoa e sessão preenchidas,0.0,= 0,True,True
+2026-11-04 23:30:23,reconciliação: bronze única = silver + rejeitados,0.0,= 0,True,True
+2026-11-04 23:30:23,silver tem eventos válidos,54789.0,> 0,True,True
+2026-11-04 23:30:23,taxa de rejeição,0.0306,<= 0.1,True,True
+2026-11-04 23:30:23,taxa de duplicatas,0.0101,<= 0.05,True,False
+2026-11-04 23:39:22,event_id único na silver,0.0,= 0,True,True
+2026-11-04 23:39:22,pessoa e sessão preenchidas,0.0,= 0,True,True
+2026-11-04 23:39:22,reconciliação: bronze única = silver + rejeitados,0.0,= 0,True,True
+2026-11-04 23:39:22,silver tem eventos válidos,54789.0,> 0,True,True
+2026-11-04 23:39:22,taxa de rejeição,0.0306,<= 0.01,False,True
+2026-11-04 23:39:22,taxa de duplicatas,0.0101,<= 0.05,True,False
+2026-11-04 23:40:33,event_id único na silver,0.0,= 0,True,True
+2026-11-04 23:40:33,pessoa e sessão preenchidas,0.0,= 0,True,True
+2026-11-04 23:40:33,reconciliação: bronze única = silver + rejeitados,0.0,= 0,True,True
+2026-11-04 23:40:33,silver tem eventos válidos,54789.0,> 0,True,True
+2026-11-04 23:40:33,taxa de rejeição,0.0306,<= 0.1,True,True
+2026-11-04 23:40:33,taxa de duplicatas,0.0101,<= 0.05,True,False
+2026-11-05 00:40:41,event_id único na silver,0.0,= 0,True,True
+2026-11-05 00:40:41,pessoa e sessão preenchidas,0.0,= 0,True,True
+2026-11-05 00:40:41,reconciliação: bronze única = silver + rejeitados,0.0,= 0,True,True
+2026-11-05 00:40:41,silver tem eventos válidos,54789.0,> 0,True,True
+2026-11-05 00:40:41,taxa de rejeição,0.0306,<= 0.1,True,True
+2026-11-05 00:40:41,taxa de duplicatas,0.0101,<= 0.05,True,False
