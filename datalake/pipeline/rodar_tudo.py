@@ -2,15 +2,16 @@
 
     docker compose run --rm app python pipeline/rodar_tudo.py                       # tudo, a partir da landing
     docker compose run --rm app python pipeline/rodar_tudo.py --limpar              # apaga bronze/silver/gold antes
-    docker compose run --rm app python pipeline/rodar_tudo.py --a-partir-de gold_funil   # só ele e quem depende dele
+    docker compose run --rm app python pipeline/rodar_tudo.py --a-partir-de 04_gold_funil   # só ele e quem depende dele
 
-A ordem vem do grafo em pipeline/workflows/medalhao.json, o mesmo que o explorador roda na tela
-Workflows: um job só entra depois de todas as dependências dele. Assim o script e o console nunca
-divergem. Se um job falha (o portão de qualidade, por exemplo), nada que depende dele roda.
+A ordem vem do grafo em workflows/medalhao.json, o mesmo que o explorador roda na tela Workflows:
+cada etapa é um workflows/<NN>_<nome>.py que chama os jobs de pipeline/, e só entra depois de todas
+as dependências dela. Assim o script e o console nunca divergem. Se uma etapa falha (o portão de
+qualidade, por exemplo), nada que depende dela roda.
 
 A Bronze é append-only: rodar de novo sem --limpar acrescenta a landing outra vez, e a Silver
 descarta as cópias na deduplicação (R5). Para reconstruir do zero, use --limpar. Mudou só uma Gold?
---a-partir-de reprocessa aquele job e os que dependem dele, sem refazer Bronze e Silver.
+--a-partir-de reprocessa aquela etapa e as que dependem dela, sem refazer Bronze e Silver.
 """
 
 from __future__ import annotations
@@ -22,8 +23,10 @@ import sys
 import time
 from pathlib import Path
 
-PASTA = Path(__file__).resolve().parent
-WORKFLOW = PASTA / "workflows" / "medalhao.json"
+PASTA = Path(__file__).resolve().parent         # pipeline/
+RAIZ = PASTA.parent                              # datalake/: as etapas rodam daqui (comum.arquivo_do_projeto)
+ETAPAS = RAIZ / "workflows"
+WORKFLOW = ETAPAS / "medalhao.json"
 CAMADAS = ("bronze", "silver", "gold")
 
 
@@ -79,7 +82,7 @@ def limpar() -> None:
 
 def rodar(job: str) -> int:
     inicio = time.monotonic()
-    codigo = subprocess.run([sys.executable, "-u", str(PASTA / f"{job}.py")]).returncode
+    codigo = subprocess.run([sys.executable, "-u", str(ETAPAS / f"{job}.py")], cwd=RAIZ).returncode
     print(f"[{'ok' if codigo == 0 else 'FALHOU'}] {job} ({time.monotonic() - inicio:.0f} s)")
     return codigo
 
@@ -88,7 +91,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--limpar", action="store_true", help="apaga bronze/, silver/ e gold/ antes de rodar")
     ap.add_argument("--a-partir-de", metavar="JOB", choices=JOBS,
-                    help="roda só este job e os que dependem dele (reprocessamento parcial)")
+                    help="roda só esta etapa e as que dependem dela (reprocessamento parcial)")
     a = ap.parse_args(argv)
     if a.limpar and a.a_partir_de:
         ap.error("--limpar apaga as camadas de que --a-partir-de depende: use um ou outro")

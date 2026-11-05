@@ -1,0 +1,10 @@
+{
+  "nome": "receita_aquisicao",
+  "descricao": "Só o caminho da receita: Bronze, Silver e a Gold receita e aquisição (sem o portão e as outras Golds).",
+  "paralelo": 1,
+  "etapas": [
+    {"job": "01_bronze_eventos", "depende_de": []},
+    {"job": "02_silver_eventos", "depende_de": ["01_bronze_eventos"]},
+    {"job": "05_gold_receita_aquisicao", "depende_de": ["02_silver_eventos"]}
+  ]
+}

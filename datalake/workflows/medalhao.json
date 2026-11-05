@@ -1,0 +1,16 @@
+{
+  "nome": "medalhao",
+  "descricao": "Datalake de uso do SolarVision: Bronze, Silver, o portão de qualidade, as Golds (duas por vez) e a exportação para o app. A receita e aquisição depende só da Silver.",
+  "paralelo": 2,
+  "etapas": [
+    {"job": "01_bronze_eventos", "depende_de": []},
+    {"job": "02_silver_eventos", "depende_de": ["01_bronze_eventos"]},
+    {"job": "03_qualidade_dados", "depende_de": ["02_silver_eventos"]},
+    {"job": "04_gold_funil", "depende_de": ["03_qualidade_dados"]},
+    {"job": "05_gold_receita_aquisicao", "depende_de": ["02_silver_eventos"]},
+    {"job": "06_gold_engajamento", "depende_de": ["03_qualidade_dados"]},
+    {"job": "07_gold_ml", "depende_de": ["03_qualidade_dados"]},
+    {"job": "08_gold_mapa_calor", "depende_de": ["03_qualidade_dados"]},
+    {"job": "09_exportar_bi", "depende_de": ["04_gold_funil", "05_gold_receita_aquisicao", "06_gold_engajamento", "07_gold_ml", "08_gold_mapa_calor"]}
+  ]
+}
