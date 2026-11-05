@@ -108,7 +108,7 @@ O `user_id` é um hash do id interno: o datalake liga os eventos da mesma pessoa
 | `sign_up`, `login` | `method` (`email`) |
 | `logout` | `scope` (`local` ou `global`) |
 | `begin_checkout` | `plano` (`pro_mensal` ou `pro_anual`), `value` (preço de tabela), `currency` (`BRL`) |
-| `purchase` | `transaction_id`, `plano`, `value` (o que foi pago: com 5% de desconto no Pix), `currency`, `payment_type` (`pix` ou `cartao`) |
+| `purchase` | `transaction_id`, `plano`, `value` (o que foi pago: com 5% de desconto no Pix, arredondado ao centavo), `currency`, `payment_type` (`pix` ou `cartao`) |
 | `refund` | `transaction_id` (o da compra), `plano`, `value` (o devolvido), `currency` |
 
 Além das chaves da tabela, os eventos que nascem de um clique trazem `element_id`.
@@ -144,7 +144,7 @@ Na assinatura, o item é o plano: `item_id` (`pro_mensal` ou `pro_anual`), `item
 
 | Plano | Preço | No Pix (−5%) |
 | --- | --- | --- |
-| `pro_mensal` | R$ 19,90 | R$ 18,91 |
+| `pro_mensal` | R$ 19,90 | R$ 18,90 |
 | `pro_anual` | R$ 199,00 | R$ 189,05 |
 
 ## Os 23 eventos
