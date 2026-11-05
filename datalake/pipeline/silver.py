@@ -5,7 +5,7 @@
 Grava:
     silver/event_name=…/year=…/month=…/day=…   eventos válidos
     silver/eventos_rejeitados/                 eventos inválidos, com o motivo (R7)
-    silver/itens/year=…/month=…/day=…          uma linha por placa por evento (R10)
+    silver/itens/year=…/month=…/day=…          uma linha por item (placa ou plano) por evento (R10)
 """
 
 from pyspark.sql import DataFrame, Window
@@ -13,7 +13,7 @@ from pyspark.sql import functions as F
 
 from comum import caminho, criar_sessao, exigir_camada, glob_eventos, gravar_eventos, ler_eventos, titulo
 
-# Os 20 eventos do contrato (docs/CONTRATO_EVENTO.md). O pipeline não importa o gerador:
+# Os 23 eventos do contrato (docs/CONTRATO_EVENTO.md). O pipeline não importa o gerador:
 # os dois só compartilham o contrato.
 CATALOGO = (
     "page_view", "scroll", "click", "site_search", "select_content",
@@ -21,10 +21,13 @@ CATALOGO = (
     "create_group", "create_panel", "view_monitoring", "import_readings",
     "register_cleaning", "generate_report", "delete_panel", "delete_group",
     "sign_up", "login", "logout",
+    "begin_checkout", "purchase", "refund",
 )
 # o id que cada ação precisa ter (regra "ação sem id")
 ACOES_DE_GRUPO = ("create_group", "delete_group")
 ACOES_DE_PLACA = ("create_panel", "import_readings", "register_cleaning", "delete_panel")
+ACOES_DE_TRANSACAO = ("purchase", "refund")
+EVENTOS_COM_VALOR = ("begin_checkout", "purchase", "refund")
 MARCOS_SCROLL = (25, 50, 75, 90)
 PAUSA_MAXIMA = 30 * 60          # segundos sem evento que abrem uma sessão nova (R8)
 
@@ -34,6 +37,7 @@ ACAO_SEM_ID = "ação sem id"
 VALOR_INVALIDO = "valor numérico inválido"
 MARCO_FORA = "marco fora do padrão"
 EXCLUSAO_ORFA = "exclusão órfã"
+REEMBOLSO_ORFAO = "reembolso órfão"
 
 # Chaves de params (contrato) e o tipo de cada uma (R6). Valor que não converte vira nulo (try_cast);
 # a validação decide se isso é motivo de rejeição.
@@ -54,6 +58,8 @@ PARAMS = {
     "view": "string", "scope": "string",
     "rows": "bigint", "rows_ignored": "bigint", "panels_removed": "int",
     "method": "string",
+    "plano": "string", "value": "double", "currency": "string",
+    "transaction_id": "string", "payment_type": "string",
     "element_id": "string",
 }
 
@@ -100,35 +106,38 @@ def motivo(e) -> F.Column:
         F.when(nome.isNull() | ~nome.isin(*CATALOGO), F.lit(FORA_DO_CATALOGO))
         .when(e.event_ts.isNull() | (e.event_ts > e.ingerido_em), F.lit(TIMESTAMP_INVALIDO))
         .when((nome.isin(*ACOES_DE_GRUPO) & e.group_id.isNull())
-              | (nome.isin(*ACOES_DE_PLACA) & e.panel_id.isNull()), F.lit(ACAO_SEM_ID))
+              | (nome.isin(*ACOES_DE_PLACA) & e.panel_id.isNull())
+              | (nome.isin(*ACOES_DE_TRANSACAO) & e.transaction_id.isNull()), F.lit(ACAO_SEM_ID))
         .when(((nome == "import_readings")
                & (e.rows.isNull() | (e.rows < 0) | (F.coalesce(e.rows_ignored, F.lit(0)) < 0)))
-              | ((nome == "create_panel") & (e.potencia_wp.isNull() | (e.potencia_wp <= 0))), F.lit(VALOR_INVALIDO))
+              | ((nome == "create_panel") & (e.potencia_wp.isNull() | (e.potencia_wp <= 0)))
+              | (nome.isin(*EVENTOS_COM_VALOR) & (e.value.isNull() | (e.value <= 0))), F.lit(VALOR_INVALIDO))
         .when((nome == "scroll") & (e.percent_scrolled.isNull() | ~e.percent_scrolled.isin(*MARCOS_SCROLL)),
               F.lit(MARCO_FORA))
     )
 
 
-def _orfas(eventos: DataFrame, exclusao: str, criacao: str, chave: str) -> DataFrame:
-    """event_id das exclusões cujo id não aparece em nenhuma criação válida."""
+def _orfas(eventos: DataFrame, exclusao: str, criacao: str, chave: str, motivo_orfa: str = EXCLUSAO_ORFA) -> DataFrame:
+    """event_id (e o motivo) dos eventos que desfazem algo cujo id não aparece em nenhuma criação
+    válida: a exclusão sem cadastro, o reembolso sem compra."""
     criados = eventos.filter(F.col("event_name") == criacao).select(chave).distinct()
     return (eventos.filter(F.col("event_name") == exclusao)
-            .join(F.broadcast(criados), chave, "left_anti").select("event_id"))
+            .join(F.broadcast(criados), chave, "left_anti").select("event_id", F.lit(motivo_orfa).alias("_orfa")))
 
 
 def validar(eventos: DataFrame) -> tuple[DataFrame, DataFrame]:
     """Separa (válidos, rejeitados) (R7). Os rejeitados ganham `motivo_rejeicao`, um por linha.
 
     A exclusão órfã olha as criações que passaram nas outras regras: uma placa cujo create_panel
-    foi rejeitado deixa a exclusão dela sem cadastro válido (efeito em cascata)."""
+    foi rejeitado deixa a exclusão dela sem cadastro válido (efeito em cascata). O reembolso é igual:
+    vale só com um purchase válido do mesmo transaction_id."""
     marcados = eventos.withColumn("motivo_rejeicao", motivo(eventos)).cache()
     candidatos = marcados.filter(F.col("motivo_rejeicao").isNull())
     orfas = (_orfas(candidatos, "delete_panel", "create_panel", "panel_id")
              .unionByName(_orfas(candidatos, "delete_group", "create_group", "group_id"))
-             .withColumn("_orfa", F.lit(True)))
+             .unionByName(_orfas(candidatos, "refund", "purchase", "transaction_id", REEMBOLSO_ORFAO)))
     com_orfas = (marcados.join(orfas, "event_id", "left")
-                 .withColumn("motivo_rejeicao", F.coalesce("motivo_rejeicao",
-                                                           F.when(F.col("_orfa"), F.lit(EXCLUSAO_ORFA))))
+                 .withColumn("motivo_rejeicao", F.coalesce("motivo_rejeicao", "_orfa"))
                  .drop("_orfa"))
     validos = com_orfas.filter(F.col("motivo_rejeicao").isNull()).drop("motivo_rejeicao")
     rejeitados = com_orfas.filter(F.col("motivo_rejeicao").isNotNull())
@@ -166,13 +175,14 @@ def sessionizar(eventos: DataFrame) -> DataFrame:
 
 
 def explodir_itens(eventos: DataFrame) -> DataFrame:
-    """Uma linha por placa por evento (R10)."""
+    """Uma linha por item por evento (R10): a placa (com a potência) ou o plano (com o preço pago)."""
     return (eventos.select("event_id", "event_name", "event_ts", "sessao_id", "pessoa", "pagina",
                            "year", "month", "day", F.explode("items").alias("item"))
             .select("event_id", "event_name", "event_ts", "sessao_id", "pessoa", "pagina",
                     F.col("item.item_id").alias("item_id"),
                     F.col("item.item_category").alias("item_category"),
                     F.col("item.potencia_wp").alias("potencia_wp"),
+                    F.col("item.price").alias("price"),
                     F.col("item.quantity").alias("quantity"),
                     "year", "month", "day"))
 

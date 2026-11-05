@@ -19,7 +19,7 @@ def texto(*nomes):
 
 # Schema explícito do contrato (docs/CONTRATO_EVENTO.md). params fica map<string,string>: as chaves
 # variam por evento e o Spark guarda número/booleano como texto; a Silver tipa (R6).
-# items são as placas envolvidas no evento.
+# items são as placas envolvidas no evento ou, na assinatura, o plano comprado (com o preço pago).
 SCHEMA = StructType([
     StructField("event_id", StringType()),
     StructField("event_name", StringType()),
@@ -35,6 +35,7 @@ SCHEMA = StructType([
         StructField("item_id", StringType()),
         StructField("item_category", StringType()),
         StructField("potencia_wp", DoubleType()),
+        StructField("price", DoubleType()),
         StructField("quantity", LongType()),
     ]))),
 ])

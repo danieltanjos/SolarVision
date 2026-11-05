@@ -133,3 +133,35 @@ def test_itens_explodem_uma_linha_por_placa(spark):
     itens = silver.explodir_itens(df).collect()
     assert sorted((r.event_id, r.item_id, r.potencia_wp) for r in itens) == [
         ("a", "placa-10", 550.0), ("a", "placa-11", 400.0)]
+
+
+def _plano(preco):
+    return [{"item_id": "pro_mensal", "item_category": "plano", "price": preco, "quantity": 1}]
+
+
+def test_compra_e_reembolso_precisam_de_transacao_valor_e_compra_valida(spark):
+    validos, rejeitados = _validar(spark, [
+        evento("compra", "purchase", params={"transaction_id": "T-1", "plano": "pro_mensal", "value": 19.9},
+               items=_plano(19.9)),
+        evento("compra-sem-id", "purchase", params={"plano": "pro_mensal", "value": 19.9}),
+        evento("compra-zero", "purchase", params={"transaction_id": "T-2", "plano": "pro_mensal", "value": 0}),
+        evento("checkout-sem-valor", "begin_checkout", params={"plano": "pro_anual"}),
+        evento("reembolso", "refund", 60, params={"transaction_id": "T-1", "value": 19.9}),
+        evento("reembolso-cascata", "refund", 60, params={"transaction_id": "T-2", "value": 19.9}),
+        evento("reembolso-orfao", "refund", 60, params={"transaction_id": "T-404", "value": 19.9}),
+    ])
+    assert validos == {"compra", "reembolso"}
+    assert rejeitados == {
+        "compra-sem-id": silver.ACAO_SEM_ID,
+        "compra-zero": silver.VALOR_INVALIDO, "checkout-sem-valor": silver.VALOR_INVALIDO,
+        "reembolso-cascata": silver.REEMBOLSO_ORFAO, "reembolso-orfao": silver.REEMBOLSO_ORFAO,
+    }
+
+
+def test_itens_do_plano_guardam_o_preco_pago(spark):
+    df = _silver(spark, [evento("c", "purchase", tela="/app/planos",
+                                params={"transaction_id": "T-1", "plano": "pro_mensal", "value": 18.91},
+                                items=_plano(18.91))])
+    [linha] = silver.explodir_itens(df).collect()
+    assert (linha.item_id, linha.item_category, linha.price, linha.potencia_wp) == ("pro_mensal", "plano", 18.91, None)
+    assert df.first().value == 18.91 and df.first().transaction_id == "T-1"
