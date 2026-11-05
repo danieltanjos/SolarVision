@@ -1,8 +1,8 @@
 # Relatório — uso da plataforma SolarVision
 
-Respostas às quatro perguntas do [enunciado](docs/ENUNCIADO.md), com as tabelas Gold e os números que as sustentam, e a seção "Qualidade do dado".
+Respostas às cinco perguntas do [enunciado](docs/ENUNCIADO.md), com as tabelas Gold e os números que as sustentam, e a seção "Qualidade do dado".
 
-> **De onde vêm os números.** Uso simulado pelo gerador (`gerador/gerar_eventos.py`, padrões: seed 42, 3000 usuários, 28 dias de setembro de 2026, 3% de sujeira), processado pelas mesmas funções dos jobs (`silver.py`, `gold_*.py`). A plataforma ainda tem poucos usuários reais: os eventos reais (tabela `eventos_coletados`) entram pelo mesmo caminho e substituem a simulação quando houver volume. Com a mesma seed os arquivos são idênticos byte a byte, então `pipeline/rodar_tudo.py --limpar` no Docker reproduz estas tabelas. Os comportamentos (quem ativa, quem volta) são hipóteses codificadas no gerador: o relatório mostra o que o datalake é capaz de responder, não conclusões sobre usuários reais.
+> **De onde vêm os números.** Uso simulado pelo gerador (`gerador/gerar_eventos.py`, padrões: seed 42, 3000 usuários, 28 dias de setembro de 2026, 3% de sujeira), processado pelas mesmas funções dos jobs (`silver.py`, `gold_*.py`). A plataforma ainda tem poucos usuários reais: os eventos reais (tabela `eventos_coletados`) entram pelo mesmo caminho e substituem a simulação quando houver volume. Com a mesma seed os arquivos são idênticos byte a byte, então `pipeline/rodar_tudo.py --limpar` no Docker reproduz estas tabelas. A assinatura Pro também é simulada (`gerador/assinaturas.py`, com rng próprio, então não muda nenhum evento de uso): o app ainda não cobra. Os comportamentos (quem ativa, quem volta, quem paga) são hipóteses codificadas no gerador: o relatório mostra o que o datalake é capaz de responder, não conclusões sobre usuários reais.
 
 Visão geral (`gold/sessoes` e `bi.js`): **6.450 sessões** de **2.997 pessoas**, 4 min 23 s por sessão em média e 2,56 telas por sessão; **1.500 contas novas**, das quais **663 ativaram** (44,2%).
 
@@ -100,6 +100,42 @@ Visão geral (`gold/sessoes` e `bi.js`): **6.450 sessões** de **2.997 pessoas**
 
 **Recomendação:** usar a propensão para disparar ajuda no momento certo: um convite para o assistente de primeira usina nas sessões de alta propensão que saíram sem cadastrar. Para os 2.478 exploradores, o objetivo é virar operador; os 519 operadores são a base para entrevistas e para testar as integrações pedidas nas buscas.
 
+## 5. Receita — quanto a assinatura rende e qual canal traz quem paga?
+
+A receita vem da assinatura Pro (hipótese de monetização do MVP): `pro_mensal` a R$ 19,90 e `pro_anual` a R$ 199,00, com 5% de desconto no Pix e reembolso em até 7 dias. A Gold segue as definições do projeto-modelo: receita bruta = soma dos `purchase` válidos; reembolsada = soma dos `refund` válidos, atribuída à compra pelo `transaction_id`; líquida = bruta − reembolsada.
+
+`gold/taxa_reembolso` (canal = todos):
+
+| Plano | Pedidos | Reembolsados | Taxa de reembolso | Receita bruta | Receita líquida |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| **Todos** | **119** | 15 | **12,6%** | **R$ 10.018,50** | **R$ 8.688,20** |
+| `pro_anual` | 44 | 6 | 13,6% | R$ 8.557,00 | R$ 7.402,80 |
+| `pro_mensal` | 75 | 9 | 12,0% | R$ 1.461,50 | R$ 1.285,40 |
+
+- **O anual é 37% dos pedidos e 85% da receita** (`gold/adesao_plano_anual`: 44 de 119). 42,9% pagaram no Pix.
+- Os reembolsos levaram **R$ 1.330,30 (13,3% da bruta)**. Como cada um é atribuído à compra, `gold/receita_diaria` mostra a receita líquida na data em que a venda aconteceu, e não no dia do estorno.
+- **Checkout** (`gold/funil_assinatura`, por sessão): 205 sessões abriram a tela de planos e começaram o checkout, e 119 pagaram (58,0%). No simulador, quem abre os planos sempre clica em "Assinar"; com o app real, a diferença entre essas duas etapas vai medir o interesse no preço.
+
+**Qual canal traz quem paga?** O canal da compra é o da sessão em que ela aconteceu (5.4.3), e **85% das compras vêm de `direct / (none)`**: quem assina já é usuário e volta pelo favorito. Para a aquisição, o que importa é o canal do cadastro. `gold/cadastro_para_compra`:
+
+| Canal do cadastro | Contas novas | Compraram | Taxa | Mediana de dias até comprar |
+| --- | ---: | ---: | ---: | ---: |
+| Todos | 1.500 | 79 | 5,3% | 8,1 |
+| **indicação / referral** | 182 | 24 | **13,2%** | 8,1 |
+| google / organic | 358 | 29 | 8,1% | 8,6 |
+| newsletter / email | 82 | 6 | 7,3% | 15,0 |
+| direct / (none) | 259 | 16 | 6,2% | 5,2 |
+| linkedin / social | 114 | 2 | 1,8% | 6,2 |
+| google / cpc | 302 | 2 | **0,7%** | 0,5 |
+| instagram / social | 203 | 0 | **0,0%** | — |
+
+- As outras 40 das 119 compras são de **usuários antigos**, que já tinham conta antes do rastreamento e não têm `sign_up` no período.
+- A **indicação** converte 20 vezes mais que o Google pago. O Instagram, que já ativava pouco (16%), não trouxe nenhum pagante.
+- A compra demora: a mediana é de **8 dias** depois do cadastro, quando a pessoa já acompanha a usina. Uma oferta no primeiro dia chega cedo demais.
+- O Google orgânico reembolsa mais (3 de 8 pedidos, na sessão da compra). Base pequena: acompanhar antes de concluir.
+
+**Recomendação:** pôr a oferta do Pro no Monitoramento e no Relatório a partir da segunda semana de uso, e não no cadastro. Destacar o anual, que concentra a receita e reembolsa quase o mesmo que o mensal. Na aquisição, a mesma conclusão da seção 3, agora em reais: o programa de indicação traz quem ativa, volta **e paga**; o Google pago e o Instagram trazem contas que não viram receita.
+
 ---
 
 ## Qualidade do dado
@@ -108,11 +144,11 @@ Visão geral (`gold/sessoes` e `bi.js`): **6.450 sessões** de **2.997 pessoas**
 
 | | Eventos |
 | --- | ---: |
-| Linhas na landing / Bronze | 57.094 |
-| **Duplicatas descartadas** (mesmo `event_id`, R5) | **574** |
-| Eventos únicos | 56.520 |
-| **Rejeitados** (R7) | **1.731** |
-| Válidos na Silver | 54.789 |
+| Linhas na landing / Bronze | 57.894 |
+| **Duplicatas descartadas** (mesmo `event_id`, R5) | **568** |
+| Eventos únicos | 57.326 |
+| **Rejeitados** (R7) | **1.754** |
+| Válidos na Silver | 55.572 |
 
 Rejeitados por motivo (`silver/eventos_rejeitados`):
 
@@ -122,10 +158,11 @@ Rejeitados por motivo (`silver/eventos_rejeitados`):
 | marco fora do padrão | 260 | `scroll_33` (260) |
 | evento fora do catálogo | 259 | `evento_fora_catalogo` (259, `share_report`) |
 | exclusão órfã | 112 | `exclusao_orfa` (67) + 45 explicados abaixo |
-| valor numérico inválido | 90 | `linhas_negativas` (23) + `potencia_zero` (67) |
-| ação sem id | 80 | `acao_sem_id` (80) |
+| valor numérico inválido | 97 | `linhas_negativas` (23) + `potencia_zero` (67) + `valor_zerado` (7, compras com `value` 0) |
+| ação sem id | 87 | `acao_sem_id` (80) + `compra_sem_transacao` (7) |
+| reembolso órfão | 9 | `reembolso_orfao` (7) + 2 em cascata (reembolsos de compras rejeitadas) |
 
-As contagens fecham: 56.520 únicos = 54.789 válidos + 1.731 rejeitados, e todo defeito injetado foi encontrado.
+As contagens fecham: 57.326 únicos = 55.572 válidos + 1.754 rejeitados, e todo defeito injetado foi encontrado. Com a receita entraram 459 eventos (205 checkouts, 133 compras, 17 reembolsos e os cliques e telas do caminho) e 21 defeitos; as sessões (6.450) e as pessoas (2.997) são as mesmas de antes, porque a receita só continua sessões que já existiam. Os números das seções 1 a 4 continuam valendo: a receita tem rng próprio no gerador e não muda nenhum evento de uso. Só o que conta telas e sessões ganha a tela de planos (`uso_telas`, `sessoes` e as features do ML), e o modelo manteve AUC 0,972 e F1 0,813.
 
 **Alguma regra rejeitou dado legítimo? Sim, a da exclusão órfã.** Dos 112 casos, 67 são exclusões de placas que nunca existiram (o defeito injetado). Os outros 45 se dividem assim:
 - **35 legítimos:** 15 `delete_panel` e 20 `delete_group` de **usuários antigos**, que já tinham conta e usinas antes do rastreamento começar. O cadastro dessas placas nunca passou pelo datalake, então a exclusão parece órfã sem ser.
