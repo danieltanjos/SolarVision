@@ -1,0 +1,18 @@
+plano,canal,pedidos,pedidos_reembolsados,taxa_reembolso,receita_bruta,receita_liquida
+(todos),(todos),119,15,0.1261,10018.5,8688.2
+(todos),direct / (none),101,11,0.1089,8251.4,7178.8
+(todos),google / organic,8,3,0.375,874.6,635.8
+(todos),indicacao / referral,7,1,0.1429,484.55,465.65
+(todos),google / cpc,2,0,0.0,218.9,218.9
+(todos),newsletter / email,1,0,0.0,189.05,189.05
+pro_anual,(todos),44,6,0.1364,8557.0,7402.8
+pro_anual,direct / (none),36,5,0.1389,6984.9,6029.7
+pro_anual,google / organic,4,1,0.25,796.0,597.0
+pro_anual,indicacao / referral,2,0,0.0,388.05,388.05
+pro_anual,google / cpc,1,0,0.0,199.0,199.0
+pro_anual,newsletter / email,1,0,0.0,189.05,189.05
+pro_mensal,(todos),75,9,0.12,1461.5,1285.4
+pro_mensal,direct / (none),65,6,0.0923,1266.5,1149.1
+pro_mensal,indicacao / referral,5,1,0.2,96.5,77.6
+pro_mensal,google / organic,4,2,0.5,78.6,38.8
+pro_mensal,google / cpc,1,0,0.0,19.9,19.9

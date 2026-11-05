@@ -1,0 +1,22 @@
+canal,ordem,etapa,sessoes,conversao_etapa_anterior,conversao_topo
+(todos),1,viu_planos,205,,1.0
+(todos),2,begin_checkout,205,1.0,1.0
+(todos),3,purchase,119,0.5805,0.5805
+direct / (none),1,viu_planos,166,,1.0
+direct / (none),2,begin_checkout,166,1.0,1.0
+direct / (none),3,purchase,101,0.6084,0.6084
+google / cpc,1,viu_planos,5,,1.0
+google / cpc,2,begin_checkout,5,1.0,1.0
+google / cpc,3,purchase,2,0.4,0.4
+google / organic,1,viu_planos,13,,1.0
+google / organic,2,begin_checkout,13,1.0,1.0
+google / organic,3,purchase,8,0.6154,0.6154
+indicacao / referral,1,viu_planos,17,,1.0
+indicacao / referral,2,begin_checkout,17,1.0,1.0
+indicacao / referral,3,purchase,7,0.4118,0.4118
+instagram / social,1,viu_planos,1,,1.0
+instagram / social,2,begin_checkout,1,1.0,1.0
+instagram / social,3,purchase,0,0.0,0.0
+newsletter / email,1,viu_planos,3,,1.0
+newsletter / email,2,begin_checkout,3,1.0,1.0
+newsletter / email,3,purchase,1,0.3333,0.3333
