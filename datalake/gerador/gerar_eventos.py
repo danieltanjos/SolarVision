@@ -10,6 +10,7 @@ Não depende do pipeline nem do Spark. A mesma seed gera exatamente os mesmos ar
 from __future__ import annotations
 
 import argparse
+import random
 import sys
 from collections import Counter
 from datetime import datetime, timedelta, timezone
@@ -19,11 +20,12 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from gerador import catalogo as cat
+from gerador.assinaturas import simular_assinaturas
 from gerador.destinos import DestinoLocal, DestinoS3
 from gerador.elementos import marcar_elementos
 from gerador.jornadas import simular
 from gerador.lotes import montar_lotes
-from gerador.sujeira import aplicar_sujeira
+from gerador.sujeira import aplicar_sujeira, aplicar_sujeira_receita
 
 DATA_PADRAO = "2026-09-01"
 
@@ -32,11 +34,17 @@ def gerar(seed: int = 42, dias: int = 28, visitantes: int = 3000, sujeira: float
           data_inicial: datetime = datetime(2026, 9, 1, tzinfo=timezone.utc)) -> tuple[dict[str, str], dict]:
     """Devolve ({chave: conteúdo JSONL}, resumo)."""
     eventos, sessoes, rng = simular(seed, dias, visitantes, data_inicial)
-    for e in eventos:
+    # a receita tem rng próprio: entra no dado sem mudar nenhum evento de uso nem a sujeira deles
+    rng_receita = random.Random(f"receita-{seed}")
+    receita = simular_assinaturas(rng_receita, eventos)
+    for e in eventos + receita:
         e["_dt"] = e["event_ts"][:10]           # dia de coleta, antes de a sujeira mexer no timestamp
-    por_evento = Counter(e["event_name"] for e in eventos)
-    eventos_limpos = len(eventos)
+    por_evento = Counter(e["event_name"] for e in eventos + receita)
+    eventos_limpos = len(eventos) + len(receita)
     defeitos = aplicar_sujeira(rng, eventos, sujeira)
+    if sujeira > 0:
+        defeitos |= aplicar_sujeira_receita(rng_receita, receita)
+    eventos += receita
     marcar_elementos(eventos)                 # determinístico: não mexe no rng
     arquivos, duplicatas = montar_lotes(rng, eventos, origem="coletor", seed=seed)
 

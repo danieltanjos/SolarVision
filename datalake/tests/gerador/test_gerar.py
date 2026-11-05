@@ -22,7 +22,7 @@ def test_seeds_diferentes_geram_conteudo_diferente():
 def test_resumo_bate_com_as_linhas_gravadas():
     arquivos, r = _gerar(5)
     linhas = sum(len(v.splitlines()) for v in arquivos.values())
-    inseridos = r["sujeira"]["exclusao_orfa"] + r["sujeira"]["evento_fora_catalogo"]
+    inseridos = r["sujeira"]["exclusao_orfa"] + r["sujeira"]["evento_fora_catalogo"] + r["sujeira"]["reembolso_orfao"]
     assert linhas == r["linhas_gravadas"] == r["eventos_limpos"] + inseridos + r["duplicatas_reenvio"]
     assert r["visitantes"] == 200
     assert r["arquivos"] == len(arquivos)
@@ -46,3 +46,15 @@ def test_main_recusa_fracao_de_sujeira_absurda(tmp_path):
 def test_main_recusa_data_inicial_invalida(tmp_path):
     with pytest.raises(SystemExit):
         main(["--data-inicial", "2026-9-1x", "--saida-local", str(tmp_path)])
+
+
+def test_a_receita_nao_muda_os_eventos_de_uso():
+    """A assinatura tem rng próprio: tirando os eventos dela, o uso é o mesmo das jornadas."""
+    from gerador.assinaturas import simular_assinaturas
+    from gerador.jornadas import simular
+
+    eventos, _, _ = simular(5, 3, 200, DATA)
+    antes = [dict(e) for e in eventos]
+    import random
+    simular_assinaturas(random.Random("receita-5"), eventos)
+    assert eventos == antes

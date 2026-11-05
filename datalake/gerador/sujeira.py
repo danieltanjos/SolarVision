@@ -10,6 +10,9 @@ ficam em 5% dos cadastros de placa. O que sobra das cotas vai para
 
 O algoritmo é o do gerador do projeto-modelo; os tipos de defeito são os do
 SolarVision (enunciado, R7).
+
+A receita (assinaturas.py) tem a sua própria sujeira, aplicar_sujeira_receita, com o rng dela:
+compra sem transaction_id, compra com valor zerado e reembolso órfão, cada um em 5% das compras.
 """
 
 from __future__ import annotations
@@ -162,3 +165,27 @@ def aplicar_sujeira(rng: random.Random, eventos: list[dict], fracao: float) -> d
             eventos.append(inserir(rng, rng.choice(limpos)))
         contagem[tipo] = cotas[tipo]
     return contagem
+
+
+# ---- receita (assinatura Pro) ------------------------------------------------------------------
+TIPOS_RECEITA = ("compra_sem_transacao", "valor_zerado", "reembolso_orfao")
+
+
+def aplicar_sujeira_receita(rng: random.Random, eventos: list[dict]) -> dict[str, int]:
+    """Defeitos nos eventos da receita, no lugar: 5% das compras perdem o transaction_id, outros 5%
+    ficam com valor 0, e entram reembolsos órfãos (de uma transação que não existe) na mesma conta.
+    O reembolso de uma compra estragada também fica órfão na Silver (efeito em cascata)."""
+    compras = [e for e in eventos if e["event_name"] == "purchase"]
+    n = math.ceil(len(compras) * TETO)
+    rng.shuffle(compras)
+    for e in compras[:n]:
+        e["params"]["transaction_id"] = None
+    for e in compras[n:2 * n]:
+        e["params"]["value"] = 0
+    reembolsos = [e for e in eventos if e["event_name"] == "refund"] or compras
+    for _ in range(n):
+        base = rng.choice(reembolsos)
+        orfao = _clonar(rng, base, "refund", {**base["params"], "transaction_id": "T-" + f"{rng.getrandbits(64):016x}"})
+        orfao["items"] = copy.deepcopy(base["items"])
+        eventos.append(orfao)
+    return {"compra_sem_transacao": n, "valor_zerado": len(compras[n:2 * n]), "reembolso_orfao": n}

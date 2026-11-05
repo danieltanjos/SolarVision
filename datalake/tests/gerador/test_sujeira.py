@@ -70,3 +70,26 @@ def test_cada_nome_de_evento_recebe_no_maximo_5_por_cento_de_mutacoes(simulacao)
     assert mutados
     for nome, n in mutados.items():
         assert n <= math.ceil(total[nome] * 0.05), nome
+
+
+def _receita(simulacao):
+    from gerador.assinaturas import simular_assinaturas
+
+    return simular_assinaturas(random.Random("receita-7"), simulacao[0])
+
+
+def test_sujeira_da_receita_estraga_5_por_cento_das_compras(simulacao):
+    from gerador.sujeira import TIPOS_RECEITA, aplicar_sujeira_receita
+
+    receita = _receita(simulacao)
+    compras = sum(1 for e in receita if e["event_name"] == "purchase")
+    n = len(receita)
+    contagem = aplicar_sujeira_receita(random.Random(1), receita)
+    assert set(contagem) == set(TIPOS_RECEITA)
+    assert all(v == math.ceil(compras * 0.05) for v in contagem.values())
+    assert len(receita) == n + contagem["reembolso_orfao"]
+    transacoes = {e["params"]["transaction_id"] for e in receita if e["event_name"] == "purchase"}
+    assert sum(e["event_name"] == "purchase" and e["params"]["transaction_id"] is None for e in receita) == contagem["compra_sem_transacao"]
+    assert sum(e["event_name"] == "purchase" and e["params"]["value"] == 0 for e in receita) == contagem["valor_zerado"]
+    orfaos = [e for e in receita if e["event_name"] == "refund" and e["params"]["transaction_id"] not in transacoes]
+    assert len(orfaos) >= contagem["reembolso_orfao"]
