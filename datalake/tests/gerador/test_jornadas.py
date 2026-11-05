@@ -22,14 +22,15 @@ def _por_usuario(eventos):
     return grupos
 
 
-def test_todos_os_eventos_do_catalogo_aparecem(simulacao):
+def test_todos_os_eventos_de_uso_do_catalogo_aparecem(simulacao):
+    """A receita (begin_checkout, purchase, refund) vem de assinaturas.py, não das jornadas."""
     eventos, _ = simulacao
-    assert {e["event_name"] for e in eventos} == set(cat.EVENTOS)
+    assert {e["event_name"] for e in eventos} == set(cat.EVENTOS) - set(cat.EVENTOS_ASSINATURA)
 
 
-def test_catalogo_tem_20_eventos_e_o_funil_esta_nele():
-    assert len(cat.EVENTOS) == len(set(cat.EVENTOS)) == 20
-    assert set(cat.FUNIL_ATIVACAO) <= set(cat.EVENTOS)
+def test_catalogo_tem_23_eventos_e_o_funil_esta_nele():
+    assert len(cat.EVENTOS) == len(set(cat.EVENTOS)) == 23
+    assert set(cat.FUNIL_ATIVACAO) | set(cat.EVENTOS_ASSINATURA) <= set(cat.EVENTOS)
 
 
 def test_toda_jornada_comeca_com_page_view(simulacao):

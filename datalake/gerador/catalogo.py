@@ -16,7 +16,10 @@ EVENTOS = (
     "register_cleaning", "generate_report", "delete_panel", "delete_group",
     # conta
     "sign_up", "login", "logout",
+    # assinatura Pro (a receita): simulada à parte, em assinaturas.py
+    "begin_checkout", "purchase", "refund",
 )
+EVENTOS_ASSINATURA = ("begin_checkout", "purchase", "refund")
 
 # a jornada de ativação, na ordem do funil (enunciado 5.3)
 FUNIL_ATIVACAO = (
@@ -34,11 +37,13 @@ CAMINHOS = {
     "limpeza": "/app/limpeza",
     "cadastro": "/app/cadastro",
     "configuracoes": "/app/configuracoes",
+    "planos": "/app/planos",
 }
 PAGINAS = {tela: BASE_URL + caminho for tela, caminho in CAMINHOS.items()}
 TITULOS = {
     "login": "Entrar", "register": "Criar conta", "home": "Início", "monitoramento": "Monitoramento",
     "relatorio": "Relatório", "limpeza": "Limpeza", "cadastro": "Cadastro", "configuracoes": "Configurações",
+    "planos": "Planos",
 }
 # telas do menu lateral: o link_id do clique é nav_<tela>
 MENU = ("home", "monitoramento", "relatorio", "limpeza", "cadastro", "configuracoes")
@@ -62,6 +67,30 @@ CANAIS = (
      "peso": 0.05, "fator_ativacao": 1.2, "fator_retencao": 1.3},
 )
 DIRETO = CANAIS[0]
+
+# Assinatura Pro (hipótese de monetização do MVP; o app ainda não cobra): relatórios e previsão sem
+# limite de placas. fator_compra e fator_reembolso entram junto com os do canal de aquisição.
+PLANOS = (
+    {"item_id": "pro_mensal", "item_name": "SolarVision Pro mensal", "item_category": "plano", "price": 19.90,
+     "peso": 0.68, "fator_reembolso": 1.0},
+    {"item_id": "pro_anual", "item_name": "SolarVision Pro anual", "item_category": "plano", "price": 199.00,
+     "peso": 0.32, "fator_reembolso": 0.6},
+)
+PAGAMENTOS = ("pix", "cartao")
+PESOS_PAGAMENTO = (0.40, 0.60)
+DESCONTO_PIX = 0.05
+MOEDA = "BRL"
+# direito de arrependimento (CDC, art. 49): o reembolso só vale até 7 dias depois da compra
+DIAS_ARREPENDIMENTO = 7
+# canal de aquisição ("source / medium") -> (fator_compra, fator_reembolso); quem não está aqui é 1.0
+FATORES_RECEITA = {
+    ("google", "organic"): (1.1, 0.9),
+    ("google", "cpc"): (0.9, 1.4),
+    ("instagram", "social"): (0.6, 2.2),
+    ("linkedin", "social"): (1.3, 0.8),
+    ("indicacao", "referral"): (1.6, 0.5),
+    ("newsletter", "email"): (1.2, 0.8),
+}
 
 # o cadastro tem formulários longos: no celular, menos gente chega à primeira placa
 DISPOSITIVOS = (

@@ -13,7 +13,8 @@ from gerador import catalogo as cat
 
 SAIDAS = {urlparse(url).hostname: "saida-" + texto.lower().replace(" ", "-") for texto, url in cat.SAIDAS}
 # atalhos (CTA) que o app tem, além do menu lateral
-CTAS = ("cta_criar_conta", "cta_entrar", "cta_relatorio_mes", "cta_registrar_limpeza", "cta_importar")
+CTAS = ("cta_criar_conta", "cta_entrar", "cta_relatorio_mes", "cta_registrar_limpeza", "cta_importar",
+        "cta_conhecer_pro", "cta_assinatura")
 FIXOS = {
     "site_search": "busca-seletor",
     "view_alerts": "btn-alertas",
@@ -28,6 +29,9 @@ FIXOS = {
     "sign_up": "btn-signup",
     "login": "btn-login",
     "logout": "btn-sair",
+    "begin_checkout": "btn-assinar",
+    "purchase": "btn-pagar",
+    "refund": "btn-pedir-reembolso",
 }
 SELECAO = {"grupo": "seletor-grupo", "placa": "seletor-placa"}
 
