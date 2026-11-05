@@ -93,7 +93,7 @@ ROTEIROS: dict[str, list[Passo]] = {
     "jobs-lista": [
         Passo(_k("sincronizar-jobs"), "Sincronizar",
               "Os jobs e workflows rodam a partir do floci, do bucket glue-assets, como no Glue, onde os scripts ficam no S3. "
-              "Depois de criar ou editar arquivos em pipeline/, clique em Sincronizar: ele envia o que é novo ou mudou "
+              "Depois de criar ou editar as etapas em workflows/ (ou os jobs de pipeline/ que elas chamam), clique em Sincronizar: ele envia o que é novo ou mudou "
               "e tira do floci o que você apagou. Passe o mouse no botão para ver o que está esperando."),
         Passo(_k("painel-jobs"), "Seus jobs",
               "Cada script .py que está no floci (menos o comum.py) é um job. A tabela mostra o status e o início da "
@@ -118,7 +118,7 @@ ROTEIROS: dict[str, list[Passo]] = {
     "workflows-lista": [
         Passo(_k("sincronizar-workflows"), "Sincronizar",
               "Os jobs e workflows rodam a partir do floci, do bucket glue-assets, como no Glue, onde os scripts ficam no S3. "
-              "Depois de criar ou editar arquivos em pipeline/, clique em Sincronizar: ele envia o que é novo ou mudou "
+              "Depois de criar ou editar as etapas em workflows/ (ou os jobs de pipeline/ que elas chamam), clique em Sincronizar: ele envia o que é novo ou mudou "
               "e tira do floci o que você apagou. Passe o mouse no botão para ver o que está esperando."),
         Passo(None, "Workflows",
               "Um workflow junta vários jobs num grafo: cada job diz de quais outros depende. Ao executar, o console "
@@ -126,7 +126,7 @@ ROTEIROS: dict[str, list[Passo]] = {
               "mas jobs independentes podem rodar ao mesmo tempo."),
         Passo(_k("criar_workflow"), "Criar workflow",
               "Abre o formulário: você dá um nome, escolhe os jobs e diz de quem cada um depende. O workflow vai para "
-              "o floci e ganha uma cópia em pipeline/workflows/, para não se perder quando o floci reiniciar."),
+              "o floci e ganha uma cópia na pasta de workflows (workflows/), para não se perder quando o floci reiniciar."),
         Passo(_k("painel-workflows"), "Seus workflows",
               "Cada linha é um workflow, com quantos jobs tem e o status da última execução. Clique no nome para abrir."),
     ],

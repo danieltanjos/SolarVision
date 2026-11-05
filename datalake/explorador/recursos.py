@@ -6,7 +6,8 @@ Data Catalog nem no Athena):
     s3://glue-assets/scripts/<job>.py        e scripts/comum.py, a biblioteca que os jobs importam
     s3://glue-assets/workflows/<nome>.json
 
-O botão Sincronizar copia pipeline/*.py e pipeline/workflows/*.json para lá, como um espelho:
+O botão Sincronizar copia os .py da pasta de jobs (EXPLORADOR_JOBS; no SolarVision, workflows/) e os
+workflows .json dela para lá, como um espelho:
 o que é novo ou mudou é enviado e o que sumiu da pasta local sai do bucket. Para rodar, o console
 baixa os scripts do bucket numa pasta temporária e executa de lá, como o Glue faz.
 """

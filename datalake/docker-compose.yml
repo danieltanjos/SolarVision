@@ -38,6 +38,8 @@ services:
       - ../frontend/public/bi:/projeto/app-bi
     environment:
       <<: *ambiente-s3
+      # as etapas numeradas e os workflows ficam juntos em workflows/ (os jobs de verdade, em pipeline/)
+      EXPLORADOR_JOBS: workflows
     command: streamlit run explorador/app.py --server.port 8501 --server.address 0.0.0.0 --server.headless true --browser.gatherUsageStats false --client.showErrorDetails none
     ports:
       - "8501:8501"

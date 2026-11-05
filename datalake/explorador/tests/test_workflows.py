@@ -54,6 +54,25 @@ def test_salvar_listar_e_excluir(tmp_path):
     assert workflows.listar(tmp_path) == ([], [])
 
 
+def test_pasta_de_jobs_chamada_workflows_guarda_os_json_ao_lado_das_etapas(tmp_path):
+    pasta = tmp_path / "workflows"
+    assert workflows.pasta_definicoes(tmp_path) == tmp_path / "workflows"
+    assert workflows.pasta_definicoes(pasta) == pasta
+    workflows.salvar(pasta, MEDALHAO)
+    assert (pasta / "medalhao.json").is_file()
+    assert workflows.listar(pasta) == ([MEDALHAO], [])
+
+
+def test_terminal_acha_os_jobs_ao_lado_do_json_ou_na_pasta_de_cima(tmp_path):
+    ao_lado = tmp_path / "workflows"
+    ao_lado.mkdir()
+    (ao_lado / "01_bronze.py").write_text("")
+    assert workflows.pasta_de_jobs(ao_lado / "medalhao.json") == ao_lado
+    embaixo = tmp_path / "pipeline" / "workflows"
+    embaixo.mkdir(parents=True)
+    assert workflows.pasta_de_jobs(embaixo / "medalhao.json") == tmp_path / "pipeline"
+
+
 def test_arquivo_estragado_vira_aviso_sem_derrubar_a_lista(tmp_path):
     workflows.salvar(tmp_path, MEDALHAO)
     (tmp_path / "workflows" / "quebrado.json").write_text("{nao é json", encoding="utf-8")

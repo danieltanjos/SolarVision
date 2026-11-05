@@ -1,8 +1,10 @@
 """Workflows (no estilo do Glue Workflows): um grafo de jobs com dependências, montado no console.
 
-Cada workflow é um arquivo JSON na pasta de jobs, versionado junto com os scripts:
+Cada workflow é um arquivo JSON na pasta de jobs, versionado junto com os scripts: em
+<pasta de jobs>/workflows/ ou, se a própria pasta de jobs se chama workflows/, ao lado dos scripts
+(no SolarVision, EXPLORADOR_JOBS=workflows reúne as etapas e os workflows numa pasta só):
 
-    pipeline/workflows/medalhao.json
+    workflows/medalhao.json
     {"nome": "medalhao", "descricao": "…", "paralelo": 2,
      "etapas": [{"job": "bronze", "depende_de": []}, {"job": "silver", "depende_de": ["bronze"]}, …]}
 
@@ -13,7 +15,7 @@ os que já rodam terminam e o resto fica "Não executado". Cada etapa é uma exe
 
 Também roda pelo terminal:
 
-    docker compose run --rm app python -m explorador.workflows pipeline/workflows/medalhao.json
+    docker compose run --rm app python -m explorador.workflows workflows/medalhao.json
 """
 
 from __future__ import annotations
@@ -108,7 +110,9 @@ def validar(wf: Workflow, jobs_disponiveis: set[str]) -> None:
 
 
 def pasta_definicoes(pasta_jobs: Path) -> Path:
-    return Path(pasta_jobs) / PASTA
+    """Onde ficam os .json: <pasta de jobs>/workflows/, ou a própria pasta se ela já é a dos workflows."""
+    pasta = Path(pasta_jobs)
+    return pasta if pasta.name == PASTA else pasta / PASTA
 
 
 def salvar(pasta_jobs: Path, wf: Workflow) -> Path:
@@ -355,6 +359,13 @@ def em_execucao(pasta_exec: Path, workflow: str) -> bool:
 
 # --------------------------------------------------------------- terminal ---------------------------------------------------------------
 
+def pasta_de_jobs(arquivo: Path) -> Path:
+    """A pasta de jobs de um workflow: a do próprio .json quando os scripts estão ao lado dele
+    (workflows/<nome>.json), senão a de cima (<pasta de jobs>/workflows/<nome>.json)."""
+    pasta = Path(arquivo).parent
+    return pasta if glue.listar_jobs(pasta) else pasta.parent
+
+
 def main(argumentos: list[str]) -> int:
     if argumentos[:1] == ["--execucao"]:                # chamado pelo console (iniciar)
         id_execucao, pasta_jobs, pasta_exec, raiz = argumentos[1:5]
@@ -364,11 +375,11 @@ def main(argumentos: list[str]) -> int:
             if "--descartar" in argumentos[5:]:          # a cópia dos scripts era só desta execução
                 shutil.rmtree(pasta_jobs, ignore_errors=True)
     if len(argumentos) != 1:
-        print("uso: python -m explorador.workflows <pasta de jobs>/workflows/<nome>.json")
+        print("uso: python -m explorador.workflows <pasta de jobs>/workflows/<nome>.json (ou workflows/<nome>.json)")
         return 2
     arquivo = Path(argumentos[0]).resolve()
     raiz = Path.cwd()
-    pasta_jobs = arquivo.parent.parent                  # <pasta de jobs>/workflows/<nome>.json
+    pasta_jobs = pasta_de_jobs(arquivo)
     pasta_exec = Path(os.environ.get("EXPLORADOR_EXECUCOES", "/tmp/explorador-execucoes"))
     wf = carregar(arquivo)
     validar(wf, {j.nome for j in glue.listar_jobs(pasta_jobs)})

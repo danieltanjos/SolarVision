@@ -120,7 +120,7 @@ s3://glue-assets/workflows/<nome>.json     os seus workflows
 
 Você continua escrevendo os arquivos em `pipeline/`, no seu editor. Para eles chegarem ao floci, clique em **⟳ Sincronizar**, no topo das telas Jobs ETL e Workflows. Passe o mouse no botão (ou chegue nele com o Tab) para ver a explicação e quantos arquivos estão esperando; o botão fica laranja quando há algo para enviar. Ele funciona como um espelho:
 
-- o que é **novo ou mudou** em `pipeline/*.py` e `pipeline/workflows/*.json` é enviado;
+- o que é **novo ou mudou** em `pipeline/*.py` e `pipeline/workflows/*.json` é enviado (no SolarVision a pasta de jobs é `workflows/`, com `EXPLORADOR_JOBS=workflows`: vão as etapas numeradas e os `.json` que ficam ao lado delas);
 - o que você **apagou** da pasta sai do floci;
 - o `comum.py` também vai, para os jobs conseguirem fazer `from comum import …`.
 
@@ -182,7 +182,7 @@ flowchart LR
 
 - **Criar workflow:** dê um **nome** (letras minúsculas, números, `_` ou `-`), escolha os **jobs** que estão no floci e, para cada um, de quais outros ele **depende**. O botão **Encadear em sequência** monta uma fila simples (cada job depende do anterior), na ordem em que você escolheu os jobs. A **prévia** desenha o grafo enquanto você preenche e avisa se algo estiver errado, por exemplo um **ciclo** (A espera B e B espera A).
 - **Jobs ao mesmo tempo:** quantos jobs independentes podem rodar juntos (de 1 a 4; o padrão é 2). Cada job abre um Spark, e mais de 2 ao mesmo tempo pode faltar memória.
-- **Onde fica salvo:** no floci, em `s3://glue-assets/workflows/<nome>.json`, e numa cópia local em `pipeline/workflows/<nome>.json`, junto com os seus scripts. A cópia local entra no git e garante que o próximo Sincronizar não apague o workflow (o floci perde tudo quando reinicia). Um workflow escrito à mão em `pipeline/workflows/` chega ao floci pelo Sincronizar.
+- **Onde fica salvo:** no floci, em `s3://glue-assets/workflows/<nome>.json`, e numa cópia local em `pipeline/workflows/<nome>.json` (no SolarVision, `workflows/<nome>.json`), junto com os seus scripts. A cópia local entra no git e garante que o próximo Sincronizar não apague o workflow (o floci perde tudo quando reinicia). Um workflow escrito à mão em `pipeline/workflows/` chega ao floci pelo Sincronizar.
 - **Executar:** baixa os scripts do floci e começa uma execução nova. A aba **Execução** mostra o grafo com as cores do status de cada job (azul rodando, verde sucesso, vermelho falhou, tracejado não executado), a tabela de **Etapas** (dependências, status, início e duração) e o **log** da etapa escolhida. Tudo se atualiza sozinho a cada 2 segundos.
 - **Se um job falha:** nenhum job novo começa. Os que já estavam rodando terminam, e quem dependia do que falhou fica como **Não executado**. O log da etapa que falhou já aparece escolhido.
 - **Parar:** não começa jobs novos; os que já rodam terminam. A execução termina como **Parado**.
@@ -190,7 +190,7 @@ flowchart LR
 - **Definição:** o `.json` que está no floci e o comando para rodar a cópia local pelo terminal, sem o explorador:
 
 ```bash
-docker compose run --rm app python -m explorador.workflows pipeline/workflows/medalhao.json
+docker compose run --rm app python -m explorador.workflows workflows/medalhao.json
 ```
 
 Pelo terminal, o progresso aparece na tela (`>>>` quando um job começa, `<<<` quando termina) e, se algo falhar, as últimas linhas do log. Essa execução roda num contêiner à parte, então não entra no **Histórico** do console. Os dados gravados no bucket são os mesmos.
