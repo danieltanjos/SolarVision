@@ -12,17 +12,18 @@ Um job por camada, como pede o [enunciado](../docs/ENUNCIADO.md) (R1 a R11). A b
 | `gold_funil.py` | `silver/` | `gold/funil_ativacao` (qualquer momento), `gold/funil_ordenado` (na ordem, com perdas, tempo entre etapas e maior vazamento), `gold/funil_login` |
 | `gold_engajamento.py` | `silver/` | `gold/sessoes`, `gold/uso_telas`, `gold/buscas_seletor`, `gold/saidas_downloads`, `gold/adocao_recursos`, `gold/atividade_diaria` (DAU/WAU/MAU) |
 | `gold_aquisicao.py` | `silver/` | `gold/ativacao_diaria`, `gold/retencao`, `gold/taxa_abandono`, `gold/cadastro_para_ativacao` |
+| `gold_receita.py` | `silver/` | `gold/receita_diaria`, `gold/taxa_reembolso`, `gold/adesao_plano_anual`, `gold/cadastro_para_compra`, `gold/funil_assinatura` (a assinatura Pro) |
 | `gold_ml.py` | `silver/` | `gold/propensao_ativacao`, `gold/metricas_modelo`, `gold/segmentos_usuarios` (Spark ML) |
 | `gold_mapa_calor.py` | `silver/` | `gold/mapa_calor_cliques`, `gold/mapa_calor_rolagem` (nomes de coluna do R11) |
-| `exportar_bi.py` | as 19 Golds | `frontend/public/bi/mapa_calor.js` e `bi.js` (montado em `/projeto/app-bi`) |
-| `rodar_tudo.py` | `workflows/medalhao.json` | roda os nove na ordem do grafo e para no primeiro que falhar (R3); `--limpar` recomeça do zero; `--a-partir-de JOB` reprocessa um job e os que dependem dele |
+| `exportar_bi.py` | as Golds do painel | `frontend/public/bi/mapa_calor.js` e `bi.js` (montado em `/projeto/app-bi`) |
+| `rodar_tudo.py` | `../workflows/medalhao.json` | roda as nove etapas na ordem do grafo e para na primeira que falhar (R3); `--limpar` recomeça do zero; `--a-partir-de ETAPA` reprocessa uma etapa e as que dependem dela |
 
 ```bash
 docker compose run --rm app python pipeline/rodar_tudo.py --limpar   # reconstrói o datalake inteiro
 docker compose run --rm app pytest                                    # gerador, coletor, jobs e explorador
 ```
 
-Cada job tem as transformações em funções puras de DataFrame (`deduplicar`, `validar`, `sessionizar`, `funil_ativacao`, `base_propensao`…) e um `main()` que só lê, chama e grava. Os testes em `tests/pipeline/` montam DataFrames pequenos (`tests/pipeline/fabrica.py`) e conferem as funções sem o S3. O workflow `workflows/medalhao.json` é a fonte única da ordem: o explorador roda esse grafo (com as Golds em paralelo) e o `rodar_tudo.py` lê o mesmo arquivo. Conceitos e decisões em [docs/FUNIL-ENGAJAMENTO-WORKFLOW.md](../docs/FUNIL-ENGAJAMENTO-WORKFLOW.md).
+Cada job tem as transformações em funções puras de DataFrame (`deduplicar`, `validar`, `sessionizar`, `funil_ativacao`, `base_propensao`…) e um `main()` que só lê, chama e grava. Os testes em `tests/pipeline/` montam DataFrames pequenos (`tests/pipeline/fabrica.py`) e conferem as funções sem o S3. A ordem fica em [`../workflows/`](../workflows/README.md): cada etapa numerada (`05_gold_receita_aquisicao.py`…) chama um ou mais jobs daqui, e o `medalhao.json` ao lado é a fonte única do grafo: o explorador roda esse grafo (com as Golds em paralelo) e o `rodar_tudo.py` lê o mesmo arquivo. Conceitos e decisões em [docs/FUNIL-ENGAJAMENTO-WORKFLOW.md](../docs/FUNIL-ENGAJAMENTO-WORKFLOW.md).
 
 Um **job** é um script Python que faz uma etapa do trabalho do começo ao fim: lê uma camada, transforma os dados e grava a camada seguinte. Por exemplo, o job Bronze lê a `landing/` e grava a `bronze/`.
 
@@ -38,10 +39,12 @@ Troque `<seu_job>` pelo nome do seu arquivo. Se você nunca usou Docker, o [SETU
 
 Outra forma: abra o explorador (http://localhost:8501) e vá em **Glue · Jobs ETL**. Como no Glue, os jobs do console moram no S3 (no bucket `glue-assets` do floci): clique primeiro em **⟳ Sincronizar** para enviar os seus `.py` de `pipeline/` para lá, depois escolha o job e clique em **Executar**. Ele roda a cópia do floci e mostra o status (**Sucesso** ou **Falhou**), a duração e o log. Mudou o arquivo? Sincronize de novo. Veja [explorador/README.md](../explorador/README.md#glue--jobs-etl).
 
-Para rodar **vários jobs de uma vez**, na ordem certa, monte um workflow em **Glue · Workflows**: você escolhe os jobs e diz de quem cada um depende (a Silver depende da Bronze, as Golds dependem da Silver…). Ele fica salvo no floci (`s3://glue-assets/workflows/<nome>.json`) e numa cópia em `pipeline/workflows/<nome>.json`, e a cópia local também roda pelo terminal:
+No SolarVision o explorador olha a pasta [`../workflows/`](../workflows/README.md) (`EXPLORADOR_JOBS=workflows` no `docker-compose.yml`): o Sincronizar leva as etapas numeradas e os `.json`, e a tela Jobs ETL lista `01_bronze_eventos` … `09_exportar_bi`. Cada etapa roda os jobs desta pasta.
+
+Para rodar **vários jobs de uma vez**, na ordem certa, use um workflow em **Glue · Workflows**: cada etapa diz de quais outras depende (a Silver depende da Bronze, as Golds dependem do portão…). Ele fica salvo no floci (`s3://glue-assets/workflows/<nome>.json`) e numa cópia em `workflows/<nome>.json`, e a cópia local também roda pelo terminal:
 
 ```bash
-docker compose run --rm app python -m explorador.workflows pipeline/workflows/<nome>.json
+docker compose run --rm app python -m explorador.workflows workflows/<nome>.json
 ```
 
 Veja [explorador/README.md](../explorador/README.md#glue--workflows).

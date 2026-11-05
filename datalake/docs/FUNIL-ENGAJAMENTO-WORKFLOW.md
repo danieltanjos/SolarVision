@@ -71,7 +71,7 @@ A diferença entre os dois funis também é informação: um `create_panel` "em 
 **Conceito.** Um workflow é o grafo de dependências entre os jobs: cada job só roda quando os de que depende terminaram com sucesso, e quem não depende de ninguém pode rodar em paralelo. No projeto-modelo esse grafo é a tela *Glue · Workflows* do explorador ("se uma etapa queima, você não serve o resto"). O curso aponta o **Apache Airflow** como o passo seguinte para orquestrar e agendar os jobs PySpark.
 
 **O que já tínhamos.**
-- `workflows/medalhao.json`: Bronze → Silver → as cinco Golds em paralelo, duas por vez → exportação;
+- `pipeline/workflows/medalhao.json` (hoje em [`workflows/`](../workflows/README.md), com as etapas numeradas): Bronze → Silver → as cinco Golds em paralelo, duas por vez → exportação;
 - `rodar_tudo.py` (R3): uma lista fixa com os oito jobs.
 
 **O que entrou.**

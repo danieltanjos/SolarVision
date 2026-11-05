@@ -6,12 +6,13 @@
 
 O SolarVision é uma plataforma web de monitoramento de energia solar (React na Vercel + Supabase). Sabemos quantas usinas e placas estão cadastradas, mas **não sabemos como as pessoas usam a plataforma**: onde desistem do cadastro, quais telas usam, de onde vêm os usuários que ficam e quem está perto de abandonar.
 
-O app foi instrumentado com **20 eventos de uso** (o `frontend/src/lib/tracking.js`), que chegam a um bucket S3 como arquivos JSON Lines. Vamos construir um **datalake em arquitetura medalhão** (Bronze → Silver → Gold) que transforme esses eventos em **business intelligence do produto**, respondendo a quatro perguntas:
+O app foi instrumentado com **20 eventos de uso** (o `frontend/src/lib/tracking.js`), que chegam a um bucket S3 como arquivos JSON Lines; o contrato tem mais **3 eventos da assinatura Pro** (`begin_checkout`, `purchase`, `refund`), a hipótese de receita do MVP, que por enquanto só o gerador emite. Vamos construir um **datalake em arquitetura medalhão** (Bronze → Silver → Gold) que transforme esses eventos em **business intelligence do produto**, respondendo a cinco perguntas:
 
 1. **Funil de ativação** — em que etapa entre criar a conta e tirar o primeiro relatório perdemos mais usuários, por canal e por dispositivo?
 2. **Engajamento** — quais telas e recursos são usados de verdade? O que as pessoas procuram no seletor de usinas e não encontram?
 3. **Aquisição e retenção** — qual canal traz usuários que ativam e voltam, e quem abandona a plataforma?
 4. **Previsão** — quais sessões estão perto de ativar (cadastrar a primeira placa), e que perfis de uso existem?
+5. **Receita** — quanto a assinatura Pro rende de fato, descontados os reembolsos, e qual canal traz quem paga e não desiste?
 
 **Ativar** é o momento em que o usuário cadastra a primeira placa: a partir dela o SolarVision passa a estimar a geração e a plataforma começa a entregar valor.
 
@@ -29,7 +30,9 @@ Competências avaliadas (as mesmas do projeto-modelo): ingestão de dado semiest
 
 ## 2. O produto
 
-As telas, os 20 eventos, os `params` e os elementos clicáveis estão no [CONTRATO_EVENTO.md](CONTRATO_EVENTO.md).
+As telas, os 23 eventos, os `params` e os elementos clicáveis estão no [CONTRATO_EVENTO.md](CONTRATO_EVENTO.md).
+
+**Assinatura Pro** (hipótese de monetização; o app ainda não cobra): `pro_mensal` (R$ 19,90) e `pro_anual` (R$ 199,00), com 5% de desconto no Pix e reembolso em até 7 dias (direito de arrependimento).
 
 **Canais de aquisição** (`traffic.source / traffic.medium`): `google / organic`, `google / cpc`, `instagram / social`, `linkedin / social`, `indicacao / referral`, `newsletter / email` e `direct / (none)`.
 
@@ -53,8 +56,9 @@ As telas, os 20 eventos, os `params` e os elementos clicáveis estão no [CONTRA
 | `frontend/src/lib/tracking.js` | a `track()` do app: identidade, contexto, `element_id` e envio em lotes |
 | `supabase/migrations/…_coletor_eventos.sql` | tabela `eventos_coletados` (só insert) e o opt-out do rastreamento |
 | `coletor/coletar_supabase.py` | leva os eventos reais do Supabase para a landing |
-| `gerador/` (catálogo, jornadas, elementos, sujeira) | simula semanas de uso do SolarVision, com defeitos, para dar volume |
-| `pipeline/` | os jobs Bronze, Silver, cinco Golds, a exportação para o app e o script de sequência |
+| `gerador/` (catálogo, jornadas, assinaturas, elementos, sujeira) | simula semanas de uso do SolarVision e a assinatura Pro, com defeitos, para dar volume |
+| `pipeline/` | os jobs Bronze, Silver, as Golds, a exportação para o app e o script de sequência |
+| `workflows/` | as etapas numeradas (`01_bronze_eventos` … `09_exportar_bi`) e os workflows `medalhao.json` e `receita_aquisicao.json`, numa pasta só |
 | `RELATORIO.md` | as respostas às quatro perguntas e a seção "Qualidade do dado" |
 | Página **Uso da plataforma** e overlay do **mapa de calor** no app | o BI de volta para o produto |
 
@@ -79,7 +83,7 @@ flowchart LR
         silver --> q{"portão de<br/>qualidade"}
         q --> g1["Gold funil"]
         q --> g2["Gold engajamento"]
-        q --> g3["Gold aquisição e retenção"]
+        silver --> g3["Gold receita e aquisição"]
         q --> g4["Gold ML"]
         q --> g5["Gold mapa de calor"]
     end
@@ -95,8 +99,8 @@ Todas as camadas ficam no bucket `solarvision-datalake`, em Parquet: `landing/`,
 ### 5.1 Arquitetura (iguais ao projeto-modelo)
 
 - **R1.** PySpark lendo de `landing/` e gravando todas as camadas no mesmo bucket, em Parquet, **só pelo Spark com `s3a://`** (sem `boto3` no pipeline), no contêiner `app`.
-- **R2.** Um job por camada: Bronze, Silver, cinco Golds (funil, engajamento, aquisição e retenção, ML, mapa de calor) e a exportação para o app; entre a Silver e as Golds, o job `qualidade` (portão do workflow, extensão nossa). Cada job confere a camada de que depende com `exigir_camada`.
-- **R3.** Um script que roda os jobs em sequência (`pipeline/rodar_tudo.py`), na ordem do grafo `pipeline/workflows/medalhao.json`: os oito do projeto-modelo mais o portão de qualidade. Ele não gera dados.
+- **R2.** Um job por camada: Bronze, Silver, cinco Golds (funil, engajamento, receita e aquisição, ML, mapa de calor) e a exportação para o app; entre a Silver e as Golds, o job `qualidade` (portão do workflow, extensão nossa). A Gold receita e aquisição tem dois arquivos, `gold_aquisicao.py` (ativação e retenção) e `gold_receita.py` (assinatura), e uma etapa só no workflow. Cada job confere a camada de que depende com `exigir_camada`.
+- **R3.** Um script que roda os jobs em sequência (`pipeline/rodar_tudo.py`), na ordem do grafo `workflows/medalhao.json`: as nove etapas numeradas, de `01_bronze_eventos` a `09_exportar_bi`. A etapa `05_gold_receita_aquisicao` depende só de `02_silver_eventos`; as outras Golds, do portão `03_qualidade_dados`. Ele não gera dados.
 - **R4.** Bronze append-only, schema explícito, particionada `event_name=/year=/month=/day=` (dia de coleta) e com proveniência (`arquivo_origem`, `ingerido_em`).
 
 ### 5.2 Silver
@@ -107,18 +111,19 @@ Todas as camadas ficam no bucket `solarvision-datalake`, em Parquet: `landing/`,
 
   | Motivo | Condição |
   | --- | --- |
-  | evento fora do catálogo | `event_name` fora dos 20 eventos do contrato |
+  | evento fora do catálogo | `event_name` fora dos 23 eventos do contrato |
   | timestamp ausente ou futuro | `event_ts` nulo ou posterior ao instante de ingestão |
-  | ação sem id | `create_group`/`delete_group` sem `group_id`; `create_panel`, `import_readings`, `register_cleaning` ou `delete_panel` sem `panel_id` |
-  | valor numérico inválido | `rows` ou `rows_ignored` negativos em `import_readings`; `potencia_wp` ≤ 0 em `create_panel` |
+  | ação sem id | `create_group`/`delete_group` sem `group_id`; `create_panel`, `import_readings`, `register_cleaning` ou `delete_panel` sem `panel_id`; `purchase`/`refund` sem `transaction_id` |
+  | valor numérico inválido | `rows` ou `rows_ignored` negativos em `import_readings`; `potencia_wp` ≤ 0 em `create_panel`; `value` nulo ou ≤ 0 em `begin_checkout`, `purchase` ou `refund` |
   | marco fora do padrão | `percent_scrolled` ∉ {25, 50, 75, 90} |
   | exclusão órfã | `delete_panel`/`delete_group` cujo id não existe em nenhum `create_panel`/`create_group` válido |
+  | reembolso órfão | `refund` cujo `transaction_id` não existe em nenhum `purchase` válido |
 
 - **R8.** Sessionização própria: sessão nova quando o mesmo `user_pseudo_id` fica mais de 30 minutos sem evento. **`session_hint` não pode ser usado.**
 - **R9.** Identity stitching: todo evento de um `user_pseudo_id` que em algum momento tenha `user_id` recebe esse `user_id`, inclusive os anteriores ao login.
-- **R10.** `silver/itens/`: `items[]` explodido, uma linha por placa por evento.
+- **R10.** `silver/itens/`: `items[]` explodido, uma linha por item (placa ou plano) por evento, com `potencia_wp` da placa e `price` do plano.
 
-### 5.3 Gold: as 19 tabelas
+### 5.3 Gold: as 24 tabelas
 
 | Job | Tabela | Conteúdo mínimo |
 | --- | --- | --- |
@@ -135,6 +140,11 @@ Todas as camadas ficam no bucket `solarvision-datalake`, em Parquet: `landing/`,
 | | `retencao` | por canal do sign_up: pessoas elegíveis e retidas em D1, D7 e D14 |
 | | `taxa_abandono` | por canal: pessoas que ativaram e quantas abandonaram (excluíram todas as placas que criaram) |
 | | `cadastro_para_ativacao` | pessoas com sign_up, quantas ativaram depois e a mediana de dias entre sign_up e a primeira placa; total e por canal |
+| Receita (assinatura Pro) | `receita_diaria` | por **data da compra**, plano e canal: pedidos, receita bruta, reembolsada e líquida, ticket médio |
+| | `taxa_reembolso` | pedidos, pedidos reembolsados e taxa de reembolso por plano × canal, por plano, por canal e no total, com a receita bruta e a líquida |
+| | `adesao_plano_anual` | por canal e no total: pedidos, fração do plano anual e fração paga no Pix |
+| | `cadastro_para_compra` | pessoas com sign_up, quantas compraram depois e a mediana de dias entre o sign_up e a primeira compra; total e por canal |
+| | `funil_assinatura` | sessões que viram os planos → começaram o checkout → pagaram (qualquer momento), com conversões; total e por canal |
 | ML | `propensao_ativacao` | probabilidade de ativação por sessão, com modelo de classificação |
 | | `metricas_modelo` | AUC, F1, precisão e recall no teste, e a lista de features |
 | | `segmentos_usuarios` | grupo de cada pessoa (K-Means) e o perfil médio de cada grupo |
@@ -158,6 +168,9 @@ Todas as camadas ficam no bucket `solarvision-datalake`, em Parquet: `landing/`,
 10. **Datas:** UTC.
 11. **Métricas do modelo:** F1, precisão e recall referem-se à classe positiva (sessão que ativou).
 12. **Página:** caminho de `page_location` sem domínio, `#` e `?`; a raiz vira `/`.
+13. **Receita** (as do projeto-modelo): bruta = soma de `value` dos `purchase` válidos (já com o desconto do Pix); reembolsada = soma de `value` dos `refund` válidos, **atribuída à compra** pelo `transaction_id` (fica na data e no canal da compra, não do reembolso); líquida = bruta − reembolsada; ticket médio = bruta ÷ pedidos. Valores em R$, arredondados a 2 casas.
+14. **Plano e canal de uma compra:** o plano é o item de categoria `plano` do `purchase`; o canal é o da sessão em que a compra aconteceu (5.4.3). Para a aquisição, `cadastro_para_compra` usa o canal da pessoa (5.4.4).
+15. **Taxa de reembolso:** pedidos com reembolso ÷ pedidos. **Dias até comprar:** como em 5.4.6, entre o primeiro `sign_up` e a primeira compra estritamente depois dele.
 
 ### 5.5 Mapa de calor no app (R11)
 
@@ -175,7 +188,7 @@ O botão **Mapa de calor** (só ADMIN) pinta, na tela atual do app, os elementos
 cd datalake
 docker compose up -d floci
 docker compose run --rm app python gerador/gerar_eventos.py      # uso sintético (landing)
-docker compose run --rm app python pipeline/rodar_tudo.py        # Bronze → Silver → Golds → exportação
+docker compose run --rm app python pipeline/rodar_tudo.py        # as etapas de workflows/medalhao.json, na ordem
 docker compose up -d explorador                                  # console em http://localhost:8501
 ```
 
@@ -188,7 +201,7 @@ Eventos reais: `docker compose run --rm app python coletor/coletar_supabase.py` 
 | Arquitetura (R1–R4) | 15 |
 | Silver (R5–R10) | 25 |
 | Gold (5.3) e mapa de calor no app (R11) | 30 |
-| Relatório: respostas às quatro perguntas com números da Gold | 20 |
+| Relatório: respostas às cinco perguntas com números da Gold | 20 |
 | Qualidade do dado: duplicatas, rejeições e armadilhas | 10 |
 
 ## Glossário (resumo)
@@ -198,6 +211,7 @@ Eventos reais: `docker compose run --rm app python coletor/coletar_supabase.py` 
 - **Ativação:** cadastrar a primeira placa.
 - **Retenção Dn:** voltar à plataforma *n* dias ou mais depois de criar a conta.
 - **Abandono:** excluir todas as placas que criou.
+- **Receita líquida:** o que a assinatura rendeu depois de devolver os reembolsos. **Ticket médio:** valor médio de um pedido.
 - **Sessão:** uma visita; nova sessão após 30 min sem evento.
 - **Identity stitching:** ligar o navegador anônimo à pessoa logada.
 - **Propensão:** probabilidade de a sessão terminar em ativação.

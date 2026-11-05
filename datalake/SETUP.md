@@ -145,10 +145,10 @@ docker compose run --rm app python -m pytest
 
 A primeira linha roda um script (troque `<script.py>` pelo caminho dele, por exemplo `pipeline/bronze.py`). A segunda roda os testes automáticos com o `pytest`.
 
-Para rodar vários jobs na ordem certa, monte um workflow na tela **Glue · Workflows** do explorador (ele fica salvo em `pipeline/workflows/<nome>.json`) e rode pelo console ou pelo terminal:
+Para rodar vários jobs na ordem certa, use um workflow da pasta [`workflows/`](workflows/README.md) (o `medalhao.json` roda tudo; o `receita_aquisicao.json`, só o caminho da receita), pela tela **Glue · Workflows** do explorador ou pelo terminal:
 
 ```bash
-docker compose run --rm app python -m explorador.workflows pipeline/workflows/<nome>.json
+docker compose run --rm app python -m explorador.workflows workflows/<nome>.json
 ```
 
 ## Problemas comuns
