@@ -4,6 +4,8 @@ Este documento descreve o formato dos eventos de uso do SolarVision e o layout d
 
 O formato é o mesmo do projeto-modelo do professor (DadosPro): só mudam o catálogo de eventos, os `params` e os `element_id`, porque o "site" instrumentado agora é o próprio SolarVision.
 
+A **assinatura Pro** (`begin_checkout`, `purchase`, `refund`) é a receita do produto. Ela é uma **hipótese de monetização do MVP**: o app ainda não cobra nem tem a tela de planos, então hoje esses eventos só vêm do gerador sintético (`gerador/assinaturas.py`). O contrato já fixa o formato para o checkout real emitir os mesmos campos quando existir.
+
 > **Aviso:** o coletor pode reenviar um lote: o mesmo `event_id` pode aparecer mais de uma vez (a Silver deduplica, R5).
 
 ```mermaid
@@ -61,8 +63,8 @@ Exemplo: o usuário cadastrou uma placa de 550 Wp no grupo 17.
 | `traffic` | `source`, `medium`, `campaign`: dos parâmetros `utm_*` da primeira visita, ou do referrer; `direct / (none)` sem nenhum |
 | `device` | `category` (`desktop`, `tablet`, `mobile`), `os`, `browser` |
 | `params` | varia por evento (tabela abaixo); números em número JSON |
-| `items` | as **placas envolvidas** no evento; `[]` nos demais |
-| dado pessoal | **nunca** há e-mail, nome, coordenadas, tarifa ou texto livre digitado pelo usuário (exceto o termo de busca do seletor, que é o nome de grupo/placa buscado) |
+| `items` | as **placas envolvidas** no evento ou, na assinatura, o **plano** comprado; `[]` nos demais |
+| dado pessoal | **nunca** há e-mail, nome, coordenadas, tarifa ou texto livre digitado pelo usuário (exceto o termo de busca do seletor, que é o nome de grupo/placa buscado); na compra, nunca há cartão, CPF ou chave Pix: só o `transaction_id` do provedor de pagamento |
 
 O `user_id` é um hash do id interno: o datalake liga os eventos da mesma pessoa sem saber quem ela é. Quem desliga o rastreamento em **Configurações** não gera eventos.
 
@@ -80,6 +82,7 @@ O `user_id` é um hash do id interno: o datalake liga os eventos da mesma pessoa
 | Limpeza | `/app/limpeza` |
 | Cadastro | `/app/cadastro` |
 | Configurações | `/app/configuracoes` |
+| Planos (assinatura Pro, planejada) | `/app/planos` |
 
 ## `params` por evento
 
@@ -104,6 +107,9 @@ O `user_id` é um hash do id interno: o datalake liga os eventos da mesma pessoa
 | `delete_group` | `group_id`, `panels_removed` |
 | `sign_up`, `login` | `method` (`email`) |
 | `logout` | `scope` (`local` ou `global`) |
+| `begin_checkout` | `plano` (`pro_mensal` ou `pro_anual`), `value` (preço de tabela), `currency` (`BRL`) |
+| `purchase` | `transaction_id`, `plano`, `value` (o que foi pago: com 5% de desconto no Pix), `currency`, `payment_type` (`pix` ou `cartao`) |
+| `refund` | `transaction_id` (o da compra), `plano`, `value` (o devolvido), `currency` |
 
 Além das chaves da tabela, os eventos que nascem de um clique trazem `element_id`.
 
@@ -113,7 +119,7 @@ Além das chaves da tabela, os eventos que nascem de um clique trazem `element_i
 
 | Evento | `element_id` |
 | --- | --- |
-| `click` interno (`outbound=false`) | o `link_id` com `-` no lugar de `_`: `nav-home`, `nav-monitoramento`, `nav-relatorio`, `nav-limpeza`, `nav-cadastro`, `nav-configuracoes`, `cta-criar-conta`, `cta-entrar`, `cta-relatorio-mes`, `cta-registrar-limpeza`, `cta-importar` |
+| `click` interno (`outbound=false`) | o `link_id` com `-` no lugar de `_`: `nav-home`, `nav-monitoramento`, `nav-relatorio`, `nav-limpeza`, `nav-cadastro`, `nav-configuracoes`, `cta-criar-conta`, `cta-entrar`, `cta-relatorio-mes`, `cta-registrar-limpeza`, `cta-importar`, `cta-conhecer-pro`, `cta-assinatura` |
 | `click` de saída (`outbound=true`) | `saida-open-meteo` |
 | `site_search` | `busca-seletor` |
 | `select_content` | `visao-dia`, `visao-semana`, `visao-mes`, `visao-ano`, `seletor-grupo`, `seletor-placa` |
@@ -126,6 +132,7 @@ Além das chaves da tabela, os eventos que nascem de um clique trazem `element_i
 | `register_cleaning` | `btn-registrar-limpeza` |
 | `delete_panel` / `delete_group` | `btn-excluir-placa` / `btn-excluir-grupo` |
 | `sign_up` / `login` / `logout` | `btn-signup` / `btn-login` / `btn-sair` |
+| `begin_checkout` / `purchase` / `refund` | `btn-assinar` / `btn-pagar` / `btn-pedir-reembolso` |
 
 `page_view`, `scroll`, `view_monitoring` e `generate_report` (abrir a tela) não trazem `element_id`.
 
@@ -133,7 +140,14 @@ Além das chaves da tabela, os eventos que nascem de um clique trazem `element_i
 
 Cada item é uma placa: `item_id` (`placa-<id>`), `item_category` (`placa`), `potencia_wp` e `quantity` (1). Aparecem em `create_panel`, `view_monitoring` (as placas da seleção), `view_cleaning_recommendation`, `import_readings`, `register_cleaning`, `generate_report` (as placas do relatório) e `delete_panel`. A Silver explode a lista numa tabela de itens (R10).
 
-## Os 20 eventos
+Na assinatura, o item é o plano: `item_id` (`pro_mensal` ou `pro_anual`), `item_name`, `item_category` (`plano`), `price` (o valor do evento: preço de tabela no `begin_checkout`, o pago no `purchase` e o devolvido no `refund`) e `quantity` (1). O plano de uma compra é o item de categoria `plano` dela.
+
+| Plano | Preço | No Pix (−5%) |
+| --- | --- | --- |
+| `pro_mensal` | R$ 19,90 | R$ 18,91 |
+| `pro_anual` | R$ 199,00 | R$ 189,05 |
+
+## Os 23 eventos
 
 | Família | Evento | Quando dispara |
 | --- | --- | --- |
@@ -157,5 +171,8 @@ Cada item é uma placa: `item_id` (`placa-<id>`), `item_category` (`placa`), `po
 | Conta | `sign_up` | conta criada; passa a preencher `user_id` |
 | | `login` | entrada; passa a preencher `user_id` |
 | | `logout` | saída |
+| Assinatura (receita) | `begin_checkout` | "Assinar" na tela de planos: escolheu o plano e abriu o pagamento |
+| | `purchase` | pagamento aprovado; uma vez por pessoa |
+| | `refund` | reembolso pedido em Configurações, até 7 dias depois da compra (direito de arrependimento, CDC art. 49) |
 
 Um evento cujo `event_name` não está nesta tabela está fora do catálogo.
