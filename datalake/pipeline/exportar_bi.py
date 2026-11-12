@@ -1,26 +1,25 @@
-"""Job de exportação para o app (R11): Gold -> frontend/public/bi/mapa_calor.js e bi.js.
+"""Job de exportação do BI para o app: Gold -> frontend/public/bi/bi.js.
 
     docker compose run --rm app python pipeline/exportar_bi.py
 
-O docker-compose monta frontend/public/bi do repositório em /projeto/app-bi. Os dois arquivos são
-resultado gerado (dados de negócio): ficam fora do git.
+O docker-compose monta frontend/public/bi do repositório em /projeto/app-bi. O arquivo é resultado
+gerado (dados de negócio): fica fora do git.
 
-- mapa_calor.js: window.MAPA_CALOR = {"gerado_em", "cliques", "rolagem"}, com os nomes de coluna
-  exatos das Golds do mapa de calor; o overlay do app pinta os elementos data-heat da tela atual.
 - bi.js: window.SOLARVISION_BI = {...}, as tabelas pequenas da Gold para a página "Uso da plataforma".
   Só agregados: nenhuma linha por pessoa ou por sessão sai do datalake.
+- O mapa de calor (mapa_calor.js, R11) é do job exportar_mapa_calor.py, como no projeto-modelo.
 """
 
 from __future__ import annotations
 
-import json
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 
-from comum import arquivo_do_projeto, caminho, criar_sessao, exigir_camada, titulo
+from comum import caminho, criar_sessao, exigir_camada, titulo
+from exportar_mapa_calor import escrever_js
 
 PASTA = "app-bi"
 # tabela Gold -> job que a grava (para a mensagem do exigir_camada, R2)
@@ -33,7 +32,6 @@ GOLDS = {
     "ativacao_diaria": "gold_aquisicao", "retencao": "gold_aquisicao",
     "taxa_abandono": "gold_aquisicao", "cadastro_para_ativacao": "gold_aquisicao",
     "propensao_ativacao": "gold_ml", "metricas_modelo": "gold_ml", "segmentos_usuarios": "gold_ml",
-    "mapa_calor_cliques": "gold_mapa_calor", "mapa_calor_rolagem": "gold_mapa_calor",
 }
 DIRETAS = ("funil_ativacao", "funil_ordenado", "funil_login", "uso_telas", "buscas_seletor",
            "saidas_downloads", "adocao_recursos", "atividade_diaria", "ativacao_diaria", "retencao",
@@ -97,31 +95,15 @@ def montar_bi(tabelas: dict[str, DataFrame], gerado_em: str) -> dict:
     }
 
 
-def montar_mapa(tabelas: dict[str, DataFrame], gerado_em: str) -> dict:
-    return {"gerado_em": gerado_em, "cliques": linhas(tabelas["mapa_calor_cliques"]),
-            "rolagem": linhas(tabelas["mapa_calor_rolagem"])}
-
-
-def escrever_js(relativo: str, variavel: str, dados: dict) -> None:
-    """Uma linha `window.<variavel> = {...};`, gravada de uma vez (quem lê nunca pega pela metade)."""
-    destino = arquivo_do_projeto(relativo)
-    destino.parent.mkdir(parents=True, exist_ok=True)
-    temporario = destino.with_name(destino.name + ".tmp")
-    temporario.write_text(f"window.{variavel} = {json.dumps(dados, ensure_ascii=False)};\n", encoding="utf-8")
-    temporario.replace(destino)
-
-
 def main() -> None:
     spark = criar_sessao("exportar_bi")
     for tabela, job in GOLDS.items():
         exigir_camada(spark, f"gold/{tabela}", f"python pipeline/{job}.py")
     tabelas = {nome: spark.read.parquet(caminho(f"gold/{nome}")) for nome in GOLDS}
     gerado_em = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    mapa, bi = montar_mapa(tabelas, gerado_em), montar_bi(tabelas, gerado_em)
-    escrever_js(f"{PASTA}/mapa_calor.js", "MAPA_CALOR", mapa)
+    bi = montar_bi(tabelas, gerado_em)
     escrever_js(f"{PASTA}/bi.js", "SOLARVISION_BI", bi)
-    titulo("Exportação para o app")
-    print(f"{PASTA}/mapa_calor.js: {len(mapa['cliques'])} elementos, {len(mapa['rolagem'])} marcos")
+    titulo("Exportação do BI para o app")
     print(f"{PASTA}/bi.js: {len(bi) - 2} tabelas + KPIs (gerado em {gerado_em})")
     spark.stop()
 

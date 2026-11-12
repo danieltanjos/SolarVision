@@ -1,18 +1,6 @@
-import json
 from datetime import date
 
 import exportar_bi
-
-
-def test_escrever_js_grava_uma_linha_com_a_variavel(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    exportar_bi.escrever_js("app-bi/mapa_calor.js", "MAPA_CALOR",
-                            {"gerado_em": "2026-10-20T21:00:00Z", "cliques": [{"pagina": "/app/home"}], "rolagem": []})
-    texto = (tmp_path / "app-bi" / "mapa_calor.js").read_text(encoding="utf-8")
-    assert texto.count("\n") == 1 and texto.startswith("window.MAPA_CALOR = {") and texto.endswith("};\n")
-    dados = json.loads(texto.removeprefix("window.MAPA_CALOR = ").removesuffix(";\n"))
-    assert dados["cliques"] == [{"pagina": "/app/home"}]
-    assert not (tmp_path / "app-bi" / "mapa_calor.js.tmp").exists()
 
 
 def test_linhas_convertem_datas_para_texto(spark):
