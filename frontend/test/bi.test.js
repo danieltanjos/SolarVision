@@ -74,6 +74,20 @@ test("BI-MAPA: filtra cliques e rolagem pela página do caminho", () => {
   assert.deepEqual(cliquesDaTela(null, "/app/home"), []);
 });
 
+test("cliques da tela vêm do mais clicado ao menos, mesmo com o arquivo em ordem alfabética", () => {
+  const mapa = {
+    cliques: [
+      { pagina: "/app/home", element_id: "btn-alertas", cliques: 868 },
+      { pagina: "/app/home", element_id: "cta-assinatura", cliques: 4 },
+      { pagina: "/app/home", element_id: "nav-cadastro", cliques: 942 },
+      { pagina: "/app/home", element_id: "nav-relatorio", cliques: 868 },
+      { pagina: "/app/cadastro", element_id: "btn-salvar-placa", cliques: 2000 }
+    ]
+  };
+  assert.deepEqual(cliquesDaTela(mapa, "/app/home").map((l) => l.element_id),
+    ["nav-cadastro", "btn-alertas", "nav-relatorio", "cta-assinatura"]);
+});
+
 test("funil comparado junta qualquer momento e na ordem, por etapa", async () => {
   const { funilComparado } = await import("../src/lib/bi.js");
   const bi = {

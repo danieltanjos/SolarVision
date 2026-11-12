@@ -68,9 +68,13 @@ export function paginaDe(caminho) {
   return caminho.split(/[?#]/)[0].replace(/\/+$/, "") || "/";
 }
 
+// Os cliques da tela, do mais clicado ao menos: o arquivo vem ordenado por página e elemento
+// (pipeline/exportar_mapa_calor.py), e o painel do overlay mostra os primeiros.
 export function cliquesDaTela(mapa, caminho) {
   const pagina = paginaDe(caminho);
-  return (mapa?.cliques ?? []).filter((linha) => linha.pagina === pagina);
+  return (mapa?.cliques ?? [])
+    .filter((linha) => linha.pagina === pagina)
+    .sort((a, b) => b.cliques - a.cliques || a.element_id.localeCompare(b.element_id));
 }
 
 export function rolagemDaTela(mapa, caminho) {
