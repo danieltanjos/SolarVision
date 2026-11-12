@@ -12,7 +12,8 @@ Aqui fica **a ordem** do datalake: cada etapa numerada é um arquivo de três li
 | `06_gold_engajamento` | `pipeline/gold_engajamento.py` | `03_qualidade_dados` |
 | `07_gold_ml` | `pipeline/gold_ml.py` | `03_qualidade_dados` |
 | `08_gold_mapa_calor` | `pipeline/gold_mapa_calor.py` | `03_qualidade_dados` |
-| `09_exportar_bi` | `pipeline/exportar_bi.py` | as cinco Golds |
+| `09_exportar_bi` | `pipeline/exportar_bi.py` (o `bi.js` do painel Uso da plataforma) | `04`, `05`, `06` e `07` |
+| `10_exportar_mapa_calor` | `pipeline/exportar_mapa_calor.py` (o `mapa_calor.js` do overlay, R11) | `08_gold_mapa_calor` |
 
 O número segue a ordem do projeto-modelo do professor (funil, engajamento, **receita e aquisição**, ML, mapa de calor), com o portão de qualidade em 03. A etapa 05 junta as duas Golds de negócio, como o job "receita e aquisição" do projeto-modelo: a ativação e a retenção (`gold_aquisicao`) e a assinatura Pro (`gold_receita`).
 
@@ -20,7 +21,7 @@ O número segue a ordem do projeto-modelo do professor (funil, engajamento, **re
 
 | Arquivo | O que roda |
 | --- | --- |
-| [`medalhao.json`](medalhao.json) | tudo: as nove etapas, duas Golds por vez; é o grafo que o `pipeline/rodar_tudo.py` segue (R3) |
+| [`medalhao.json`](medalhao.json) | tudo: as dez etapas, duas Golds por vez; é o grafo que o `pipeline/rodar_tudo.py` segue (R3) |
 | [`receita_aquisicao.json`](receita_aquisicao.json) | só o caminho da receita: `01_bronze_eventos → 02_silver_eventos → 05_gold_receita_aquisicao` |
 
 ```mermaid
@@ -32,10 +33,13 @@ flowchart LR
     q --> e["06_gold_engajamento"]
     q --> m["07_gold_ml"]
     q --> c["08_gold_mapa_calor"]
-    f & r & e & m & c --> x["09_exportar_bi"]
+    f & r & e & m --> x["09_exportar_bi"]
+    c --> xm["10_exportar_mapa_calor"]
 ```
 
-A etapa `05_gold_receita_aquisicao` depende **só da Silver**, como pede o workflow do professor (`{"job": "05_gold_receita_aquisicao", "depende_de": ["02_silver_eventos"]}`): no explorador ela roda ao lado do portão. As outras Golds esperam o portão. A exportação espera todas, então um dado reprovado pelo portão nunca chega ao app.
+A etapa `05_gold_receita_aquisicao` depende **só da Silver**, como pede o workflow do professor (`{"job": "05_gold_receita_aquisicao", "depende_de": ["02_silver_eventos"]}`): no explorador ela roda ao lado do portão. As outras Golds esperam o portão. As exportações esperam as Golds que leem, então um dado reprovado pelo portão nunca chega ao app.
+
+A exportação do mapa de calor é uma etapa própria, como o `exportar_mapa_calor` do projeto-modelo do professor: a `10_exportar_mapa_calor` depende só da `08_gold_mapa_calor`, então o overlay do app é atualizado sem esperar o funil, a receita e o ML. A `09_exportar_bi` grava só o `bi.js` do painel.
 
 ## Como rodar
 

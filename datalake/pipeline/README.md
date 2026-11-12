@@ -15,7 +15,8 @@ Um job por camada, como pede o [enunciado](../docs/ENUNCIADO.md) (R1 a R11). A b
 | `gold_receita.py` | `silver/` | `gold/receita_diaria`, `gold/taxa_reembolso`, `gold/adesao_plano_anual`, `gold/cadastro_para_compra`, `gold/funil_assinatura` (a assinatura Pro) |
 | `gold_ml.py` | `silver/` | `gold/propensao_ativacao`, `gold/metricas_modelo`, `gold/segmentos_usuarios` (Spark ML) |
 | `gold_mapa_calor.py` | `silver/` | `gold/mapa_calor_cliques`, `gold/mapa_calor_rolagem` (nomes de coluna do R11) |
-| `exportar_bi.py` | as Golds do painel | `frontend/public/bi/mapa_calor.js` e `bi.js` (montado em `/projeto/app-bi`) |
+| `exportar_bi.py` | as Golds do painel | `frontend/public/bi/bi.js` (montado em `/projeto/app-bi`), lido pela página Uso da plataforma |
+| `exportar_mapa_calor.py` | `gold/mapa_calor_cliques`, `gold/mapa_calor_rolagem` | `frontend/public/bi/mapa_calor.js` (R11): confere os nomes de coluna exatos, ordena e grava numa linha, de uma vez |
 | `rodar_tudo.py` | `../workflows/medalhao.json` | roda as nove etapas na ordem do grafo e para na primeira que falhar (R3); `--limpar` recomeça do zero; `--a-partir-de ETAPA` reprocessa uma etapa e as que dependem dela |
 
 ```bash
@@ -39,7 +40,7 @@ Troque `<seu_job>` pelo nome do seu arquivo. Se você nunca usou Docker, o [SETU
 
 Outra forma: abra o explorador (http://localhost:8501) e vá em **Glue · Jobs ETL**. Como no Glue, os jobs do console moram no S3 (no bucket `glue-assets` do floci): clique primeiro em **⟳ Sincronizar** para enviar os seus `.py` de `pipeline/` para lá, depois escolha o job e clique em **Executar**. Ele roda a cópia do floci e mostra o status (**Sucesso** ou **Falhou**), a duração e o log. Mudou o arquivo? Sincronize de novo. Veja [explorador/README.md](../explorador/README.md#glue--jobs-etl).
 
-No SolarVision o explorador olha a pasta [`../workflows/`](../workflows/README.md) (`EXPLORADOR_JOBS=workflows` no `docker-compose.yml`): o Sincronizar leva as etapas numeradas e os `.json`, e a tela Jobs ETL lista `01_bronze_eventos` … `09_exportar_bi`. Cada etapa roda os jobs desta pasta.
+No SolarVision o explorador olha a pasta [`../workflows/`](../workflows/README.md) (`EXPLORADOR_JOBS=workflows` no `docker-compose.yml`): o Sincronizar leva as etapas numeradas e os `.json`, e a tela Jobs ETL lista `01_bronze_eventos` … `10_exportar_mapa_calor`. Cada etapa roda os jobs desta pasta.
 
 Para rodar **vários jobs de uma vez**, na ordem certa, use um workflow em **Glue · Workflows**: cada etapa diz de quais outras depende (a Silver depende da Bronze, as Golds dependem do portão…). Ele fica salvo no floci (`s3://glue-assets/workflows/<nome>.json`) e numa cópia em `workflows/<nome>.json`, e a cópia local também roda pelo terminal:
 
@@ -228,15 +229,16 @@ Rode estes três comandos, nesta ordem:
 
 ## Exportar um resultado pequeno para o app (R11)
 
-O `exportar_bi.py` lê as Golds pelo Spark e, no fim, grava dois arquivos comuns com Python, cada um numa linha `window.<VARIÁVEL> = {...};`:
+Dois jobs leem as Golds pelo Spark e, no fim, gravam um arquivo comum com Python, numa linha `window.<VARIÁVEL> = {...};`:
 
-- `app-bi/mapa_calor.js` → `window.MAPA_CALOR = {"gerado_em", "cliques", "rolagem"}`, com os nomes de coluna exatos das duas Golds do mapa de calor. O botão **Mapa de calor** do app (ADMIN) pinta os elementos `data-heat` da tela atual.
-- `app-bi/bi.js` → `window.SOLARVISION_BI = {...}`: KPIs, as tabelas pequenas da Gold, a propensão por faixa de probabilidade e o perfil médio dos segmentos, para a página **Uso da plataforma**. Só agregados: nenhuma linha por pessoa ou por sessão sai do datalake.
+- `exportar_mapa_calor.py` → `app-bi/mapa_calor.js`, com `window.MAPA_CALOR = {"gerado_em", "cliques", "rolagem"}` e os nomes de coluna exatos das duas Golds do mapa de calor. Se faltar uma coluna, o job para dizendo qual e o que rodar antes; se não houver clique, avisa. O botão **Mapa de calor** do app (ADMIN) pinta os elementos `data-heat` da tela atual. É o mesmo desenho do `exportar_mapa_calor` do projeto-modelo do professor.
+- `exportar_bi.py` → `app-bi/bi.js`, com `window.SOLARVISION_BI = {...}`: KPIs, as tabelas pequenas da Gold, a propensão por faixa de probabilidade e o perfil médio dos segmentos, para a página **Uso da plataforma**. Só agregados: nenhuma linha por pessoa ou por sessão sai do datalake.
 
 `app-bi/` é o `frontend/public/bi` do repositório, montado pelo docker-compose; o Vite serve a pasta em `/bi/`. Os arquivos são resultado gerado (dados de negócio) e ficam fora do git.
 
 - **Trazer o resultado para o Python:** `collect()` só em tabelas pequenas, como as Golds. **Nunca** na Bronze ou na Silver: são dezenas de milhares de linhas.
 - **Onde gravar:** `arquivo_do_projeto(...)`, do `comum.py`, e não `Path(__file__)`: no explorador o script roda de uma cópia baixada do floci, numa pasta temporária.
-- Datas e `Decimal` viram texto e número antes do `json.dumps` (`exportar_bi.linhas`).
+- Datas e `Decimal` viram texto e número antes do `json.dumps` (`exportar_bi.linhas` e `exportar_mapa_calor.linhas`).
+- **Gravar de uma vez:** os dois escrevem num `.tmp` e renomeiam no fim (`escrever_js`), para o app nunca ler um arquivo pela metade.
 
 Depois, com o app rodando (`npm run dev` no `frontend`), entre como ADMIN, abra **Uso da plataforma** e ligue o **Mapa de calor** no cabeçalho. Rodou o job de novo? Recarregue a página.

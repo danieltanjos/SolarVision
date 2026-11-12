@@ -21,7 +21,7 @@ flowchart LR
 | [`gerador/`](gerador/README.md) | simula semanas de uso do SolarVision (com defeitos) e importa o JSONL exportado pelo app |
 | `coletor/` | leva os eventos reais da tabela `eventos_coletados` do Supabase para a landing |
 | [`pipeline/`](pipeline/README.md) | os jobs PySpark: Bronze, Silver, as Golds (com a receita), exportação para o app e o script de sequência |
-| [`workflows/`](workflows/README.md) | as etapas numeradas do medalhão (`01_bronze_eventos` … `09_exportar_bi`) e os workflows `medalhao.json` e `receita_aquisicao.json` |
+| [`workflows/`](workflows/README.md) | as etapas numeradas do medalhão (`01_bronze_eventos` … `10_exportar_mapa_calor`) e os workflows `medalhao.json` e `receita_aquisicao.json` |
 | [`explorador/`](explorador/README.md) | console de estudo (S3, Glue, Athena) em http://localhost:8501: ver o bucket, rodar jobs e fazer consultas SQL sobre a Gold |
 | [`RELATORIO.md`](RELATORIO.md) | as respostas às cinco perguntas e a qualidade do dado |
 

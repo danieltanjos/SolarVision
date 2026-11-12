@@ -247,7 +247,7 @@ flowchart LR
         col["coletor/coletar_supabase.py<br/>(service key)"] --> land[("landing<br/>floci S3")]
         ger["gerador/ (sintético)"] --> land
         land --> bronze["Bronze"] --> silver["Silver"] --> gold["15 Golds + Spark ML"]
-        gold --> exp["exportar_bi.py"]
+        gold --> exp["exportar_bi.py<br/>exportar_mapa_calor.py"]
     end
     tab --> col
     exp -->|frontend/public/bi| painel["/app/uso e mapa de calor<br/>(ADMIN)"]

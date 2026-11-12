@@ -58,7 +58,7 @@ As telas, os 23 eventos, os `params` e os elementos clicáveis estão no [CONTRA
 | `coletor/coletar_supabase.py` | leva os eventos reais do Supabase para a landing |
 | `gerador/` (catálogo, jornadas, assinaturas, elementos, sujeira) | simula semanas de uso do SolarVision e a assinatura Pro, com defeitos, para dar volume |
 | `pipeline/` | os jobs Bronze, Silver, as Golds, a exportação para o app e o script de sequência |
-| `workflows/` | as etapas numeradas (`01_bronze_eventos` … `09_exportar_bi`) e os workflows `medalhao.json` e `receita_aquisicao.json`, numa pasta só |
+| `workflows/` | as etapas numeradas (`01_bronze_eventos` … `10_exportar_mapa_calor`) e os workflows `medalhao.json` e `receita_aquisicao.json`, numa pasta só |
 | `RELATORIO.md` | as respostas às quatro perguntas e a seção "Qualidade do dado" |
 | Página **Uso da plataforma** e overlay do **mapa de calor** no app | o BI de volta para o produto |
 
@@ -87,8 +87,11 @@ flowchart LR
         q --> g4["Gold ML"]
         q --> g5["Gold mapa de calor"]
     end
-    g1 & g2 & g3 & g4 & g5 --> exp["exportar_bi.py"]
-    exp --> bi["frontend/public/bi/*.js"]
+    g1 & g2 & g3 & g4 --> exp["exportar_bi.py"]
+    g5 --> expm["exportar_mapa_calor.py"]
+    exp --> bi["frontend/public/bi/bi.js"]
+    expm --> bi2["frontend/public/bi/mapa_calor.js"]
+    bi2 -.-> painel
     bi -.-> painel["Uso da plataforma<br/>+ mapa de calor (ADMIN)"]
 ```
 
@@ -100,7 +103,7 @@ Todas as camadas ficam no bucket `solarvision-datalake`, em Parquet: `landing/`,
 
 - **R1.** PySpark lendo de `landing/` e gravando todas as camadas no mesmo bucket, em Parquet, **só pelo Spark com `s3a://`** (sem `boto3` no pipeline), no contêiner `app`.
 - **R2.** Um job por camada: Bronze, Silver, cinco Golds (funil, engajamento, receita e aquisição, ML, mapa de calor) e a exportação para o app; entre a Silver e as Golds, o job `qualidade` (portão do workflow, extensão nossa). A Gold receita e aquisição tem dois arquivos, `gold_aquisicao.py` (ativação e retenção) e `gold_receita.py` (assinatura), e uma etapa só no workflow. Cada job confere a camada de que depende com `exigir_camada`.
-- **R3.** Um script que roda os jobs em sequência (`pipeline/rodar_tudo.py`), na ordem do grafo `workflows/medalhao.json`: as nove etapas numeradas, de `01_bronze_eventos` a `09_exportar_bi`. A etapa `05_gold_receita_aquisicao` depende só de `02_silver_eventos`; as outras Golds, do portão `03_qualidade_dados`. Ele não gera dados.
+- **R3.** Um script que roda os jobs em sequência (`pipeline/rodar_tudo.py`), na ordem do grafo `workflows/medalhao.json`: as dez etapas numeradas, de `01_bronze_eventos` a `10_exportar_mapa_calor`. A etapa `05_gold_receita_aquisicao` depende só de `02_silver_eventos`; as outras Golds, do portão `03_qualidade_dados`; a `10_exportar_mapa_calor`, só da `08_gold_mapa_calor`. Ele não gera dados.
 - **R4.** Bronze append-only, schema explícito, particionada `event_name=/year=/month=/day=` (dia de coleta) e com proveniência (`arquivo_origem`, `ingerido_em`).
 
 ### 5.2 Silver
@@ -174,7 +177,7 @@ Todas as camadas ficam no bucket `solarvision-datalake`, em Parquet: `landing/`,
 
 ### 5.5 Mapa de calor no app (R11)
 
-Um job lê `mapa_calor_cliques` e `mapa_calor_rolagem` e grava `frontend/public/bi/mapa_calor.js` numa linha:
+Um job próprio, `pipeline/exportar_mapa_calor.py` (etapa `10_exportar_mapa_calor`, como o `exportar_mapa_calor` do projeto-modelo), lê `mapa_calor_cliques` e `mapa_calor_rolagem`, confere os nomes de coluna e grava `frontend/public/bi/mapa_calor.js` numa linha:
 
 ```js
 window.MAPA_CALOR = {"gerado_em": "2026-10-20T21:00:00Z", "cliques": [ ... ], "rolagem": [ ... ]};

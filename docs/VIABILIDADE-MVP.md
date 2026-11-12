@@ -16,7 +16,7 @@ flowchart LR
     tab --> col["coletor"] --> land[("landing<br/>S3 floci")]
     ger["gerador sintético"] --> land
     land --> b["Bronze"] --> s["Silver"] --> g["15 Golds<br/>+ Spark ML"]
-    g --> exp["exportar_bi"] --> painel["Uso da plataforma<br/>+ mapa de calor"]
+    g --> exp["exportar_bi<br/>exportar_mapa_calor"] --> painel["Uso da plataforma<br/>+ mapa de calor"]
 ```
 
 ## 2. Viabilidade técnica
@@ -26,7 +26,7 @@ flowchart LR
 | Coleta | `lib/tracking.js` (porta da `track()` do projeto-modelo), envio em lotes de 5 s para uma tabela do Supabase que só aceita insert |
 | Processamento | PySpark 4.2 em Docker (`datalake/`), S3 emulado (floci); oito jobs e um script de sequência; roda num notebook comum |
 | IA | Spark ML: regressão logística (propensão de ativação, AUC 0,97 na simulação) e K-Means (dois perfis, silhueta 0,79) |
-| Integração ao produto | Página `/app/uso` (ADMIN) e overlay do mapa de calor, lendo o que o `exportar_bi.py` grava em `frontend/public/bi` |
+| Integração ao produto | Página `/app/uso` (ADMIN) e overlay do mapa de calor, lendo o que o `exportar_bi.py` (`bi.js`) e o `exportar_mapa_calor.py` (`mapa_calor.js`) gravam em `frontend/public/bi` |
 | Qualidade | 74 testes do gerador, testes das funções de cada job (Spark em memória), 4 do coletor, 72 do frontend e um teste de ponta a ponta da tabela coletora |
 | Reaproveitamento | Docker, `comum.py`, `bronze.py`, explorador e metade do gerador vieram prontos do projeto-modelo |
 
