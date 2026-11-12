@@ -23,8 +23,10 @@ services:
         required: false
     volumes:
       - .:/projeto
-      # exportar_bi.py grava aqui o mapa de calor e o BI que o app lê (frontend/public/bi, fora do git)
+      # exportar_bi.py e exportar_mapa_calor.py gravam aqui o BI e o mapa de calor que o app lê (fora do git)
       - ../frontend/public/bi:/projeto/app-bi
+      # só leitura: tests/site confere os data-heat do app contra o contrato (como o tests/site do professor)
+      - ../frontend/src:/projeto/app-src:ro
     environment: *ambiente-s3
     depends_on:
       - floci

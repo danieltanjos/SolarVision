@@ -36,6 +36,11 @@ FIXOS = {
 SELECAO = {"grupo": "seletor-grupo", "placa": "seletor-placa"}
 
 
+# Elementos do contrato que ainda não têm tela no app: a assinatura Pro é uma hipótese de monetização
+# (gerador/assinaturas.py), sem a tela /app/planos. tests/site confere que o resto existe no app.
+PLANEJADOS = frozenset({"cta-conhecer-pro", "cta-assinatura", "btn-assinar", "btn-pagar", "btn-pedir-reembolso"})
+
+
 def _link(link_id: str) -> str:
     """'nav_monitoramento' -> 'nav-monitoramento' (o link_id com - no lugar de _)."""
     return link_id.replace("_", "-")
