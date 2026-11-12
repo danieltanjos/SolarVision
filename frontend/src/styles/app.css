@@ -1811,7 +1811,8 @@ h1, h2, h3 {
     }
 }
 
-/* Mapa de calor do datalake de uso (ADMIN): manchas por cima dos elementos data-heat, sem receber cliques. */
+/* Mapa de calor do datalake de uso (ADMIN), como o do site do projeto-modelo: canvas com manchas difusas,
+   etiquetas da taxa de clique e a faixa de rolagem. Nenhuma camada recebe clique. */
 .sv-icon-btn.is-ativo {
     background: #b91c1c;
     color: #fff;
@@ -1821,14 +1822,41 @@ h1, h2, h3 {
     position: fixed;
     inset: 0;
     z-index: 2000;
+    overflow: hidden;
     pointer-events: none;
 }
 
-.sv-calor-mancha {
-    position: fixed;
-    border-radius: 6px;
-    opacity: 0.45;
-    mix-blend-mode: multiply;
+.sv-calor-canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+}
+
+.sv-calor-etiqueta,
+.sv-calor-marco {
+    position: absolute;
+    pointer-events: none;
+    background: #fff;
+    color: #0f172a;
+    border: 1px solid #1e3a8a;
+    font: 700 10px/1.3 system-ui, sans-serif;
+    padding: 0 4px;
+    white-space: nowrap;
+}
+
+.sv-calor-faixa {
+    position: absolute;
+    width: 72px;
+    pointer-events: none;
+    border-left: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.sv-calor-marco {
+    right: 6px;
+    transform: translateY(-50%);
 }
 
 .sv-calor-painel {
@@ -1841,6 +1869,11 @@ h1, h2, h3 {
     background: rgba(15, 20, 26, 0.88);
     color: #fff;
     font-size: 0.75rem;
+}
+
+.sv-calor-painel small {
+    display: block;
+    opacity: 0.85;
 }
 
 .sv-calor-painel ol {
