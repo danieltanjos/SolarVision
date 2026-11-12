@@ -19,7 +19,7 @@ def _jobs_da_etapa(etapa: str) -> list[str]:
 def test_a_ordem_vem_do_workflow_e_respeita_as_dependencias():
     ordem = rodar_tudo.JOBS
     assert ordem[:3] == ("01_bronze_eventos", "02_silver_eventos", "03_qualidade_dados")
-    assert ordem[-1] == "09_exportar_bi"
+    assert set(ordem[-2:]) == {"09_exportar_bi", "10_exportar_mapa_calor"} and len(ordem) == 10
     for job, deps in rodar_tudo.GRAFO.items():
         assert all(ordem.index(d) < ordem.index(job) for d in deps), job
         assert (ETAPAS / f"{job}.py").is_file(), job
@@ -38,7 +38,14 @@ def test_receita_e_aquisicao_depende_so_da_silver_e_as_outras_golds_do_portao():
     golds = [j for j in rodar_tudo.JOBS if "_gold_" in j]
     assert len(golds) == 5
     assert all(grafo[g] == {"03_qualidade_dados"} for g in golds if g != "05_gold_receita_aquisicao")
-    assert grafo["09_exportar_bi"] == set(golds)
+    assert grafo["09_exportar_bi"] == set(golds) - {"08_gold_mapa_calor"}
+
+
+def test_mapa_de_calor_exporta_so_depois_da_gold_dele_como_no_projeto_modelo():
+    assert rodar_tudo.GRAFO["10_exportar_mapa_calor"] == {"08_gold_mapa_calor"}
+    assert _jobs_da_etapa("10_exportar_mapa_calor") == ["exportar_mapa_calor"]
+    assert rodar_tudo.a_partir_de(rodar_tudo.GRAFO, "08_gold_mapa_calor") == ("08_gold_mapa_calor",
+                                                                             "10_exportar_mapa_calor")
 
 
 def test_os_workflows_ficam_todos_na_pasta_workflows():
@@ -65,7 +72,7 @@ def test_a_partir_de_pega_a_etapa_e_todas_as_que_dependem_dela():
     assert rodar_tudo.a_partir_de(grafo, "02_silver_eventos") == rodar_tudo.JOBS[1:]
     assert rodar_tudo.a_partir_de(grafo, "03_qualidade_dados") == (
         "03_qualidade_dados", "04_gold_funil", "06_gold_engajamento", "07_gold_ml", "08_gold_mapa_calor",
-        "09_exportar_bi")
+        "09_exportar_bi", "10_exportar_mapa_calor")
 
 
 def test_para_na_primeira_etapa_que_falha(monkeypatch):
