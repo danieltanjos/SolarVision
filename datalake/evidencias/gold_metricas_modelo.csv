@@ -1,0 +1,5 @@
+modelo,auc,f1,precisao,recall,limiar,sessoes_treino,sessoes_teste,positivos_teste,features
+regressao_logistica,0.972,0.8132,0.6935,0.9829,0.5,5077,1373,175,"['eventos_antes' 'telas_distintas' 'scroll_maximo' 'cliques' 'buscas'
+ 'buscas_sem_resultado' 'viu_cadastro' 'viu_monitoramento' 'abriu_alertas'
+ 'criou_conta_na_sessao' 'segundos_antes' 'sessoes_anteriores'
+ 'ja_ativou_antes' 'canal' 'dispositivo']"

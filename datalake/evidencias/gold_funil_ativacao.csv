@@ -1,0 +1,8 @@
+ordem,etapa,pessoas,conversao_etapa_anterior,conversao_topo
+1,sign_up,1500,,1.0
+2,create_group,765,0.51,0.51
+3,create_panel,663,0.8667,0.442
+4,view_monitoring,491,0.7406,0.3273
+5,import_readings,213,0.4338,0.142
+6,register_cleaning,223,1.0469,0.1487
+7,generate_report,299,1.3408,0.1993

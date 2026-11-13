@@ -1,0 +1,9 @@
+etapa,eventos
+bronze: linhas,57894
+bronze: event_id únicos,57326
+duplicatas descartadas (R5),568
+silver: válidos,55572
+silver: rejeitados (R7),1754
+silver: sessões (R8),6450
+silver: pessoas (R9),2997
+silver: itens (R10),11379

@@ -1,0 +1,25 @@
+canal,dia,elegiveis,retidos,taxa_retencao
+(todos),1,1453,663,0.4563
+(todos),7,1125,351,0.312
+(todos),14,745,148,0.1987
+direct / (none),1,253,127,0.502
+direct / (none),7,202,67,0.3317
+direct / (none),14,141,25,0.1773
+google / cpc,1,291,90,0.3093
+google / cpc,7,219,25,0.1142
+google / cpc,14,149,5,0.0336
+google / organic,1,349,180,0.5158
+google / organic,7,282,121,0.4291
+google / organic,14,177,57,0.322
+indicacao / referral,1,171,131,0.7661
+indicacao / referral,7,124,84,0.6774
+indicacao / referral,14,80,43,0.5375
+instagram / social,1,198,37,0.1869
+instagram / social,7,149,7,0.047
+instagram / social,14,101,1,0.0099
+linkedin / social,1,111,49,0.4414
+linkedin / social,7,91,23,0.2527
+linkedin / social,14,63,3,0.0476
+newsletter / email,1,80,49,0.6125
+newsletter / email,7,58,24,0.4138
+newsletter / email,14,34,14,0.4118

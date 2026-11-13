@@ -1,0 +1,8 @@
+motivo_rejeicao,eventos,nomes_de_evento
+timestamp ausente ou futuro,930,14
+marco fora do padrão,260,1
+evento fora do catálogo,259,1
+exclusão órfã,112,2
+valor numérico inválido,97,3
+ação sem id,87,5
+reembolso órfão,9,1

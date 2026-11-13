@@ -1,0 +1,7 @@
+executado_em,regra,valor,limite,ok,bloqueante
+2026-11-12 22:46:25,event_id único na silver,0.0,= 0,True,True
+2026-11-12 22:46:25,pessoa e sessão preenchidas,0.0,= 0,True,True
+2026-11-12 22:46:25,reconciliação: bronze única = silver + rejeitados,0.0,= 0,True,True
+2026-11-12 22:46:25,silver tem eventos válidos,55572.0,> 0,True,True
+2026-11-12 22:46:25,taxa de rejeição,0.0306,<= 0.1,True,True
+2026-11-12 22:46:25,taxa de duplicatas,0.0098,<= 0.05,True,False
