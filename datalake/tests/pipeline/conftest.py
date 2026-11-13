@@ -18,6 +18,8 @@ def spark():
         .appName("testes-comum")
         .config("spark.ui.enabled", "false")
         .config("spark.sql.shuffle.partitions", "2")
+        # a mesma sessão serve 300+ testes: com o padrão (1 GB) o driver ficava sem memória para o broadcast
+        .config("spark.driver.memory", "2g")
         .config("spark.sql.session.timeZone", "UTC")                 # como a sessão dos jobs (comum.py)
         .config("spark.sql.sources.partitionColumnTypeInference.enabled", "false")
         .getOrCreate()
@@ -25,3 +27,10 @@ def spark():
     sessao.sparkContext.setLogLevel("ERROR")
     yield sessao
     sessao.stop()
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _limpar_cache(spark):
+    """Cada arquivo de teste começa sem os DataFrames que o anterior deixou em cache (.cache() dos jobs)."""
+    yield
+    spark.catalog.clearCache()
