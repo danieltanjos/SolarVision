@@ -61,7 +61,7 @@ Dado de treino e teste: o sistema real do laboratório Fotovoltaica-UFSC, de 201
 | Física × razão dos dias recentes | 18,0% | 8,8% | 5,2% |
 | **Modelo (GBT sobre a física)** | **11,9%** | **5,1%** | **2,8%** |
 
-Hiperparâmetros escolhidos na validação: profundidade 2, 100 iterações, passo 0,1. Faixa: P10 = −20,3% e P90 = +26,1% em torno da previsão do dia.
+Os números saem de [`previsao_energia/metricas_previsao.csv`](previsao_energia/metricas_previsao.csv), exportado da `gold/metricas_previsao` desta execução, com os pesos das features em [`importancia_features.csv`](previsao_energia/importancia_features.csv) e o portão em [`qualidade_energia.csv`](previsao_energia/qualidade_energia.csv). Hiperparâmetros escolhidos na validação: profundidade 2, 100 iterações, passo 0,1. Faixa: P10 = −20,3% e P90 = +26,1% em torno da previsão do dia.
 
 - O modelo erra **23% menos no dia** e **22% menos na semana** que a física que o app mostra hoje.
 - Calibrar um k fixo no treino piora: o sistema perde ~2% ao ano (degradação e sujeira acumulada). Por isso a idade da placa entra no modelo.

@@ -1,0 +1,10 @@
+feature,importancia
+irradiacao_kwh_m2,0.2708
+chuva_mm,0.1824
+idade_dias,0.1261
+doy_sin,0.1091
+doy_cos,0.0982
+temp_media_sol,0.0881
+razao_ref,0.0677
+dias_desde_lavagem,0.045
+tem_historico,0.0125
