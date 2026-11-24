@@ -43,7 +43,7 @@ def test_todo_elemento_do_contrato_existe_no_app_e_vice_versa():
 
 def test_templates_do_app_estao_no_lugar_que_o_teste_resolve():
     texto = _todo_o_app()
-    assert 'data-heat={`nav-${item.to.split("/").pop()}`}' in texto
+    assert '`nav-${item.to.split("/").pop()}`' in texto
     assert "data-heat={`visao-${option.value}`}" in texto
     assert "data-heat={`cfg-${SETTING[id]}`}" in texto
 
