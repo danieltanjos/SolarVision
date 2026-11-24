@@ -5,7 +5,11 @@
 
 Precisa de SUPABASE_URL e SUPABASE_SERVICE_KEY no datalake/.env (fora do git): a tabela só aceita
 insert pela API, e só a service key lê. Guarda o último id levado em .coletor/ultimo_id, para a próxima
-execução trazer só os eventos novos.
+execução trazer só os eventos novos. Depois de gravar na landing, apaga do Supabase o que já levou
+(o plano gratuito tem 500 MB); --manter deixa as linhas lá.
+
+Dado real e dado do gerador não se misturam por acaso: os arquivos do coletor levam "app-" no nome e os
+do gerador "coletor-s<seed>-". Para analisar só o uso real, limpe a landing antes (ou não rode o gerador).
 
 Como o gerador, fica fora do pipeline (pode usar boto3 e HTTP); grava na landing com o mesmo layout
 (lotes.pasta: event_name=…/year=…/month=…/day=…, o dia de coleta = o dia em que o evento chegou ao
@@ -50,6 +54,15 @@ def buscar(url: str, chave: str, desde_id: int) -> list[dict]:
         desde_id = pagina[-1]["id"]
 
 
+def apagar_ate(url: str, chave: str, ultimo_id: int) -> None:
+    """Apaga do Supabase as linhas com id <= ultimo_id, que já estão na landing."""
+    pedido = urllib.request.Request(f"{url.rstrip('/')}/rest/v1/eventos_coletados?id=lte.{ultimo_id}", method="DELETE",
+                                    headers={"apikey": chave, "Authorization": f"Bearer {chave}",
+                                             "Prefer": "return=minimal"})
+    with urllib.request.urlopen(pedido, timeout=60):
+        pass
+
+
 def montar_arquivos(linhas: list[dict], agora: datetime) -> dict[str, str]:
     """{chave na landing: JSONL}: um arquivo por event_name e dia de chegada, no layout do contrato."""
     por_pasta: dict[str, list[str]] = defaultdict(list)
@@ -73,6 +86,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--saida-local", type=Path, help="grava nesta pasta em vez do S3")
     ap.add_argument("--desde-id", type=int, help="ignora o estado salvo e traz os eventos com id maior que este")
+    ap.add_argument("--manter", action="store_true", help="não apaga do Supabase os eventos já levados")
     a = ap.parse_args(argv)
 
     url, chave = os.environ.get("SUPABASE_URL"), os.environ.get("SUPABASE_SERVICE_KEY")
@@ -82,6 +96,8 @@ def main(argv: list[str] | None = None) -> int:
     desde = a.desde_id if a.desde_id is not None else ler_ultimo_id(ESTADO)
     linhas = buscar(url, chave, desde)
     if not linhas:
+        if desde and not a.manter:
+            apagar_ate(url, chave, desde)       # o que sobrou de uma execução que não chegou a apagar
         print(f"Nenhum evento novo depois do id {desde}.")
         return 0
 
@@ -91,6 +107,9 @@ def main(argv: list[str] | None = None) -> int:
     ESTADO.parent.mkdir(exist_ok=True)
     ESTADO.write_text(str(linhas[-1]["id"]), encoding="utf-8")
     print(f"{len(linhas)} eventos (ids {linhas[0]['id']} a {linhas[-1]['id']}) enviados para {destino.descricao()}")
+    if not a.manter:
+        apagar_ate(url, chave, linhas[-1]["id"])    # só depois de gravar e de guardar o estado
+        print(f"apagados do Supabase os eventos com id <= {linhas[-1]['id']}")
     return 0
 
 
