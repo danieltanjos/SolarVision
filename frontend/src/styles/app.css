@@ -1066,7 +1066,21 @@ h1, h2, h3 {
     background: var(--sv-border);
 }
 
+/* faixa P10-P90 da previsão do modelo, por trás da barra */
+.sv-forecast-bar {
+    position: relative;
+}
+
+.sv-forecast-faixa {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-radius: 999px;
+    background: rgba(42, 111, 184, 0.28);
+}
+
 .sv-forecast-bar > div {
+    position: relative;
     width: 100%;
     min-height: 4px;
     border-radius: 999px;
