@@ -93,9 +93,44 @@ def _com_peso(df: DataFrame) -> DataFrame:
     return df.withColumn("peso", F.when(F.col("rotulo") == 1, 1 - positivos).otherwise(positivos))
 
 
+ESQUEMA_METRICAS = ("modelo string, auc double, f1 double, precisao double, recall double, limiar double, "
+                    "sessoes_treino long, sessoes_teste long, positivos_teste long, features array<string>, "
+                    "motivo string")
+COLUNAS_PROPENSAO = ("sessao_id", "pessoa", "sessao_inicio", "conjunto", "rotulo", "probabilidade", "previsto",
+                     "canal", "dispositivo")
+
+
+def sem_modelo(base: DataFrame, motivo: str) -> tuple[DataFrame, DataFrame]:
+    """Pouco dado para treinar (o começo com eventos reais): tabela vazia e métricas nulas com o motivo,
+    em vez de derrubar o job e, com ele, a exportação do BI."""
+    contagem = base.groupBy("conjunto").count().collect()
+    n = {r.conjunto: r["count"] for r in contagem}
+    spark = base.sparkSession
+    metricas = spark.createDataFrame(
+        [("regressao_logistica", None, None, None, None, LIMIAR, n.get("treino", 0), n.get("teste", 0), None,
+          list(FEATURES), motivo)], ESQUEMA_METRICAS)
+    tabela = base.limit(0).select("sessao_id", "pessoa", "sessao_inicio", "conjunto", "rotulo",
+                                  F.lit(None).cast("double").alias("probabilidade"),
+                                  F.lit(None).cast("int").alias("previsto"), "canal", "dispositivo")
+    return tabela, metricas
+
+
+def motivo_sem_modelo(base: DataFrame) -> str | None:
+    """Por que não dá para treinar e medir, ou None se dá: o treino precisa das duas classes e o teste de sessões."""
+    por_conjunto = {(r.conjunto, r.rotulo) for r in base.select("conjunto", "rotulo").distinct().collect()}
+    if {("treino", 0), ("treino", 1)} - por_conjunto:
+        return "o treino não tem sessões que ativaram e que não ativaram"
+    if not {("teste", 0), ("teste", 1)} & por_conjunto:
+        return "nenhuma sessão no conjunto de teste"
+    return None
+
+
 def propensao(eventos: DataFrame) -> tuple[DataFrame, DataFrame]:
     """Treina no conjunto de treino e devolve (propensao_ativacao, metricas_modelo)."""
     base = base_propensao(eventos).fillna(0, subset=list(NUMERICAS)).cache()
+    motivo = motivo_sem_modelo(base)
+    if motivo:
+        return sem_modelo(base, motivo)
     treino = _com_peso(base.filter(F.col("conjunto") == "treino"))
     ajustado = modelo_propensao().fit(treino)
     previsto = (ajustado.transform(base)
@@ -115,11 +150,8 @@ def propensao(eventos: DataFrame) -> tuple[DataFrame, DataFrame]:
     spark = eventos.sparkSession
     metricas = spark.createDataFrame(
         [("regressao_logistica", round(auc, 4), round(f1, 4), round(precisao, 4), round(recall, 4), LIMIAR,
-          treino.count(), m.n, vp + fn, list(FEATURES))],
-        "modelo string, auc double, f1 double, precisao double, recall double, limiar double, "
-        "sessoes_treino long, sessoes_teste long, positivos_teste long, features array<string>")
-    tabela = previsto.select("sessao_id", "pessoa", "sessao_inicio", "conjunto", "rotulo", "probabilidade",
-                             "previsto", "canal", "dispositivo")
+          treino.count(), m.n, vp + fn, list(FEATURES), None)], ESQUEMA_METRICAS)
+    tabela = previsto.select(*COLUNAS_PROPENSAO)
     return tabela, metricas
 
 
@@ -158,13 +190,16 @@ def segmentos(eventos: DataFrame) -> DataFrame:
         silhueta = avaliador.evaluate(agrupado)
         if melhor is None or silhueta > melhor[0]:
             melhor = (silhueta, k, agrupado)
+    if melhor is None:      # menos pessoas que o menor K: um grupo só, sem silhueta
+        melhor = (None, 1, escalado.withColumn("segmento", F.lit(0)))
     silhueta, k, agrupado = melhor
     grupo = Window.partitionBy("segmento")
     com_perfil = agrupado.select("pessoa", "segmento", *PERFIL)
     for c in PERFIL:
         com_perfil = com_perfil.withColumn(f"media_{c}", F.round(F.avg(c).over(grupo), 2))
     return (com_perfil.withColumn("pessoas_no_segmento", F.count("*").over(grupo))
-            .withColumn("k", F.lit(k)).withColumn("silhueta", F.lit(round(silhueta, 4))))
+            .withColumn("k", F.lit(k))
+            .withColumn("silhueta", F.lit(None if silhueta is None else round(silhueta, 4)).cast("double")))
 
 
 def calcular(eventos: DataFrame) -> dict[str, DataFrame]:
@@ -182,7 +217,8 @@ def main() -> None:
         tabela.write.mode("overwrite").parquet(caminho(f"gold/{nome}"))
         print(f"gold/{nome}: {tabela.count()} linhas")
     m = tabelas["metricas_modelo"].first()
-    print(f"propensão: AUC {m.auc} · F1 {m.f1} · precisão {m.precisao} · recall {m.recall}")
+    print(f"propensão: sem modelo ({m.motivo})" if m.motivo
+          else f"propensão: AUC {m.auc} · F1 {m.f1} · precisão {m.precisao} · recall {m.recall}")
     s = tabelas["segmentos_usuarios"].select("k", "silhueta").first()
     print(f"segmentos: K = {s.k} · silhueta {s.silhueta}")
     spark.stop()
