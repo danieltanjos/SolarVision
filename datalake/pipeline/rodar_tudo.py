@@ -3,6 +3,7 @@
     docker compose run --rm app python pipeline/rodar_tudo.py                       # tudo, a partir da landing
     docker compose run --rm app python pipeline/rodar_tudo.py --limpar              # apaga bronze/silver/gold antes
     docker compose run --rm app python pipeline/rodar_tudo.py --a-partir-de 04_gold_funil   # só ele e quem depende dele
+    docker compose run --rm app python pipeline/rodar_tudo.py --workflow previsao_energia   # o grafo da previsão
 
 A ordem vem do grafo em workflows/medalhao.json, o mesmo que o explorador roda na tela Workflows:
 cada etapa é um workflows/<NN>_<nome>.py que chama os jobs de pipeline/, e só entra depois de todas
@@ -27,7 +28,8 @@ PASTA = Path(__file__).resolve().parent         # pipeline/
 RAIZ = PASTA.parent                              # datalake/: as etapas rodam daqui (comum.arquivo_do_projeto)
 ETAPAS = RAIZ / "workflows"
 WORKFLOW = ETAPAS / "medalhao.json"
-CAMADAS = ("bronze", "silver", "gold")
+# o que o --limpar apaga em cada workflow (as Golds da energia são regravadas a cada execução)
+CAMADAS = {"medalhao": ("bronze", "silver", "gold"), "previsao_energia": ("bronze_energia", "silver_energia")}
 
 
 class GrafoInvalido(ValueError):
@@ -70,11 +72,11 @@ GRAFO = carregar_grafo()
 JOBS = ordem_topologica(GRAFO)
 
 
-def limpar() -> None:
+def limpar(workflow: str = "medalhao") -> None:
     from comum import apagar_camada, criar_sessao, titulo
 
     spark = criar_sessao("limpar")
-    for camada in CAMADAS:
+    for camada in CAMADAS[workflow]:
         print(f"{camada}/: {'apagada' if apagar_camada(spark, camada) else 'já estava vazia'}")
     spark.stop()
     titulo("Camadas apagadas")
@@ -89,15 +91,20 @@ def rodar(job: str) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--limpar", action="store_true", help="apaga bronze/, silver/ e gold/ antes de rodar")
-    ap.add_argument("--a-partir-de", metavar="JOB", choices=JOBS,
+    ap.add_argument("--workflow", default="medalhao", choices=sorted(CAMADAS),
+                    help="o grafo de workflows/<nome>.json a seguir (padrão: medalhao)")
+    ap.add_argument("--limpar", action="store_true", help="apaga as camadas do workflow antes de rodar")
+    ap.add_argument("--a-partir-de", metavar="JOB",
                     help="roda só esta etapa e as que dependem dela (reprocessamento parcial)")
     a = ap.parse_args(argv)
+    grafo = GRAFO if a.workflow == "medalhao" else carregar_grafo(ETAPAS / f"{a.workflow}.json")
+    if a.a_partir_de and a.a_partir_de not in grafo:
+        ap.error(f"{a.a_partir_de} não é etapa do workflow {a.workflow}")
     if a.limpar and a.a_partir_de:
         ap.error("--limpar apaga as camadas de que --a-partir-de depende: use um ou outro")
     if a.limpar:
-        limpar()
-    jobs = a_partir_de(GRAFO, a.a_partir_de) if a.a_partir_de else JOBS
+        limpar(a.workflow)
+    jobs = a_partir_de(grafo, a.a_partir_de) if a.a_partir_de else ordem_topologica(grafo)
     for job in jobs:
         codigo = rodar(job)
         if codigo != 0:
