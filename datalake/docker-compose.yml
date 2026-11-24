@@ -34,6 +34,10 @@ services:
   explorador:
     image: solarvision-datalake-app
     working_dir: /projeto
+    # o mesmo .env do app: os jobs rodados pelo console também publicam no Supabase
+    env_file:
+      - path: .env
+        required: false
     volumes:
       - .:/projeto
       # exportar_bi.py grava aqui o mapa de calor e o BI que o app lê (frontend/public/bi, fora do git)
