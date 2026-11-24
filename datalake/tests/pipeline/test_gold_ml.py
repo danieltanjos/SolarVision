@@ -57,3 +57,22 @@ def test_segmentos_separam_perfis_diferentes(spark):
     assert len({grupos[f"u-m{i}"] for i in range(8)}) == 1
     assert grupos["u-m0"] != grupos["u-v0"]
     assert linhas[0].silhueta > 0.5 and 2 <= linhas[0].k <= 6
+
+
+def test_pouco_dado_real_nao_derruba_o_job(spark):
+    # duas pessoas, ninguém ativou: sem as duas classes, a propensão grava as métricas com o motivo
+    eventos = silver_de(spark, [*jornada("a", 0, OLHA, user_id="u-a"), *jornada("b", 5, OLHA, user_id="u-b")])
+    tabela, metricas = gold_ml.propensao(eventos)
+    m = metricas.first()
+    assert tabela.count() == 0 and tabela.columns == list(gold_ml.COLUNAS_PROPENSAO)
+    assert m.auc is None and "não ativaram" in m.motivo
+    segmentos = gold_ml.segmentos(eventos).collect()
+    assert {(r.segmento, r.k, r.silhueta) for r in segmentos} == {(0, 1, None)}
+
+
+def test_com_dado_suficiente_nao_ha_motivo(spark):
+    eventos = []
+    for i in range(60):
+        eventos += _ativa(f"q{i}", i * 100, 3000 + i, 4000 + i) if i % 2 else jornada(f"q{i}", i * 100, OLHA, user_id=f"u-q{i}")
+    _, metricas = gold_ml.propensao(silver_de(spark, eventos))
+    assert metricas.first().motivo is None
