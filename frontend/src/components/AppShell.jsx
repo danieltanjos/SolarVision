@@ -107,7 +107,7 @@ export default function AppShell() {
         </footer>
       </div>
 
-      <MobileNav />
+      <MobileNav isAdmin={user?.role === "ADMIN"} />
     </div>
   );
 }

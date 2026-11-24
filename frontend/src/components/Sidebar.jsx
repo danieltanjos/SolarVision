@@ -9,8 +9,13 @@ export const NAV_ITEMS = [
   { to: "/app/configuracoes", label: "Configurações", short: "Config", icon: "bi-gear" }
 ];
 
-// Só para ADMIN: o BI do datalake de uso.
-export const NAV_ADMIN = { to: "/app/uso", label: "Uso da plataforma", short: "Uso", icon: "bi-bar-chart-line" };
+// Só para ADMIN: o BI do datalake de uso. Não é rastreado (o painel do ADMIN não é uso do produto).
+export const NAV_ADMIN = { to: "/app/uso", label: "Uso da plataforma", short: "Uso", icon: "bi-bar-chart-line", admin: true };
+
+// link_id do clique num item do menu (o element_id vem do data-heat); o item do ADMIN não é rastreado.
+export function linkDoMenu(item) {
+  return item.admin ? undefined : `nav_${item.to.split("/").pop()}`;
+}
 
 export default function Sidebar({ logo, isCollapsed, onToggle, isAdmin = false }) {
   return (
@@ -25,8 +30,8 @@ export default function Sidebar({ logo, isCollapsed, onToggle, isAdmin = false }
           <NavLink
             key={item.to}
             to={item.to}
-            data-link-id={`nav_${item.to.split("/").pop()}`}
-            data-heat={`nav-${item.to.split("/").pop()}`}
+            data-link-id={linkDoMenu(item)}
+            data-heat={item.admin ? undefined : `nav-${item.to.split("/").pop()}`}
             title={isCollapsed ? item.label : undefined}
             className={({ isActive }) => `sv-nav-item ${isActive ? "active" : ""}`}
           >
