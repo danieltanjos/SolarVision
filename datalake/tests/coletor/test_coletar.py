@@ -43,3 +43,30 @@ def test_sem_credenciais_para_com_mensagem(monkeypatch, capsys):
     monkeypatch.delenv("SUPABASE_SERVICE_KEY", raising=False)
     assert main([]) == 1
     assert "SUPABASE_SERVICE_KEY" in capsys.readouterr().err
+
+
+def _supabase_falso(monkeypatch, linhas):
+    import coletor.coletar_supabase as col
+
+    chamadas = []
+    monkeypatch.setenv("SUPABASE_URL", "https://x.supabase.co")
+    monkeypatch.setenv("SUPABASE_SERVICE_KEY", "k")
+    monkeypatch.setattr(col, "buscar", lambda url, chave, desde: chamadas.append(("buscar", desde)) or linhas)
+    monkeypatch.setattr(col, "apagar_ate", lambda url, chave, ultimo: chamadas.append(("apagar", ultimo)))
+    return col, chamadas
+
+
+def test_apaga_do_supabase_so_depois_de_gravar_e_salvar_o_estado(monkeypatch, tmp_path):
+    col, chamadas = _supabase_falso(monkeypatch, [_linha(7, "page_view", "2026-10-20T10:00:00Z")])
+    monkeypatch.setattr(col, "ESTADO", tmp_path / ".coletor" / "ultimo_id")
+    assert main(["--saida-local", str(tmp_path / "saida")]) == 0
+    assert chamadas == [("buscar", 0), ("apagar", 7)]
+    assert col.ESTADO.read_text(encoding="utf-8") == "7"
+    assert list((tmp_path / "saida").rglob("app-*.jsonl"))
+
+
+def test_manter_nao_apaga_nada(monkeypatch, tmp_path):
+    col, chamadas = _supabase_falso(monkeypatch, [_linha(7, "page_view", "2026-10-20T10:00:00Z")])
+    monkeypatch.setattr(col, "ESTADO", tmp_path / "ultimo_id")
+    assert main(["--saida-local", str(tmp_path), "--manter"]) == 0
+    assert chamadas == [("buscar", 0)]
