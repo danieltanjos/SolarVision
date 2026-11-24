@@ -102,6 +102,64 @@ export function marcosNovos(percentual, jaRegistrados) {
   return MARCOS_SCROLL.filter((marco) => percentual >= marco && !jaRegistrados.has(marco));
 }
 
+// Telas que o contrato não rastreia: o painel do ADMIN não é uso do produto.
+export const TELAS_NAO_RASTREADAS = new Set(["/app/uso"]);
+
+export function telaRastreada(caminho) {
+  return !TELAS_NAO_RASTREADAS.has(caminho);
+}
+
+// Erro que não passa tentando de novo: a tabela não existe (migration não aplicada) ou não há permissão.
+export function erroPermanente(erro) {
+  return ["42P01", "PGRST205", "42501"].includes(erro?.code) || erro?.status === 404;
+}
+
+// Fila de envio em lotes. Só envia depois de liberada: com a conta logada, quando o perfil diz se o
+// rastreamento está ligado (o opt-out vale antes do primeiro envio). Se o envio falha, o lote volta
+// para a fila (até `maximo` eventos, os mais novos); se o erro é permanente, a fila para de vez.
+export function criarFila({ transporte = null, maximo = MAX_FILA } = {}) {
+  const itens = [];
+  let liberada = false;
+  let ativa = Boolean(transporte);
+  return {
+    itens,
+    get ativa() {
+      return ativa;
+    },
+    adicionar(evento) {
+      if (!ativa) return;
+      itens.push(evento);
+      if (itens.length > maximo) itens.splice(0, itens.length - maximo);
+    },
+    liberar() {
+      liberada = true;
+    },
+    bloquear() {
+      liberada = false;
+    },
+    descartar() {
+      itens.length = 0;
+    },
+    async enviar() {
+      if (!ativa || !liberada || itens.length === 0) return "parada";
+      const lote = itens.splice(0, itens.length);
+      try {
+        await transporte(lote);
+        return "enviada";
+      } catch (erro) {
+        if (erroPermanente(erro)) {
+          ativa = false;
+          return "desligada";
+        }
+        const todos = [...lote, ...itens];
+        itens.length = 0;
+        itens.push(...todos.slice(-maximo));
+        return "falhou";
+      }
+    }
+  };
+}
+
 // ---------------------------------------------------------------- estado do navegador
 
 const navegador = typeof window !== "undefined";
@@ -133,9 +191,8 @@ const estado = {
   ultimaTela: null,
   ultimoPageView: { caminho: null, quando: 0 },
   marcos: new Set(),
-  fila: [],
-  registro: [],
-  transporte: null
+  fila: criarFila(),
+  registro: []
 };
 
 function desligado() {
@@ -154,15 +211,8 @@ function contexto() {
   };
 }
 
-async function enviar() {
-  if (!estado.transporte || estado.fila.length === 0) return;
-  const lote = estado.fila.splice(0, estado.fila.length);
-  try {
-    await estado.transporte(lote);
-  } catch {
-    estado.fila.unshift(...lote.slice(-MAX_FILA)); // tenta de novo no próximo ciclo
-    estado.fila.splice(MAX_FILA);
-  }
+function enviar() {
+  return estado.fila.enviar();
 }
 
 function aoRolar() {
@@ -179,7 +229,7 @@ function aoRolar() {
 export function iniciarRastreamento({ transporte = null } = {}) {
   if (!navegador || estado.iniciado) return;
   estado.iniciado = true;
-  estado.transporte = transporte;
+  estado.fila = criarFila({ transporte });
   estado.pseudo = ler(CHAVE_PSEUDO) || `anon-${uuid().slice(0, 8)}`;
   gravar(CHAVE_PSEUDO, estado.pseudo);
   estado.canal = canalDe({ search: window.location.search, referrer: document.referrer, host: window.location.hostname });
@@ -195,24 +245,31 @@ export function iniciarRastreamento({ transporte = null } = {}) {
 }
 
 // id do usuário no Supabase (ou null ao sair): vira o user_id pseudonimizado dos próximos eventos.
+// Com uma conta nova, a fila espera o perfil dizer se o rastreamento está ligado; sem conta, vale a
+// escolha deste navegador.
 export function definirUsuario(idSupabase) {
-  estado.userId = userIdDe(idSupabase);
+  const novo = userIdDe(idSupabase);
+  if (novo && novo !== estado.userId) estado.fila.bloquear();
+  if (!novo) estado.fila.liberar();
+  estado.userId = novo;
 }
 
 export function rastreamentoLigado() {
   return !desligado();
 }
 
-// Opt-out: desligado, nenhum evento novo é criado nem enviado (vale para este navegador).
+// Opt-out: desligado, nenhum evento novo é criado nem enviado (vale para este navegador). Chamado com a
+// escolha da conta assim que o perfil carrega: libera a fila, ou a descarta antes do primeiro envio.
 export function definirRastreamento(ligado) {
   gravar(CHAVE_DESLIGADO, ligado ? null : "1");
-  if (!ligado) estado.fila.length = 0;
+  if (!ligado) estado.fila.descartar();
+  estado.fila.liberar();
 }
 
 export function track(nome, params = {}, items = []) {
-  if (!navegador || !estado.iniciado || desligado()) return null;
+  if (!navegador || !estado.iniciado || desligado() || !telaRastreada(window.location.pathname)) return null;
   const evento = montarEvento(nome, params, items, contexto());
-  estado.fila.push(evento);
+  estado.fila.adicionar(evento);
   estado.registro.push(evento);
   if (estado.registro.length > MAX_REGISTRO) estado.registro.shift();
   return evento;

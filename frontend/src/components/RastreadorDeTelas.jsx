@@ -10,11 +10,11 @@ const TITULOS = {
   "/app/relatorio": "Relatório",
   "/app/limpeza": "Limpeza",
   "/app/cadastro": "Cadastro",
-  "/app/configuracoes": "Configurações",
-  "/app/uso": "Uso da plataforma"
+  "/app/configuracoes": "Configurações"
 };
 
-// Sem interface: registra o page_view de cada tela e os cliques em links marcados, como o
+// Sem interface: registra o page_view de cada tela do produto (o painel do ADMIN, /app/uso, fica de
+// fora, como diz o contrato) e os cliques em links marcados, como o
 // listener de cliques do site do projeto-modelo. Links internos levam data-link-id (o element_id
 // é o data-heat); links de saída levam data-saida.
 export default function RastreadorDeTelas() {
