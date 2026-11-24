@@ -216,6 +216,28 @@ test("eventos de uso: o app só grava, ninguém lê pela API, e o opt-out fica n
   await api.salvarPerfil(perfil.id, { rastreamento: true });
 });
 
+test("BI do datalake: só ADMIN lê bi_exportacoes", async () => {
+  // a conta do teste é USER: a RLS devolve vazio, e o anônimo nem tem permissão
+  const { data, error } = await supabase.from("bi_exportacoes").select("nome");
+  assert.ifError(error);
+  assert.deepEqual(data, []);
+  assert.equal(await api.getBiExportacao("bi"), null);
+  const anonimo = await fetch(`${process.env.VITE_SUPABASE_URL}/rest/v1/bi_exportacoes?select=nome`, {
+    headers: { apikey: process.env.VITE_SUPABASE_PUBLISHABLE_KEY }
+  });
+  assert.ok(!anonimo.ok);
+});
+
+test("BI do datalake: ADMIN lê (com E2E_ADMIN_EMAIL e E2E_ADMIN_SENHA)", { skip: !process.env.E2E_ADMIN_EMAIL }, async () => {
+  const admin = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    { auth: { persistSession: false } });
+  const login = await admin.auth.signInWithPassword({ email: process.env.E2E_ADMIN_EMAIL, password: process.env.E2E_ADMIN_SENHA });
+  assert.ifError(login.error);
+  const { error } = await admin.from("bi_exportacoes").select("nome, gerado_em");
+  assert.ifError(error);
+  await admin.auth.signOut();
+});
+
 test("edita e exclui grupo, placa e limpeza", async () => {
   // Update parcial: só os campos informados mudam (o local continua).
   await api.updateGroup(grupo.id, { nome: ` Grupo E2E ${sufixo} editado `, tarifaKwh: 0.95, custoLimpeza: 30 });
