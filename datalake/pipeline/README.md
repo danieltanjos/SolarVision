@@ -12,7 +12,6 @@ Um job por camada, como pede o [enunciado](../docs/ENUNCIADO.md) (R1 a R11). A b
 | `gold_funil.py` | `silver/` | `gold/funil_ativacao` (qualquer momento), `gold/funil_ordenado` (na ordem, com perdas, tempo entre etapas e maior vazamento), `gold/funil_login` |
 | `gold_engajamento.py` | `silver/` | `gold/sessoes`, `gold/uso_telas`, `gold/buscas_seletor`, `gold/saidas_downloads`, `gold/adocao_recursos`, `gold/atividade_diaria` (DAU/WAU/MAU) |
 | `gold_aquisicao.py` | `silver/` | `gold/ativacao_diaria`, `gold/retencao`, `gold/taxa_abandono`, `gold/cadastro_para_ativacao` |
-| `gold_receita.py` | `silver/` | `gold/receita_diaria`, `gold/taxa_reembolso`, `gold/adesao_plano_anual`, `gold/cadastro_para_compra`, `gold/funil_assinatura` (a assinatura Pro) |
 | `gold_ml.py` | `silver/` | `gold/propensao_ativacao`, `gold/metricas_modelo`, `gold/segmentos_usuarios` (Spark ML) |
 | `gold_mapa_calor.py` | `silver/` | `gold/mapa_calor_cliques`, `gold/mapa_calor_rolagem` (nomes de coluna do R11) |
 | `exportar_bi.py` | as Golds do painel | `frontend/public/bi/bi.js` (montado em `/projeto/app-bi`), lido pela página Uso da plataforma |
@@ -24,7 +23,7 @@ docker compose run --rm app python pipeline/rodar_tudo.py --limpar   # reconstr�
 docker compose run --rm app pytest                                    # gerador, coletor, jobs e explorador
 ```
 
-Cada job tem as transformações em funções puras de DataFrame (`deduplicar`, `validar`, `sessionizar`, `funil_ativacao`, `base_propensao`…) e um `main()` que só lê, chama e grava. Os testes em `tests/pipeline/` montam DataFrames pequenos (`tests/pipeline/fabrica.py`) e conferem as funções sem o S3. A ordem fica em [`../workflows/`](../workflows/README.md): cada etapa numerada (`05_gold_receita_aquisicao.py`…) chama um ou mais jobs daqui, e o `medalhao.json` ao lado é a fonte única do grafo: o explorador roda esse grafo (com as Golds em paralelo) e o `rodar_tudo.py` lê o mesmo arquivo. Conceitos e decisões em [docs/FUNIL-ENGAJAMENTO-WORKFLOW.md](../docs/FUNIL-ENGAJAMENTO-WORKFLOW.md).
+Cada job tem as transformações em funções puras de DataFrame (`deduplicar`, `validar`, `sessionizar`, `funil_ativacao`, `base_propensao`…) e um `main()` que só lê, chama e grava. Os testes em `tests/pipeline/` montam DataFrames pequenos (`tests/pipeline/fabrica.py`) e conferem as funções sem o S3. A ordem fica em [`../workflows/`](../workflows/README.md): cada etapa numerada (`05_gold_aquisicao.py`…) chama um ou mais jobs daqui, e o `medalhao.json` ao lado é a fonte única do grafo: o explorador roda esse grafo (com as Golds em paralelo) e o `rodar_tudo.py` lê o mesmo arquivo. Conceitos e decisões em [docs/FUNIL-ENGAJAMENTO-WORKFLOW.md](../docs/FUNIL-ENGAJAMENTO-WORKFLOW.md).
 
 Um **job** é um script Python que faz uma etapa do trabalho do começo ao fim: lê uma camada, transforma os dados e grava a camada seguinte. Por exemplo, o job Bronze lê a `landing/` e grava a `bronze/`.
 
