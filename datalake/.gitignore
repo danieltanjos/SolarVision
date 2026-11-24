@@ -16,3 +16,6 @@ app-bi/
 # estado do coletor (último id levado do Supabase)
 .coletor/
 dist/
+
+# cache das respostas do Open-Meteo (gerador/importar_ufsc.py)
+.cache-open-meteo/
