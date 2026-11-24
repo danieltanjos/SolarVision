@@ -7,6 +7,7 @@ import { useAuth } from "./context/AuthContext";
 const CadastroPage = lazy(() => import("./pages/CadastroPage"));
 const CleaningPage = lazy(() => import("./pages/CleaningPage"));
 const HomePage = lazy(() => import("./pages/HomePage"));
+const LandingPage = lazy(() => import("./pages/LandingPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const MonitoringPage = lazy(() => import("./pages/MonitoringPage"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
@@ -25,15 +26,21 @@ function LazyPage({ children }) {
   return <Suspense fallback={<RouteFallback />}>{children}</Suspense>;
 }
 
-function LandingRedirect() {
+// Quem já entrou vai direto para o app; visitante vê a landing page.
+function Landing() {
   const { isAuthenticated } = useAuth();
-  return <Navigate to={isAuthenticated ? "/app/home" : "/login"} replace />;
+  if (isAuthenticated) return <Navigate to="/app/home" replace />;
+  return (
+    <LazyPage>
+      <LandingPage />
+    </LazyPage>
+  );
 }
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<LandingRedirect />} />
+      <Route path="/" element={<Landing />} />
       <Route
         path="/login"
         element={(

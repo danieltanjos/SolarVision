@@ -77,12 +77,17 @@ Lista de funcionalidades que estão **referenciadas/parcialmente implementadas**
 - **Ranking:** a anomalia só existe em grupo com 2+ placas e usa limiar fixo (10 p.p. abaixo da mediana); sem leituras, o desempenho reflete só a sujeira simulada.
 - **Onde:** `supabase/migrations/20261008110000_sujeira_chuva_financeiro.sql`, `20261008120000_historico_previsao.sql`, `20261008130000_leituras_reais.sql`.
 
+### 13. Planos e preços da landing page (vitrine)
+- **Estado atual:** a landing page (`/`) mostra três planos (Casa grátis até 12 placas e 1 grupo; Comércio R$ 30/mês até 60 placas e 5 grupos; Usina R$ 120/mês até 500 placas e 50 grupos), com alternância mensal/anual. É só apresentação: os três botões levam ao cadastro normal.
+- **Falta:** o plano do usuário no banco, os limites de placas e grupos (hoje qualquer conta cadastra quantos quiser e usa todos os recursos), a cobrança (gateway de pagamento) e a tela para trocar de plano.
+- **Onde:** `frontend/src/pages/LandingPage.jsx` (`PLANOS`), nova migration em `supabase/migrations/`, `frontend/src/pages/SettingsPage.jsx`.
+
 ---
 
 ## Baixa prioridade (polimento)
 
 ### 11. Testes ausentes
-- **Estado atual:** 54 testes de utilitários do frontend (`node --test`) e 10 testes de ponta a ponta de `lib/api.js` contra o Supabase (`supabase/tests/e2e.mjs`: RLS por dono, cadastros, edição/exclusão, recarga do clima, carga pelo pg_cron, valores do período, recomendação, leituras importadas, ranking, média de 5 anos, acerto da previsão, alertas e preferências do usuário).
+- **Estado atual:** 57 testes de utilitários do frontend (`node --test`) e 10 testes de ponta a ponta de `lib/api.js` contra o Supabase (`supabase/tests/e2e.mjs`: RLS por dono, cadastros, edição/exclusão, recarga do clima, carga pelo pg_cron, valores do período, recomendação, leituras importadas, ranking, média de 5 anos, acerto da previsão, alertas e preferências do usuário).
 - **Falta:** testes das telas (ex.: Playwright contra a URL de QA) e testes isolados do banco (ex.: pgTAP).
 
 Polimentos resolvidos: o status do grupo na Home usa o selo (`StatusBadge`, desde o redesign) e a placa do formulário de limpeza volta ao vazio depois de salvar (rodada de análises).
@@ -104,6 +109,7 @@ Polimentos resolvidos: o status do grupo na Home usa o selo (`StatusBadge`, desd
 | 9 | "Meu perfil" x "Configurações" | Média | Front | Resolvido |
 | 10 | Loading + feedback de sucesso | Média | Front | Resolvido |
 | 12 | Limitações das análises (chuva, histórico, acerto) | Média | Banco | Pendente |
+| 13 | Planos da landing page: limites e cobrança | Média | Front + Banco + Pagamento | Pendente (só vitrine) |
 | 11 | Testes ausentes | Baixa | Front + Banco | Pendente |
 
 ## Resolvidos na rodada de análises (`feat/analises`)

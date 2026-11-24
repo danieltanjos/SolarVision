@@ -119,6 +119,7 @@ Aplicação de página única, com rotas protegidas pela sessão do Supabase e t
 
 | Tela | Rota | Função | Tabelas / RPC |
 |---|---|---|---|
+| Landing page | `/` | Página pública de apresentação, sempre no tema claro: painel de exemplo em 3D que acompanha o mouse (gráfico real x estimado de um dia ilustrativo), fotos, recursos, como funciona, **planos e preços** (Casa, Comércio e Usina, com limite de placas; **(parcial)** - só vitrine, o app não cobra nem limita) e **simulação** 3D de uma casa com quatro placas (hora do dia e dias sem limpar; `three` carregado sob demanda, com foto no lugar se não houver WebGL). Quem já tem sessão é levado para `/app/home` | nenhuma (conta em `lib/simulacao.js`) |
 | Login | `/login` | Autenticação | Supabase Auth (`signInWithPassword`) |
 | Registro | `/register` | Criação de conta | Supabase Auth (`signUp`) + trigger em `usuarios` |
 | Home | `/app/home` | Cards (real hoje x estimado até agora, estimado hoje/agora, perda por sujeira, placas ativas), gráfico de hoje, limpezas recentes, **limpezas recomendadas** (placas para limpar agora e as sujas em que a chuva prevista adia a limpeza), previsão de 7 dias com o acerto da previsão e grupos (link para o Monitoramento) | `rpc dashboard_resumo`, `rpc dashboard_metricas`, `rpc recomendacoes_limpeza`, `rpc acerto_previsao`, `grupos_solares`, `placas`, `limpezas` |
