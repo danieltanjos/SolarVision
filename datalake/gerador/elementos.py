@@ -13,8 +13,7 @@ from gerador import catalogo as cat
 
 SAIDAS = {urlparse(url).hostname: "saida-" + texto.lower().replace(" ", "-") for texto, url in cat.SAIDAS}
 # atalhos (CTA) que o app tem, além do menu lateral
-CTAS = ("cta_criar_conta", "cta_entrar", "cta_relatorio_mes", "cta_registrar_limpeza", "cta_importar",
-        "cta_conhecer_pro", "cta_assinatura")
+CTAS = ("cta_criar_conta", "cta_entrar", "cta_relatorio_mes", "cta_registrar_limpeza", "cta_importar")
 FIXOS = {
     "site_search": "busca-seletor",
     "view_alerts": "btn-alertas",
@@ -29,16 +28,8 @@ FIXOS = {
     "sign_up": "btn-signup",
     "login": "btn-login",
     "logout": "btn-sair",
-    "begin_checkout": "btn-assinar",
-    "purchase": "btn-pagar",
-    "refund": "btn-pedir-reembolso",
 }
 SELECAO = {"grupo": "seletor-grupo", "placa": "seletor-placa"}
-
-
-# Elementos do contrato que ainda não têm tela no app: a assinatura Pro é uma hipótese de monetização
-# (gerador/assinaturas.py), sem a tela /app/planos. tests/site confere que o resto existe no app.
-PLANEJADOS = frozenset({"cta-conhecer-pro", "cta-assinatura", "btn-assinar", "btn-pagar", "btn-pedir-reembolso"})
 
 
 def _link(link_id: str) -> str:
