@@ -1,4 +1,4 @@
-"""Job de exportação do BI para o app: Gold -> frontend/public/bi/bi.js.
+"""Job de exportação do BI para o app: Gold -> frontend/public/bi/bi.js e a tabela bi_exportacoes do Supabase.
 
     docker compose run --rm app python pipeline/exportar_bi.py
 
@@ -20,6 +20,7 @@ from pyspark.sql import functions as F
 
 from comum import caminho, criar_sessao, exigir_camada, titulo
 from exportar_mapa_calor import escrever_js
+from supabase_rest import credenciais, publicar_bi
 
 PASTA = "app-bi"
 # tabela Gold -> job que a grava (para a mensagem do exigir_camada, R2)
@@ -103,8 +104,13 @@ def main() -> None:
     gerado_em = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     bi = montar_bi(tabelas, gerado_em)
     escrever_js(f"{PASTA}/bi.js", "SOLARVISION_BI", bi)
+    cred = credenciais()
+    if cred:
+        publicar_bi(cred, "bi", bi, gerado_em)
     titulo("Exportação do BI para o app")
     print(f"{PASTA}/bi.js: {len(bi) - 2} tabelas + KPIs (gerado em {gerado_em})")
+    print("Supabase: bi_exportacoes/bi atualizado (o app em produção lê daí)" if cred
+          else "Supabase: sem SUPABASE_URL/SUPABASE_SERVICE_KEY no datalake/.env, só o arquivo local")
     spark.stop()
 
 

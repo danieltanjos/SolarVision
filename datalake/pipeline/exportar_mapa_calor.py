@@ -1,5 +1,6 @@
 """Job de exportação do mapa de calor (R11): gold/mapa_calor_cliques e gold/mapa_calor_rolagem pelo
-Spark -> frontend/public/bi/mapa_calor.js, que o botão "Mapa de calor" do app carrega.
+Spark -> frontend/public/bi/mapa_calor.js e a tabela bi_exportacoes do Supabase (com SUPABASE_URL e
+SUPABASE_SERVICE_KEY no datalake/.env), que o botão "Mapa de calor" do app carrega.
 
     docker compose run --rm app python pipeline/exportar_mapa_calor.py
 
@@ -20,6 +21,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from comum import arquivo_do_projeto, caminho, criar_sessao, exigir_camada, titulo
+from supabase_rest import credenciais, publicar_bi
 
 DESTINO = "app-bi/mapa_calor.js"
 VARIAVEL = "MAPA_CALOR"
@@ -81,7 +83,11 @@ def main() -> None:
     finally:
         spark.stop()
     gerado_em = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    escrever_js(DESTINO, VARIAVEL, montar(lidas["cliques"], lidas["rolagem"], gerado_em))
+    mapa = montar(lidas["cliques"], lidas["rolagem"], gerado_em)
+    escrever_js(DESTINO, VARIAVEL, mapa)
+    cred = credenciais()
+    if cred:
+        publicar_bi(cred, "mapa_calor", mapa, gerado_em)
 
     titulo("Exportação do mapa de calor")
     telas = sorted({linha["pagina"] for linha in lidas["cliques"]})
@@ -89,6 +95,8 @@ def main() -> None:
           f"{len(lidas['rolagem'])} de rolagem (gerado em {gerado_em})")
     if not lidas["cliques"]:
         print("Aviso: nenhum clique com element_id. Se a landing é antiga, rode de novo o gerador e o pipeline.")
+    print("Supabase: bi_exportacoes/mapa_calor atualizado (o app em produção lê daí)" if cred
+          else "Supabase: sem SUPABASE_URL/SUPABASE_SERVICE_KEY no datalake/.env, só o arquivo local")
 
 
 if __name__ == "__main__":
