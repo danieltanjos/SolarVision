@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from gerador.elementos import ELEMENTOS, PLANEJADOS
+from gerador.elementos import ELEMENTOS
 
 RAIZ = Path(__file__).resolve().parents[2]
 APP = next((p for p in (RAIZ / "app-src", RAIZ.parent / "frontend" / "src") if p.is_dir()), None)
@@ -38,12 +38,7 @@ def ids_no_app() -> set[str]:
 
 
 def test_todo_elemento_do_contrato_existe_no_app_e_vice_versa():
-    assert ids_no_app() - SO_ADMIN == set(ELEMENTOS) - PLANEJADOS
-
-
-def test_planejados_sao_so_os_da_assinatura_e_estao_no_contrato():
-    assert PLANEJADOS <= ELEMENTOS
-    assert not PLANEJADOS & ids_no_app()
+    assert ids_no_app() - SO_ADMIN == set(ELEMENTOS)
 
 
 def test_templates_do_app_estao_no_lugar_que_o_teste_resolve():

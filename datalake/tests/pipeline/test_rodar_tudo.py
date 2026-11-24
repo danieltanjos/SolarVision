@@ -29,15 +29,14 @@ def test_cada_etapa_chama_jobs_que_existem_no_pipeline():
     chamados = [j for etapa in rodar_tudo.JOBS for j in _jobs_da_etapa(etapa)]
     assert all((PIPELINE / f"{j}.py").is_file() for j in chamados), chamados
     assert len(chamados) == len(set(chamados))                         # nenhum job roda duas vezes
-    assert _jobs_da_etapa("05_gold_receita_aquisicao") == ["gold_aquisicao", "gold_receita"]
+    assert _jobs_da_etapa("05_gold_aquisicao") == ["gold_aquisicao"]
 
 
-def test_receita_e_aquisicao_depende_so_da_silver_e_as_outras_golds_do_portao():
+def test_todas_as_golds_dependem_do_portao_de_qualidade():
     grafo = rodar_tudo.GRAFO
-    assert grafo["05_gold_receita_aquisicao"] == {"02_silver_eventos"}
     golds = [j for j in rodar_tudo.JOBS if "_gold_" in j]
     assert len(golds) == 5
-    assert all(grafo[g] == {"03_qualidade_dados"} for g in golds if g != "05_gold_receita_aquisicao")
+    assert all(grafo[g] == {"03_qualidade_dados"} for g in golds)
     assert grafo["09_exportar_bi"] == set(golds) - {"08_gold_mapa_calor"}
 
 
@@ -50,7 +49,7 @@ def test_mapa_de_calor_exporta_so_depois_da_gold_dele_como_no_projeto_modelo():
 
 def test_os_workflows_ficam_todos_na_pasta_workflows():
     nomes = {p.stem for p in ETAPAS.glob("*.json")}
-    assert nomes == {"medalhao", "receita_aquisicao"}
+    assert nomes == {"medalhao"}
     for arquivo in ETAPAS.glob("*.json"):
         wf = json.loads(arquivo.read_text(encoding="utf-8"))
         assert wf["nome"] == arquivo.stem
@@ -71,8 +70,8 @@ def test_a_partir_de_pega_a_etapa_e_todas_as_que_dependem_dela():
     assert rodar_tudo.a_partir_de(grafo, "04_gold_funil") == ("04_gold_funil", "09_exportar_bi")
     assert rodar_tudo.a_partir_de(grafo, "02_silver_eventos") == rodar_tudo.JOBS[1:]
     assert rodar_tudo.a_partir_de(grafo, "03_qualidade_dados") == (
-        "03_qualidade_dados", "04_gold_funil", "06_gold_engajamento", "07_gold_ml", "08_gold_mapa_calor",
-        "09_exportar_bi", "10_exportar_mapa_calor")
+        "03_qualidade_dados", "04_gold_funil", "05_gold_aquisicao", "06_gold_engajamento", "07_gold_ml",
+        "08_gold_mapa_calor", "09_exportar_bi", "10_exportar_mapa_calor")
 
 
 def test_para_na_primeira_etapa_que_falha(monkeypatch):
@@ -93,7 +92,7 @@ def test_roda_todas_quando_nada_falha(monkeypatch):
 def test_reprocessamento_parcial_pelo_terminal(monkeypatch):
     rodados = []
     monkeypatch.setattr(rodar_tudo, "rodar", lambda job: rodados.append(job) or 0)
-    assert rodar_tudo.main(["--a-partir-de", "05_gold_receita_aquisicao"]) == 0
-    assert rodados == ["05_gold_receita_aquisicao", "09_exportar_bi"]
+    assert rodar_tudo.main(["--a-partir-de", "05_gold_aquisicao"]) == 0
+    assert rodados == ["05_gold_aquisicao", "09_exportar_bi"]
     with pytest.raises(SystemExit):
         rodar_tudo.main(["--a-partir-de", "04_gold_funil", "--limpar"])
