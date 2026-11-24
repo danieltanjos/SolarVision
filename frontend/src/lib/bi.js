@@ -121,7 +121,7 @@ export function recursosPorAdocao(bi) {
 // O dia fechado mais recente com a janela de 28 dias completa (o MAU de verdade). O último dia do
 // período ainda está em andamento e subestimaria o DAU. Sem nenhum assim, o último dia fechado.
 export function atividadeAtual(bi) {
-  const dias = [...(bi?.atividade_diaria ?? [])].sort((a, b) => a.data.localeCompare(b.data));
+  const dias = (bi?.atividade_diaria ?? []).filter((dia) => dia.data).sort((a, b) => a.data.localeCompare(b.data));
   const fechados = dias.filter((dia) => dia.dia_completo !== false);
   return fechados.filter((dia) => dia.janela_completa).at(-1) ?? fechados.at(-1) ?? dias.at(-1) ?? null;
 }

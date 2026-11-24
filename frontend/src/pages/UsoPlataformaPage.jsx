@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import Chart from "react-apexcharts";
-import { useAuth } from "../context/AuthContext";
 import {
   CORES_SERIES, TODOS, atividadeAtual, buscasSemResultado, carregarBi, duracao, funilComparado, horas, pct,
   recursosPorAdocao, retencaoPorCanal, situacaoQualidade
@@ -122,30 +121,20 @@ function exportarJsonl() {
 
 // Business intelligence do uso da plataforma: o que o datalake de uso exporta (só ADMIN).
 export default function UsoPlataformaPage() {
-  const { user } = useAuth();
   const [bi, setBi] = useState(undefined); // undefined = carregando; null = o datalake ainda não exportou
 
   useEffect(() => {
     carregarBi().then(setBi);
   }, []);
 
-  if (user?.role !== "ADMIN") {
-    return (
-      <div className="sv-page">
-        <section className="card sv-empty">
-          <i className="bi bi-shield-lock" />
-          <p>Página restrita a administradores.</p>
-        </section>
-      </div>
-    );
-  }
 
   const funil = funilComparado(bi);
   const topo = funil[0]?.qualquer_momento || 1;
   const vazamento = funil.find((linha) => linha.maior_vazamento);
   const atual = atividadeAtual(bi);
   const qualidade = situacaoQualidade(bi);
-  const atividade = atividadeLinhas((bi?.atividade_diaria ?? []).filter((dia) => dia.dia_completo !== false));
+  const kpis = bi?.kpis ?? {};
+  const atividade = atividadeLinhas((bi?.atividade_diaria ?? []).filter((dia) => dia.data && dia.dia_completo !== false));
   const modelo = bi?.metricas_modelo?.[0];
   const ativacaoPorCanal = (bi?.cadastro_para_ativacao ?? []).filter((linha) => linha.canal !== TODOS);
   const abandono = Object.fromEntries((bi?.taxa_abandono ?? []).map((linha) => [linha.canal, linha]));
@@ -188,15 +177,15 @@ export default function UsoPlataformaPage() {
       ) : (
         <>
           <div className="sv-kpis sv-kpis-cinco">
-            <Kpi titulo="Sessões" icone="bi-window-stack" valor={numero(bi.kpis.sessoes)}>
-              {numero(bi.kpis.pessoas)} pessoas · {numero(bi.kpis.telas_por_sessao, 1)} telas por sessão
+            <Kpi titulo="Sessões" icone="bi-window-stack" valor={numero(kpis.sessoes)}>
+              {numero(kpis.pessoas)} pessoas · {numero(kpis.telas_por_sessao, 1)} telas por sessão
             </Kpi>
-            <Kpi titulo="Duração média" icone="bi-stopwatch" valor={duracao(bi.kpis.duracao_media_seg)}>por sessão</Kpi>
-            <Kpi titulo="Novos usuários" icone="bi-person-plus" valor={numero(bi.kpis.novos_usuarios)}>
+            <Kpi titulo="Duração média" icone="bi-stopwatch" valor={duracao(kpis.duracao_media_seg)}>por sessão</Kpi>
+            <Kpi titulo="Novos usuários" icone="bi-person-plus" valor={numero(kpis.novos_usuarios)}>
               criaram a conta no período
             </Kpi>
-            <Kpi titulo="Ativação" icone="bi-lightning-charge" valor={pct(bi.kpis.taxa_ativacao)}>
-              {numero(bi.kpis.ativados)} cadastraram uma placa · mediana de {numero(bi.kpis.mediana_dias_ativar, 1)} dias
+            <Kpi titulo="Ativação" icone="bi-lightning-charge" valor={pct(kpis.taxa_ativacao)}>
+              {numero(kpis.ativados)} cadastraram uma placa · mediana de {numero(kpis.mediana_dias_ativar, 1)} dias
             </Kpi>
             <Kpi titulo="Aderência" icone="bi-arrow-repeat" valor={pct(atual?.aderencia_dau_mau)}>
               DAU/MAU · {numero(atual?.dau)} no dia de {numero(atual?.mau)} no mês
@@ -265,7 +254,7 @@ export default function UsoPlataformaPage() {
                   <tbody>
                     {retencaoPorCanal(bi).map((linha) => {
                       const ativacao = ativacaoPorCanal.find((a) => a.canal === linha.canal)
-                        ?? (linha.canal === TODOS ? { pessoas: bi.kpis.novos_usuarios, taxa_ativacao: bi.kpis.taxa_ativacao } : {});
+                        ?? (linha.canal === TODOS ? { pessoas: kpis.novos_usuarios, taxa_ativacao: kpis.taxa_ativacao } : {});
                       return (
                         <tr key={linha.canal} className={linha.canal === TODOS ? "fw-semibold" : ""}>
                           <td>{linha.canal === TODOS ? "Todos" : linha.canal}</td>

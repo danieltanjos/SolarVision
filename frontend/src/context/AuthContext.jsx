@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { getCurrentUser, supabase } from "../lib/api";
-import { definirRastreamento, definirUsuario, track } from "../lib/tracking";
+import { definirRastreamento, definirUsuario, rastreamentoLigado, track } from "../lib/tracking";
 
 const AuthContext = createContext(null);
 
@@ -8,6 +8,8 @@ export function AuthProvider({ children }) {
   // undefined = ainda lendo a sessão salva; null = deslogado.
   const [session, setSession] = useState(undefined);
   const [user, setUser] = useState(null);
+  // false enquanto o perfil (papel, preferências) da conta logada ainda está carregando
+  const [perfilPronto, setPerfilPronto] = useState(false);
 
   useEffect(() => {
     // O Supabase persiste a sessão (JWT + refresh) no localStorage e emite INITIAL_SESSION ao assinar.
@@ -25,18 +27,24 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!userId) {
       setUser(null);
+      setPerfilPronto(true);
       return;
     }
+    setPerfilPronto(false);
     let ativo = true; // ignora a resposta se o usuário mudar (logout/login) antes dela chegar
     getCurrentUser().then(
       (perfil) => {
         if (!ativo) return;
         definirRastreamento(perfil.rastreamento !== false); // a escolha da conta vale em qualquer navegador
         setUser(perfil);
+        setPerfilPronto(true);
       },
       (error) => {
         console.error("Não foi possível carregar o perfil do usuário.", error);
-        if (ativo) setUser(null);
+        if (!ativo) return;
+        definirRastreamento(rastreamentoLigado()); // sem o perfil, vale a escolha deste navegador
+        setUser(null);
+        setPerfilPronto(true);
       }
     );
     return () => {
@@ -96,6 +104,7 @@ export function AuthProvider({ children }) {
       value={{
         isAuthenticated: Boolean(session),
         user,
+        perfilPronto,
         login,
         register,
         logout,

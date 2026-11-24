@@ -1,6 +1,8 @@
 import { Suspense, lazy } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import AppShell from "./components/AppShell";
+import AdminRoute from "./components/AdminRoute";
+import LimiteDeErro from "./components/LimiteDeErro";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RastreadorDeTelas from "./components/RastreadorDeTelas";
 import { useAuth } from "./context/AuthContext";
@@ -107,9 +109,13 @@ export default function App() {
         <Route
           path="uso"
           element={(
-            <LazyPage>
-              <UsoPlataformaPage />
-            </LazyPage>
+            <AdminRoute>
+              <LimiteDeErro mensagem="Não foi possível mostrar o uso da plataforma.">
+                <LazyPage>
+                  <UsoPlataformaPage />
+                </LazyPage>
+              </LimiteDeErro>
+            </AdminRoute>
           )}
         />
         <Route
