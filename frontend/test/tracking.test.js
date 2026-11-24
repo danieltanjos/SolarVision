@@ -2,12 +2,15 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   canalDe,
+  criarFila,
   dispositivoDe,
   elementoDe,
+  erroPermanente,
   hashCurto,
   marcosNovos,
   montarEvento,
   placaItem,
+  telaRastreada,
   userIdDe
 } from "../src/lib/tracking.js";
 
@@ -70,4 +73,65 @@ test("TRK-ELEMENTO: data-heat do elemento ou do ancestral mais próximo", () => 
   assert.equal(elementoDe(botao), "btn-salvar-placa");
   assert.equal(elementoDe(solto), null);
   assert.equal(elementoDe(null), null);
+});
+
+test("TRK-FILA: só envia depois de liberada (o opt-out da conta vale antes do primeiro envio)", async () => {
+  const enviados = [];
+  const fila = criarFila({ transporte: async (lote) => enviados.push(...lote) });
+  fila.adicionar({ event_name: "login" });
+  assert.equal(await fila.enviar(), "parada");
+  assert.deepEqual(enviados, []);
+  fila.descartar();                                         // a conta tinha desligado o rastreamento
+  fila.liberar();
+  assert.equal(await fila.enviar(), "parada");
+  fila.adicionar({ event_name: "page_view" });
+  assert.equal(await fila.enviar(), "enviada");
+  assert.deepEqual(enviados.map((e) => e.event_name), ["page_view"]);
+});
+
+test("TRK-FILA: falha passageira devolve o lote, guardando só os mais novos", async () => {
+  let falhar = true;
+  const enviados = [];
+  const fila = criarFila({ maximo: 3, transporte: async (lote) => {
+    if (falhar) throw new Error("rede");
+    enviados.push(...lote);
+  } });
+  fila.liberar();
+  for (const n of [1, 2]) fila.adicionar({ n });
+  assert.equal(await fila.enviar(), "falhou");
+  for (const n of [3, 4]) fila.adicionar({ n });
+  assert.deepEqual(fila.itens.map((e) => e.n), [2, 3, 4]);
+  falhar = false;
+  assert.equal(await fila.enviar(), "enviada");
+  assert.deepEqual(enviados.map((e) => e.n), [2, 3, 4]);
+});
+
+test("TRK-FILA: tabela inexistente para a fila de vez, sem reenviar a cada 5 s", async () => {
+  let chamadas = 0;
+  const fila = criarFila({ transporte: async () => {
+    chamadas += 1;
+    throw { code: "PGRST205", message: "Could not find the table 'public.eventos_coletados'" };
+  } });
+  fila.liberar();
+  fila.adicionar({ n: 1 });
+  assert.equal(await fila.enviar(), "desligada");
+  fila.adicionar({ n: 2 });
+  assert.equal(await fila.enviar(), "parada");
+  assert.equal(chamadas, 1);
+  assert.equal(fila.ativa, false);
+});
+
+test("TRK-ERRO: erros permanentes são tabela ausente, sem permissão ou 404", () => {
+  assert.ok(erroPermanente({ code: "42P01" }));
+  assert.ok(erroPermanente({ code: "PGRST205" }));
+  assert.ok(erroPermanente({ code: "42501" }));
+  assert.ok(erroPermanente({ status: 404 }));
+  assert.ok(!erroPermanente(new Error("Failed to fetch")));
+  assert.ok(!erroPermanente(null));
+});
+
+test("TRK-TELA: o painel do ADMIN não é rastreado; as telas do produto são", () => {
+  assert.equal(telaRastreada("/app/uso"), false);
+  assert.equal(telaRastreada("/app/home"), true);
+  assert.equal(telaRastreada("/login"), true);
 });
