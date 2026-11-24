@@ -8,8 +8,8 @@ export function AuthProvider({ children }) {
   // undefined = ainda lendo a sessão salva; null = deslogado.
   const [session, setSession] = useState(undefined);
   const [user, setUser] = useState(null);
-  // false enquanto o perfil (papel, preferências) da conta logada ainda está carregando
-  const [perfilPronto, setPerfilPronto] = useState(false);
+  // de qual conta o perfil (papel, preferências) já carregou; o perfil está pronto quando é o da conta logada
+  const [perfilCarregadoDe, setPerfilCarregadoDe] = useState(null);
 
   useEffect(() => {
     // O Supabase persiste a sessão (JWT + refresh) no localStorage e emite INITIAL_SESSION ao assinar.
@@ -27,24 +27,22 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!userId) {
       setUser(null);
-      setPerfilPronto(true);
       return;
     }
-    setPerfilPronto(false);
     let ativo = true; // ignora a resposta se o usuário mudar (logout/login) antes dela chegar
     getCurrentUser().then(
       (perfil) => {
         if (!ativo) return;
         definirRastreamento(perfil.rastreamento !== false); // a escolha da conta vale em qualquer navegador
         setUser(perfil);
-        setPerfilPronto(true);
+        setPerfilCarregadoDe(userId);
       },
       (error) => {
         console.error("Não foi possível carregar o perfil do usuário.", error);
         if (!ativo) return;
         definirRastreamento(rastreamentoLigado()); // sem o perfil, vale a escolha deste navegador
         setUser(null);
-        setPerfilPronto(true);
+        setPerfilCarregadoDe(userId);
       }
     );
     return () => {
@@ -98,6 +96,9 @@ export function AuthProvider({ children }) {
   if (session === undefined) {
     return null;
   }
+
+  // Derivado, não guardado: no render em que a sessão acaba de chegar, o perfil daquela conta ainda não carregou.
+  const perfilPronto = !userId || perfilCarregadoDe === userId;
 
   return (
     <AuthContext.Provider
