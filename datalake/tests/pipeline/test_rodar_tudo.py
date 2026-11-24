@@ -49,11 +49,11 @@ def test_mapa_de_calor_exporta_so_depois_da_gold_dele_como_no_projeto_modelo():
 
 def test_os_workflows_ficam_todos_na_pasta_workflows():
     nomes = {p.stem for p in ETAPAS.glob("*.json")}
-    assert nomes == {"medalhao"}
+    assert nomes == {"medalhao", "previsao_energia"}
     for arquivo in ETAPAS.glob("*.json"):
         wf = json.loads(arquivo.read_text(encoding="utf-8"))
         assert wf["nome"] == arquivo.stem
-        assert {e["job"] for e in wf["etapas"]} <= set(rodar_tudo.JOBS)
+        assert all((ETAPAS / f"{e['job']}.py").is_file() for e in wf["etapas"])
         rodar_tudo.ordem_topologica({e["job"]: set(e["depende_de"]) for e in wf["etapas"]})
     assert not (PIPELINE / "workflows").exists()
 
@@ -96,3 +96,17 @@ def test_reprocessamento_parcial_pelo_terminal(monkeypatch):
     assert rodados == ["05_gold_aquisicao", "09_exportar_bi"]
     with pytest.raises(SystemExit):
         rodar_tudo.main(["--a-partir-de", "04_gold_funil", "--limpar"])
+
+
+def test_workflow_da_previsao_de_energia_em_sequencia_com_o_portao(monkeypatch):
+    grafo = rodar_tudo.carregar_grafo(ETAPAS / "previsao_energia.json")
+    ordem = rodar_tudo.ordem_topologica(grafo)
+    assert ordem == ("e01_bronze_energia", "e02_silver_energia", "e03_qualidade_energia", "e04_gold_previsao_energia",
+                     "e05_prever_energia", "e06_publicar_previsao")
+    assert all((PIPELINE / f"{j}.py").is_file() for etapa in ordem for j in _jobs_da_etapa(etapa))
+    rodados = []
+    monkeypatch.setattr(rodar_tudo, "rodar", lambda job: rodados.append(job) or (1 if job == "e03_qualidade_energia" else 0))
+    assert rodar_tudo.main(["--workflow", "previsao_energia"]) == 1
+    assert rodados == list(ordem[:3])                                  # o portão segura o treino
+    with pytest.raises(SystemExit):
+        rodar_tudo.main(["--workflow", "previsao_energia", "--a-partir-de", "04_gold_funil"])
