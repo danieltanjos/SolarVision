@@ -55,5 +55,6 @@ def test_cliques_do_app_levam_o_element_id_do_data_heat():
 
 def test_app_carrega_o_mapa_e_tem_o_botao():
     bi = _fonte("lib/bi.js")
-    assert 'carregarExportacao("/bi/mapa_calor.js", "MAPA_CALOR")' in bi
+    assert 'carregarExportacao("/bi/mapa_calor.js", "MAPA_CALOR", doBanco)' in bi
+    assert 'getBiExportacao("mapa_calor")' in _fonte("components/MapaCalor.jsx")
     assert 'id="mapa-calor"' in _fonte("components/MapaCalor.jsx")
