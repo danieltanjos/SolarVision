@@ -1,0 +1,13 @@
+{
+  "nome": "previsao_energia",
+  "descricao": "Previsão da energia dos próximos 7 dias: Bronze e Silver de energia, o portão, o treino do modelo sobre a física, a previsão da semana e a publicação no app.",
+  "paralelo": 1,
+  "etapas": [
+    {"job": "e01_bronze_energia", "depende_de": []},
+    {"job": "e02_silver_energia", "depende_de": ["e01_bronze_energia"]},
+    {"job": "e03_qualidade_energia", "depende_de": ["e02_silver_energia"]},
+    {"job": "e04_gold_previsao_energia", "depende_de": ["e03_qualidade_energia"]},
+    {"job": "e05_prever_energia", "depende_de": ["e04_gold_previsao_energia"]},
+    {"job": "e06_publicar_previsao", "depende_de": ["e05_prever_energia"]}
+  ]
+}
