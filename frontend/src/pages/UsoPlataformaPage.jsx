@@ -207,7 +207,12 @@ export default function UsoPlataformaPage() {
               ) : null}
             </Cartao>
             <Cartao titulo="Modelo de propensão" descricao="Regressão logística (Spark ML): chance de a sessão ativar.">
-              {modelo ? (
+              {modelo?.motivo ? (
+                <p className="sv-muted mb-2">
+                  <i className="bi bi-hourglass-split me-1" />
+                  Ainda sem modelo: {modelo.motivo}.
+                </p>
+              ) : modelo ? (
                 <dl className="sv-mini">
                   <div><dt>AUC</dt><dd>{numero(modelo.auc, 3)}</dd></div>
                   <div><dt>F1</dt><dd>{numero(modelo.f1, 3)}</dd></div>
