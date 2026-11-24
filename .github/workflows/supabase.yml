@@ -1,7 +1,7 @@
 name: Supabase
 on:
   push:
-    branches: [qa, production]
+    branches: [qa, main]
   schedule:
     - cron: '0 12 * * *' # todo dia às 09h de Brasília
   workflow_dispatch:

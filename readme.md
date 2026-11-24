@@ -54,7 +54,7 @@ A Vercel só entrega os arquivos estáticos; depois de carregada, a SPA fala dir
 - Banco: PostgreSQL gerenciado pelo Supabase (região São Paulo)
 - Clima: Open-Meteo (gratuito para uso não comercial, sem chave; dados CC BY 4.0, atribuição no rodapé do app)
 - Hospedagem: Vercel (projeto `solarvision`, Root Directory `frontend`)
-- CI: GitHub Actions (testes + build do frontend; migrations + teste de ponta a ponta ao publicar em `qa`/`production`; requisição diária para o Supabase free não pausar)
+- CI: GitHub Actions (testes + build do frontend; migrations + teste de ponta a ponta ao publicar em `qa`/`main`; requisição diária para o Supabase free não pausar)
 
 ## Execução local
 
@@ -76,7 +76,7 @@ Variáveis (em Supabase > Project Settings > API Keys):
 
 ## Banco: migrations e clima
 
-1. **Schema:** as migrations de `supabase/migrations/` são aplicadas automaticamente pelo workflow `.github/workflows/supabase.yml` a cada push em `qa`/`production` (`supabase db push`, segredo `SUPABASE_DB_URL` do repositório). Para aplicar à mão: `npx supabase db push --db-url "<connection string do Session pooler>"`. Elas criam as tabelas, as políticas RLS (cada usuário só vê os grupos de que é dono; ADMIN vê todos), os triggers, a view `geracao_horaria`, as funções do dashboard, das análises e do clima e os jobs pg_cron (`sincronizar-clima`, `guardar-previsao` e `gerar-alertas`).
+1. **Schema:** as migrations de `supabase/migrations/` são aplicadas automaticamente pelo workflow `.github/workflows/supabase.yml` a cada push em `qa`/`main` (`supabase db push`, segredo `SUPABASE_DB_URL` do repositório). Para aplicar à mão: `npx supabase db push --db-url "<connection string do Session pooler>"`. Elas criam as tabelas, as políticas RLS (cada usuário só vê os grupos de que é dono; ADMIN vê todos), os triggers, a view `geracao_horaria`, as funções do dashboard, das análises e do clima e os jobs pg_cron (`sincronizar-clima`, `guardar-previsao` e `gerar-alertas`).
 2. **Dados:** não há carga manual. Ao cadastrar um grupo com latitude/longitude e uma placa com potência (Wp), inclinação e orientação, o job `sincronizar-clima` (pg_cron, a cada minuto) baixa do Open-Meteo, em ~1 min, 5 anos de clima horário e a previsão; depois a previsão é atualizada de hora em hora. Mudar o local do grupo ou a inclinação/orientação da placa recarrega o clima. Leituras reais entram pelo Monitoramento (placa selecionada > **Importar leituras (CSV)**). Detalhes em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md#5-geração-estimada-pelo-clima-open-meteo).
 3. **Administrador:** não há tela; para um usuário ver as usinas de todos, no SQL Editor: `update public.usuarios set role = 'ADMIN' where email = '...';`. Os grupos criados antes do dono por grupo ficaram com o primeiro usuário cadastrado.
 
@@ -88,15 +88,18 @@ A Vercel publica o diretório `frontend` (`frontend/vercel.json` faz o rewrite d
 
 | Branch | Ambiente Vercel | URL |
 |---|---|---|
-| `production` | Production | https://solarvision-senai.vercel.app |
+| `main` | Production | https://solarvision-senai.vercel.app |
 | `qa` | QA (domínio fixo) | https://solarvision-senai-qa.vercel.app |
-| demais branches/PRs | Preview | URL gerada por deploy |
+| `develop`, `feat/*`, `fix/*`, `hotfix/*` e PRs | Preview | URL gerada por deploy |
 
-Fluxo de entrega:
+Fluxo de entrega (Git Flow):
 
-1. Desenvolver em uma branch de feature e abrir PR para `main` (o CI roda testes e build).
-2. Fazer merge de `main` em `qa` e validar na URL de QA.
-3. Fazer merge de `qa` em `production`.
+1. **Feature:** criar a branch (`feat/*`, `fix/*`) a partir de `develop` e abrir PR para `develop`. O PR é revisado e o CI roda testes e build.
+2. **Release:** fazer merge de `develop` em `qa` e validar na URL de QA. A `qa` é a branch de release: é fixa, em vez de uma `release/x.y` por versão, porque a URL de QA na Vercel está presa ao nome da branch.
+3. **Publicação:** fazer merge de `qa` em `main`, marcar a versão com uma tag (`v1.0`, `v1.1`) e, se a `qa` recebeu correções, fazer merge dela de volta em `develop`.
+4. **Hotfix:** correção urgente de produção sai de `main` em uma branch `hotfix/*`, volta para `main` com tag (`v1.0.1`) e também para `develop`.
+
+`main` só recebe merges de `qa` e de `hotfix/*`; o que está em `main` é o que está no ar.
 
 Os dois ambientes usam **o mesmo projeto Supabase** (`skfguameoeklepcjnqth`): QA e produção compartilham banco e usuários. Ver [`docs/DECISOES-TECNICAS.md`](docs/DECISOES-TECNICAS.md).
 
@@ -105,7 +108,7 @@ Os dois ambientes usam **o mesmo projeto Supabase** (`skfguameoeklepcjnqth`): QA
 - **Frontend:** 53 testes nativos do Node (`node --test`) para escala de potência/energia, formatação pt-BR (inclusive R$), nomes com acentos, janelas do gráfico no fuso de São Paulo, leitura de coordenadas do Google Maps, sujeira, comparação com a média histórica, erro da previsão, calendário, leitura do CSV de leituras, janelas do relatório (mês x mês anterior) e datas dos alertas.
 - **Ponta a ponta:** `supabase/tests/e2e.mjs` (10 testes) roda o `api.js` do frontend contra o Supabase (RLS, inclusive um segundo usuário que não vê nem altera o grupo do primeiro, perfil, cadastros, edição/exclusão, recarga do clima ao editar, carga dos 5 anos de clima pelo pg_cron, estimativa/previsão do dashboard, valores do período, recomendação de limpeza, leituras importadas, ranking, média de 5 anos, acerto da previsão, alertas, preferências do usuário e mensagens de erro), com contas fixas de teste, e apaga o que cria. Espera o pg_cron carregar o clima (~30 s observados, limite de 3 min). Na rodada de análises os testes passaram contra um Supabase local recriado do zero com todas as migrations.
 - **Validação do modelo:** [`docs/validacao/`](docs/validacao/RESULTADO.md) compara a geração estimada com 5 anos de leituras reais (Fotovoltaica-UFSC): r diário ≈ 0,89 e erro mensal ≈ 6 %, com PR real provavelmente abaixo do 0,82 fixo.
-- **CI:** `.github/workflows/quality.yml` roda em push/PR com Node 24 (`npm ci`, testes com relatório JUnit e `npm run build`). `.github/workflows/supabase.yml` aplica as migrations e roda o teste de ponta a ponta a cada push em `qa`/`production`, e faz uma requisição diária ao Supabase, porque o plano free pausa projetos parados por 7 dias. O GitHub desliga workflows agendados após 60 dias sem commits no repositório.
+- **CI:** `.github/workflows/quality.yml` roda em push/PR com Node 24 (`npm ci`, testes com relatório JUnit e `npm run build`). `.github/workflows/supabase.yml` aplica as migrations e roda o teste de ponta a ponta a cada push em `qa`/`main`, e faz uma requisição diária ao Supabase, porque o plano free pausa projetos parados por 7 dias. O GitHub desliga workflows agendados após 60 dias sem commits no repositório.
 
 Para reproduzir, em `frontend`: `npm ci`, `npm test` e `npm run build`. Ponta a ponta, na raiz: `node --env-file=frontend/.env.local --test supabase/tests/e2e.mjs`.
 

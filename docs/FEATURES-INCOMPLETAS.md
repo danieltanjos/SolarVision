@@ -26,7 +26,7 @@ Lista de funcionalidades que estão **referenciadas/parcialmente implementadas**
 - Grupos, placas e limpezas têm editar e excluir na interface (`updateGroup`/`deleteGroup`, `updatePanel`/`deletePanel`, `updateCleaning`/`deleteCleaning` em `lib/api.js`), com modal de confirmação (`ConfirmarExclusao`) que avisa o que a exclusão em cascata remove. Coberto pelo teste de ponta a ponta.
 
 ### 4. QA e produção no mesmo projeto Supabase
-- **Estado atual:** os ambientes `qa` e `production` da Vercel apontam para o mesmo banco; dados e usuários criados em QA aparecem em produção.
+- **Estado atual:** os ambientes de QA (branch `qa`) e de produção (branch `main`) da Vercel apontam para o mesmo banco; dados e usuários criados em QA aparecem em produção.
 - **Falta:** um segundo projeto Supabase para QA (mesmas migrations) e variáveis `VITE_SUPABASE_*` diferentes por ambiente na Vercel.
 - **Onde:** Supabase e configuração de variáveis da Vercel.
 
