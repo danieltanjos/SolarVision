@@ -4,6 +4,7 @@ import {
   CORES_SERIES, TODOS, atividadeAtual, buscasSemResultado, carregarBi, duracao, funilComparado, horas, pct,
   recursosPorAdocao, retencaoPorCanal, situacaoQualidade
 } from "../lib/bi";
+import { getBiExportacao } from "../lib/api";
 import { eventosEmJsonl } from "../lib/tracking";
 
 const ETAPAS = {
@@ -124,7 +125,7 @@ export default function UsoPlataformaPage() {
   const [bi, setBi] = useState(undefined); // undefined = carregando; null = o datalake ainda não exportou
 
   useEffect(() => {
-    carregarBi().then(setBi);
+    carregarBi(() => getBiExportacao("bi")).then(setBi);
   }, []);
 
 
@@ -170,8 +171,8 @@ export default function UsoPlataformaPage() {
           <i className="bi bi-database-x" />
           <p>O datalake ainda não exportou o BI.</p>
           <span>
-            Em <code>datalake/</code>: <code>docker compose run --rm app python pipeline/rodar_tudo.py</code> grava
-            {" "}<code>frontend/public/bi/bi.js</code>.
+            Em <code>datalake/</code>, com <code>SUPABASE_URL</code> e <code>SUPABASE_SERVICE_KEY</code> no <code>.env</code>:
+            {" "}<code>docker compose run --rm app python pipeline/rodar_tudo.py</code> publica o BI no Supabase.
           </span>
         </section>
       ) : (

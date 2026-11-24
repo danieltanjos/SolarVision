@@ -150,6 +150,13 @@ export function salvarPerfil(id, perfil) {
 
 // Lote de eventos de uso (lib/tracking.js) para a tabela coletora; o datalake lê de lá. Só insert:
 // nem o próprio usuário lê os eventos pela API.
+// Uma exportação do datalake ('bi' ou 'mapa_calor'). A RLS só deixa ADMIN ler; sem a tabela (migration
+// não aplicada), sem permissão ou sem a linha, devolve null e o app cai no arquivo local de desenvolvimento.
+export async function getBiExportacao(nome) {
+  const { data, error } = await supabase.from("bi_exportacoes").select("dados").eq("nome", nome).maybeSingle();
+  return error ? null : (data?.dados ?? null);
+}
+
 export function enviarEventos(lote) {
   return unwrap(supabase.from("eventos_coletados").insert(lote.map((evento) => ({ evento }))));
 }

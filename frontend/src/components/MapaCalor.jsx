@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
+import { getBiExportacao } from "../lib/api";
 import { carregarMapaCalor, cliquesDaTela, corDoCalor, pct, rolagemDaTela } from "../lib/bi";
 import { LARGURA_FAIXA, gradienteDaFaixa, marcoY, pintarCalor, pontosDoElemento } from "../lib/mapaCalor";
 
@@ -9,8 +10,8 @@ import { LARGURA_FAIXA, gradienteDaFaixa, marcoY, pintarCalor, pontosDoElemento 
 // a etiqueta da taxa de clique, e a faixa da direita mostra até onde as sessões rolam. No app o menu e o
 // cabeçalho são fixos na tela, então o canvas fica preso à janela e é redesenhado ao rolar.
 // O overlay não recebe cliques (pointer-events: none) e não gera eventos.
-const AVISO_SEM_MAPA = "Ainda não há mapa. Rode o job de exportação do mapa de calor (R11) para gerar "
-  + "frontend/public/bi/mapa_calor.js e recarregue a página.";
+const AVISO_SEM_MAPA = "Ainda não há mapa. Rode o job de exportação do mapa de calor (R11) para publicar o mapa "
+  + "no Supabase e recarregue a página.";
 const AVISO_SEM_CLIQUES = "O mapa não tem cliques: a landing foi gerada antes do element_id. Rode o gerador "
   + "de novo e o pipeline inteiro.";
 
@@ -34,7 +35,7 @@ export default function MapaCalor() {
       setLigado(false);
       return;
     }
-    const carregado = mapa ?? (await carregarMapaCalor());
+    const carregado = mapa ?? (await carregarMapaCalor(() => getBiExportacao("mapa_calor")));
     if (!carregado) {
       avisar(AVISO_SEM_MAPA);
       return;

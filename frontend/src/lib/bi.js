@@ -1,15 +1,19 @@
-// BI do uso da plataforma: o que o datalake exporta (datalake/pipeline/exportar_bi.py) para o app.
+// BI do uso da plataforma: o que o datalake exporta (datalake/pipeline/exportar_bi.py e
+// exportar_mapa_calor.py) para o app. Em produção vem da tabela bi_exportacoes do Supabase (só ADMIN
+// lê, pela RLS); em desenvolvimento, sem a linha no banco, dos arquivos locais gerados pelo datalake:
 // frontend/public/bi/bi.js        -> window.SOLARVISION_BI  (página Uso da plataforma)
 // frontend/public/bi/mapa_calor.js -> window.MAPA_CALOR      (overlay do mapa de calor)
-// Os dois arquivos são gerados pelo datalake e ficam fora do git (dados de negócio).
+// Os arquivos ficam fora do git (dados de negócio), por isso não existem na Vercel.
 
 export const TODOS = "(todos)";
 
-// Carrega um dos arquivos do datalake e devolve a variável que ele define, ou null se não houver.
-// Sem o arquivo, a Vercel devolve o index.html: o script não define nada e o resultado é null.
-export function carregarExportacao(src, variavel) {
-  if (typeof window === "undefined") return Promise.resolve(null);
-  if (window[variavel]) return Promise.resolve(window[variavel]);
+// Carrega uma exportação do datalake: primeiro do banco (doBanco, que devolve os dados ou null), depois do
+// arquivo local, só fora do build de produção (lá o arquivo não existe e a Vercel devolveria o index.html).
+export async function carregarExportacao(src, variavel, doBanco = null) {
+  const doSupabase = doBanco ? await doBanco().catch(() => null) : null;
+  if (doSupabase) return doSupabase;
+  if (typeof window === "undefined" || import.meta.env?.PROD) return null;
+  if (window[variavel]) return window[variavel];
   return new Promise((resolve) => {
     const script = document.createElement("script");
     script.src = `${src}?v=${Date.now()}`;
@@ -19,8 +23,8 @@ export function carregarExportacao(src, variavel) {
   });
 }
 
-export const carregarBi = () => carregarExportacao("/bi/bi.js", "SOLARVISION_BI");
-export const carregarMapaCalor = () => carregarExportacao("/bi/mapa_calor.js", "MAPA_CALOR");
+export const carregarBi = (doBanco) => carregarExportacao("/bi/bi.js", "SOLARVISION_BI", doBanco);
+export const carregarMapaCalor = (doBanco) => carregarExportacao("/bi/mapa_calor.js", "MAPA_CALOR", doBanco);
 
 export function pct(fracao, casas = 0) {
   if (fracao == null || !Number.isFinite(Number(fracao))) return "—";
