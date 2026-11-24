@@ -217,6 +217,20 @@ export function getRecomendacoesLimpeza() {
   );
 }
 
+// Previsão do modelo do datalake (previsoes_ml) por placa e dia, nas placas que a RLS deixa ver. Sem a tabela
+// (migration não aplicada) ou sem previsão, devolve [] e o card fica só com a estimativa física.
+export async function getPrevisaoMl({ dataInicio, dataFim, grupoId = null, placaId = null }) {
+  let consulta = supabase
+    .from("previsoes_ml")
+    .select("dia, estimadaWh:estimada_wh, previstaWh:prevista_wh, p10Wh:p10_wh, p90Wh:p90_wh, modelo, placas!inner(grupo_id)")
+    .gte("dia", dataInicio)
+    .lte("dia", dataFim);
+  if (placaId) consulta = consulta.eq("placa_id", placaId);
+  else if (grupoId) consulta = consulta.eq("placas.grupo_id", grupoId);
+  const { data, error } = await consulta;
+  return error ? [] : data;
+}
+
 // Estimado (só o clima) da mesma janela nos 5 anos anteriores, com os mesmos x de getDashboardMetrics.
 export function getDashboardHistorico({ granularidade, dataInicio, dataFim, grupoId = null, placaId = null }) {
   return unwrap(
