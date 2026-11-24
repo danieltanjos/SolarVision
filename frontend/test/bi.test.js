@@ -137,3 +137,18 @@ test("situação da qualidade separa falha bloqueante de alerta", async () => {
   assert.deepEqual(s.alertas.map((r) => r.regra), ["taxa de duplicatas"]);
   assert.equal(situacaoQualidade({}), null);
 });
+
+test("exportação do datalake vem primeiro do banco; sem banco e sem navegador, null", async () => {
+  const { carregarExportacao } = await import("../src/lib/bi.js");
+  assert.deepEqual(await carregarExportacao("/bi/bi.js", "SOLARVISION_BI", async () => ({ kpis: { sessoes: 1 } })),
+    { kpis: { sessoes: 1 } });
+  assert.equal(await carregarExportacao("/bi/bi.js", "SOLARVISION_BI", async () => null), null);
+  assert.equal(await carregarExportacao("/bi/bi.js", "SOLARVISION_BI", async () => { throw new Error("rede"); }), null);
+  assert.equal(await carregarExportacao("/bi/bi.js", "SOLARVISION_BI"), null);
+});
+
+test("atividade atual ignora linhas sem data", async () => {
+  const { atividadeAtual } = await import("../src/lib/bi.js");
+  const bi = { atividade_diaria: [{ data: "2026-09-27", dau: 300, janela_completa: true }, { dau: 1 }] };
+  assert.equal(atividadeAtual(bi).dau, 300);
+});
