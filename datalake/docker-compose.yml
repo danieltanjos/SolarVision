@@ -27,6 +27,8 @@ services:
       - ../frontend/public/bi:/projeto/app-bi
       # só leitura: tests/site confere os data-heat do app contra o contrato (como o tests/site do professor)
       - ../frontend/src:/projeto/app-src:ro
+      # só leitura: o CSV real da UFSC, a referência do modelo de previsão de energia (gerador/importar_ufsc.py)
+      - ../supabase/seed:/projeto/seed-ufsc:ro
     environment: *ambiente-s3
     depends_on:
       - floci
