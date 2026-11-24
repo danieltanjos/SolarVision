@@ -21,7 +21,8 @@ O número segue a ordem do projeto-modelo do professor (funil, aquisição, enga
 
 | Arquivo | O que roda |
 | --- | --- |
-| [`medalhao.json`](medalhao.json) | tudo: as dez etapas, duas Golds por vez; é o grafo que o `pipeline/rodar_tudo.py` segue (R3) |
+| [`medalhao.json`](medalhao.json) | o uso da plataforma: as dez etapas, duas Golds por vez; é o grafo que o `pipeline/rodar_tudo.py` segue (R3) |
+| [`previsao_energia.json`](previsao_energia.json) | a previsão de energia dos próximos 7 dias: `e01_bronze_energia` → `e02_silver_energia` → `e03_qualidade_energia` → `e04_gold_previsao_energia` → `e05_prever_energia` → `e06_publicar_previsao` ([docs/PREVISAO_ENERGIA.md](../docs/PREVISAO_ENERGIA.md)); `rodar_tudo.py --workflow previsao_energia` |
 
 ```mermaid
 flowchart LR

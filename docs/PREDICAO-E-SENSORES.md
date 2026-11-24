@@ -190,6 +190,8 @@ irradiancia_fonte  = 'SENSOR' | 'SENSOR_FATOR' | 'OPEN_METEO'   -- exibida na UI
 
 ## 9. Predição sem estação (cenário atual)
 
+**Já implementado:** um modelo de correção no datalake ([datalake/docs/PREVISAO_ENERGIA.md](../datalake/docs/PREVISAO_ENERGIA.md)). Um GBT do Spark ML aprende a razão real ÷ estimado de cada dia, com o CSV real da UFSC e as leituras importadas pelos usuários; a previsão da semana é a estimativa física × a razão prevista, publicada em `previsoes_ml` e mostrada no card de previsão. No último ano da UFSC, o erro cai de 15,5% para 11,9% no dia e de 6,6% para 5,1% na semana. Ele cobre parte das fases 2 e 4 (calibração pelo histórico real e faixa P10-P90) sem mexer na fórmula; as fases abaixo continuam valendo para o modelo físico.
+
 Resumo do plano (detalhado no PR de cada fase), em ordem de ganho:
 
 | Fase | O que entra | Precisa de leituras? |

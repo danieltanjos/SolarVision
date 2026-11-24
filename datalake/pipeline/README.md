@@ -14,9 +14,16 @@ Um job por camada, como pede o [enunciado](../docs/ENUNCIADO.md) (R1 a R11). A b
 | `gold_aquisicao.py` | `silver/` | `gold/ativacao_diaria`, `gold/retencao`, `gold/taxa_abandono`, `gold/cadastro_para_ativacao` |
 | `gold_ml.py` | `silver/` | `gold/propensao_ativacao`, `gold/metricas_modelo`, `gold/segmentos_usuarios` (Spark ML) |
 | `gold_mapa_calor.py` | `silver/` | `gold/mapa_calor_cliques`, `gold/mapa_calor_rolagem` (nomes de coluna do R11) |
-| `exportar_bi.py` | as Golds do painel | `frontend/public/bi/bi.js` (montado em `/projeto/app-bi`), lido pela página Uso da plataforma |
-| `exportar_mapa_calor.py` | `gold/mapa_calor_cliques`, `gold/mapa_calor_rolagem` | `frontend/public/bi/mapa_calor.js` (R11): confere os nomes de coluna exatos, ordena e grava numa linha, de uma vez |
-| `rodar_tudo.py` | `../workflows/medalhao.json` | roda as nove etapas na ordem do grafo e para na primeira que falhar (R3); `--limpar` recomeça do zero; `--a-partir-de ETAPA` reprocessa uma etapa e as que dependem dela |
+| `exportar_bi.py` | as Golds do painel | `frontend/public/bi/bi.js` (montado em `/projeto/app-bi`) e, com o `.env`, a linha `bi` de `bi_exportacoes` no Supabase, lida pela página Uso da plataforma |
+| `exportar_mapa_calor.py` | `gold/mapa_calor_cliques`, `gold/mapa_calor_rolagem` | `frontend/public/bi/mapa_calor.js` (R11) e a linha `mapa_calor` de `bi_exportacoes`: confere os nomes de coluna exatos, ordena e grava numa linha, de uma vez |
+| `bronze_energia.py` | `landing_energia/` | `bronze_energia/<tabela>/`: placas, clima, leituras e limpezas, append-only, com proveniência |
+| `silver_energia.py` | `bronze_energia/` | `silver_energia/horas` (estimativa física e real por hora), `dias_medidos`, `placas`, `limpezas`, `rejeitados` |
+| `qualidade_energia.py` | `silver_energia/` | `gold/qualidade_energia`: o portão da previsão |
+| `gold_previsao_energia.py` | `silver_energia/` | o modelo (`modelos/previsao_energia`), `gold/energia_diaria`, `gold/metricas_previsao`, `gold/importancia_features` |
+| `prever_energia.py` | o modelo e `gold/energia_diaria` | `gold/previsao_7dias`: as placas do app, de hoje a hoje + 6 |
+| `publicar_previsao.py` | `gold/previsao_7dias` | a tabela `previsoes_ml` do Supabase, lida pelo card de previsão do app |
+| `supabase_rest.py` | — | o caminho de volta para o app: upsert com a service key do `datalake/.env` |
+| `rodar_tudo.py` | `../workflows/<workflow>.json` | roda as etapas na ordem do grafo e para na primeira que falhar (R3); `--workflow previsao_energia` segue o grafo da previsão; `--limpar` recomeça do zero; `--a-partir-de ETAPA` reprocessa uma etapa e as que dependem dela |
 
 ```bash
 docker compose run --rm app python pipeline/rodar_tudo.py --limpar   # reconstrói o datalake inteiro
