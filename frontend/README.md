@@ -61,4 +61,4 @@ npm run build   # gera dist/
 
 ## Publicação
 
-A Vercel publica este diretório (Root Directory `frontend`) com as mesmas variáveis `VITE_SUPABASE_*`. A branch `production` vai para Production e a branch `qa` para o ambiente de QA; ver o [README da raiz](../readme.md#deploy-e-branches).
+A Vercel publica este diretório (Root Directory `frontend`) com as mesmas variáveis `VITE_SUPABASE_*`. A branch `main` vai para Production e a branch `qa` para o ambiente de QA; ver o [README da raiz](../readme.md#deploy-e-branches).
