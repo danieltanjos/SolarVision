@@ -185,6 +185,13 @@ test("alertas: lista e marca como lido; só lido_em é alterável", async () => 
   assert.ok((await api.listAlertas()).every((a) => a.lidoEm));
   const { error } = await supabase.from("alertas").update({ mensagem: "x" }).eq("id", 0);
   assert.ok(error, "o dono não pode alterar a mensagem");
+
+  // Déficit: o dono verifica a própria placa (a leitura de 1200 W do teste anterior não é falha);
+  // varrer todos os grupos é só do pg_cron, e placa de outro dono (ou inexistente) é recusada.
+  const periodo = { dataInicio: new Date(Date.now() - 3 * 864e5).toISOString(), dataFim: new Date().toISOString() };
+  assert.equal(typeof (await api.verificarDeficit(placa.id, periodo)), "number");
+  assert.ok((await supabase.rpc("gerar_alertas_deficit", { data_inicio: periodo.dataInicio, data_fim: periodo.dataFim })).error);
+  await assert.rejects(api.verificarDeficit(-1, periodo));
 });
 
 test("erros chegam traduzidos", async () => {
