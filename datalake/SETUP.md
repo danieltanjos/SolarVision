@@ -173,6 +173,8 @@ Depois, troque `docker compose` por `.\segredo.ps1` nos comandos que usam o Supa
 
 O script põe a chave numa variável só durante o comando, e o [`docker-compose.segredo.yml`](docker-compose.segredo.yml) a entrega ao contêiner como o arquivo `/run/secrets/supabase_service_key`. Ela não aparece no `docker inspect`. Sem a chave, tudo roda igual, e a publicação fica só no arquivo local. `.\segredo.ps1 apagar` esquece a chave.
 
+No GitHub Actions, a mesma chave fica no secret `SUPABASE_SERVICE_KEY` do repositório (Settings > Secrets and variables > Actions). O GitHub não deixa ler o secret de volta, então ele não serve para rodar aqui: no PC, continua o `segredo.ps1` (ou `SUPABASE_SERVICE_KEY` no `.env`, em texto, em quem não usa Windows).
+
 ## Problemas comuns
 
 Se algo der errado, procure a mensagem na primeira coluna.

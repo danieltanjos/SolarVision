@@ -86,4 +86,6 @@ docker compose run --rm app python gerador/importar_ufsc.py          # a referê
 docker compose run --rm app python pipeline/rodar_tudo.py --workflow previsao_energia
 ```
 
+**Todo dia, no GitHub Actions:** o [`.github/workflows/previsao-energia.yml`](../../.github/workflows/previsao-energia.yml) faz essa mesma sequência às 06h de Brasília num datalake novo, com a service key do secret `SUPABASE_SERVICE_KEY` do repositório. Assim o card não volta à física por falta de alguém rodar o datalake. Enquanto a tabela `previsoes_ml` não existir, ele só avisa e não roda. Também dá para disparar à mão, na aba Actions do GitHub.
+
 A publicação (`e06`) precisa da `SUPABASE_URL` no `datalake/.env`, da service key guardada pelo `segredo.ps1` ([SETUP](../SETUP.md)) e da migration `20261125090200_previsoes_ml.sql` aplicada. Sem elas, a previsão fica só na Gold.
