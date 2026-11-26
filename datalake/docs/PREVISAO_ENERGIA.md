@@ -67,6 +67,10 @@ Os números saem de [`previsao_energia/metricas_previsao.csv`](previsao_energia/
 - Calibrar um k fixo no treino piora: o sistema perde ~2% ao ano (degradação e sujeira acumulada). Por isso a idade da placa entra no modelo.
 - As features que mais pesam são a irradiação do dia (0,27), a chuva (0,18), a idade (0,13) e a estação do ano (seno 0,11 e cosseno 0,10). O modelo aprende que, em dia nublado e chuvoso, a física superestima, e que a razão cai com o tempo.
 
+## E o modelo de déficit?
+
+O app tem outro ML sobre a mesma referência da UFSC: o de déficit de geração (`ml/treinar_deficit.py`, ver [FUNCIONALIDADES.md](../../docs/FUNCIONALIDADES.md)). Ele é **por hora** e serve para o alerta: separa a placa que parou ou foi sombreada da nuvem que passou. Este é **por dia** e serve para a previsão da semana. Os dois partem da mesma ideia (aprender a razão real ÷ física), mas não dependem um do outro.
+
 ## Limites
 
 - **Um sistema só de referência.** A UFSC é um sistema CdTe, com orientação e Wp inferidos na validação. Nas placas do app sem leituras, o modelo aplica o que aprendeu ali, e a razão fica perto de 1. Quanto mais gente importar o CSV do inversor, mais a correção vira da própria placa (`razao_ref`).
