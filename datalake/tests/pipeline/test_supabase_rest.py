@@ -26,6 +26,26 @@ def pedidos(monkeypatch):
     return feitos
 
 
+@pytest.fixture(autouse=True)
+def sem_segredo(monkeypatch, tmp_path):
+    monkeypatch.setattr(sr, "SEGREDO", tmp_path / "supabase_service_key")
+    return sr.SEGREDO
+
+
+def test_credenciais_preferem_o_secret_do_compose(monkeypatch, sem_segredo):
+    monkeypatch.setenv("SUPABASE_URL", "https://x.supabase.co")
+    monkeypatch.setenv("SUPABASE_SERVICE_KEY", "do-env")
+    sem_segredo.write_text("do-secret\n", encoding="utf-8")
+    assert sr.credenciais() == ("https://x.supabase.co", "do-secret")
+
+
+def test_secret_vazio_cai_no_env(monkeypatch, sem_segredo):
+    monkeypatch.setenv("SUPABASE_URL", "https://x.supabase.co")
+    monkeypatch.setenv("SUPABASE_SERVICE_KEY", "do-env")
+    sem_segredo.write_text("", encoding="utf-8")
+    assert sr.credenciais() == ("https://x.supabase.co", "do-env")
+
+
 def test_credenciais_vem_do_env_e_faltando_uma_e_none(monkeypatch):
     monkeypatch.setenv("SUPABASE_URL", "https://x.supabase.co/")
     monkeypatch.setenv("SUPABASE_SERVICE_KEY", "chave")
