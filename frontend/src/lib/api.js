@@ -122,7 +122,7 @@ export function getCurrentUser() {
       .from("usuarios")
       .select(
         "id, nome, email, role, criadoEm:criado_em, alertaLimpeza:alerta_limpeza, alertaPrevisao:alerta_previsao, " +
-          "alertaDesempenho:alerta_desempenho, limiarLimpeza:limiar_limpeza, limiarPrevisao:limiar_previsao, " +
+          "alertaDesempenho:alerta_desempenho, alertaDeficit:alerta_deficit, limiarLimpeza:limiar_limpeza, limiarPrevisao:limiar_previsao, " +
           "tarifaPadrao:tarifa_padrao, custoLimpezaPadrao:custo_limpeza_padrao"
       )
       .single()
@@ -136,6 +136,7 @@ export function salvarPerfil(id, perfil) {
     alerta_limpeza: perfil.alertaLimpeza,
     alerta_previsao: perfil.alertaPrevisao,
     alerta_desempenho: perfil.alertaDesempenho,
+    alerta_deficit: perfil.alertaDeficit,
     limiar_limpeza: perfil.limiarLimpeza,
     limiar_previsao: perfil.limiarPrevisao,
     tarifa_padrao: perfil.tarifaPadrao,
@@ -170,6 +171,12 @@ export function salvarLeituras(placaId, leituras) {
       { onConflict: "placa_id,data_hora" }
     )
   );
+}
+
+// Procura falha (sem geração com sol) e queda repentina nas leituras do período, no grupo da placa;
+// grava os alertas no sino e devolve quantos são novos.
+export function verificarDeficit(placaId, { dataInicio, dataFim }) {
+  return unwrap(supabase.rpc("gerar_alertas_deficit", { data_inicio: dataInicio, data_fim: dataFim, placa: placaId }));
 }
 
 // kWh/kWp e desempenho (real ÷ estimado) de cada placa no período; anomalia = mais de 10 p.p. abaixo da mediana do grupo.

@@ -16,3 +16,5 @@ frontend/dist/
 .vercel
 __pycache__/
 supabase/.temp/
+ml/.venv/
+ml/.cache/
