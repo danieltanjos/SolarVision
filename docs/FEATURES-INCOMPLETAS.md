@@ -83,7 +83,7 @@ Lista de funcionalidades que estão **referenciadas/parcialmente implementadas**
 
 ### 13. Previsão de energia por ML (parcial)
 - **Estado atual:** o workflow `previsao_energia` do datalake treina um GBT do Spark ML que corrige a física dia a dia e publica a semana em `previsoes_ml`; o card de previsão mostra o valor do modelo com a faixa P10-P90 ([PREVISAO_ENERGIA.md](../datalake/docs/PREVISAO_ENERGIA.md)).
-- **Roda à mão:** o datalake roda no Docker de quem desenvolve. Cada execução cobre os próximos 7 dias; sem outra, o card volta à física. Falta agendar (ex.: GitHub Actions toda madrugada) ou levar a previsão para dentro do banco.
+- **Agendada no GitHub Actions:** `.github/workflows/previsao-energia.yml` roda o datalake todo dia às 06h de Brasília (secret `SUPABASE_SERVICE_KEY`). Cada execução cobre os próximos 7 dias; se o job falhar por uma semana, o card volta à física. Só começa a publicar depois que a migration `previsoes_ml` chegar ao banco.
 - **Duas preparações do mesmo dado:** o modelo de déficit (`ml/comum.py`, pandas) e o da previsão (`gerador/importar_ufsc.py` e `silver_energia`, Spark) leem o CSV da UFSC e o clima histórico cada um do seu jeito. Unificar numa etapa do datalake, que também publicaria a `modelo_deficit` sem precisar de migration a cada treino.
 - **Clima do treino ≠ clima da previsão** e **um sistema só de referência**, como no modelo de déficit.
 - **Onde:** `datalake/workflows/previsao_energia.json`, `datalake/pipeline/gold_previsao_energia.py`, `supabase/migrations/20261125090200_previsoes_ml.sql`, `frontend/src/components/PrevisaoSemana.jsx`.
@@ -115,7 +115,7 @@ Polimentos resolvidos: o status do grupo na Home usa o selo (`StatusBadge`, desd
 | 9 | "Meu perfil" x "Configurações" | Média | Front | Resolvido |
 | 10 | Loading + feedback de sucesso | Média | Front | Resolvido |
 | 12 | Limitações das análises (chuva, histórico, acerto) | Média | Banco | Pendente |
-| 13 | Previsão de energia por ML | Média | Datalake + Banco + Front | Parcial (roda à mão) |
+| 13 | Previsão de energia por ML | Média | Datalake + Banco + Front | Parcial (agendada; falta a migration) |
 | 11 | Testes ausentes | Baixa | Front + Banco | Pendente |
 
 ## Resolvidos na rodada de análises (`feat/analises`)
