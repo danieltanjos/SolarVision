@@ -117,13 +117,13 @@ Para reproduzir, em `frontend`: `npm ci`, `npm test` e `npm run build`. Ponta a 
 
 ## Datalake de uso (BI do produto)
 
-O app registra como é usado (`frontend/src/lib/tracking.js`, 20 eventos, com opt-out em Configurações) numa tabela que só aceita insert (`eventos_coletados`). Em `datalake/`, um datalake medalhão em PySpark (Docker, S3 emulado), baseado no projeto-modelo do professor, responde ao funil de ativação, ao engajamento, à aquisição e retenção e à previsão de ativação (Spark ML), e devolve o resultado ao app: página **Uso da plataforma** e **mapa de calor**, só para ADMIN.
+O app registra como é usado (`frontend/src/lib/tracking.js`, 20 eventos, com opt-out em Configurações) numa tabela que só aceita insert (`eventos_coletados`). Em `datalake/`, um datalake medalhão em PySpark (Docker, S3 emulado), baseado no projeto-modelo do professor, responde ao funil de ativação, ao engajamento, à aquisição e retenção e à previsão de ativação (Spark ML), e devolve o resultado ao app: página **Uso da plataforma** e **mapa de calor**, só para ADMIN. Um segundo workflow, `previsao_energia`, treina com o CSV real da UFSC a correção da física e publica a previsão da semana de cada placa no card "Previsão de geração" ([datalake/docs/PREVISAO_ENERGIA.md](datalake/docs/PREVISAO_ENERGIA.md)).
 
 ```bash
 cd datalake
 docker compose up -d floci
 docker compose run --rm app python gerador/gerar_eventos.py        # uso sintético
-docker compose run --rm app python coletor/coletar_supabase.py     # eventos reais (datalake/.env)
+.\segredo.ps1 run --rm app python coletor/coletar_supabase.py     # eventos reais (service key: datalake/SETUP.md)
 docker compose run --rm app python pipeline/rodar_tudo.py --limpar # Bronze → Silver → Golds → frontend/public/bi
 ```
 
