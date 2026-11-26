@@ -82,4 +82,4 @@ docker compose run --rm app python gerador/importar_ufsc.py          # a referê
 docker compose run --rm app python pipeline/rodar_tudo.py --workflow previsao_energia
 ```
 
-A publicação (`e06`) precisa da `SUPABASE_URL` no `datalake/.env`, da service key guardada pelo `segredo.ps1` ([SETUP](../SETUP.md)) e da migration `20261124100000_previsoes_ml.sql` aplicada. Sem elas, a previsão fica só na Gold.
+A publicação (`e06`) precisa da `SUPABASE_URL` no `datalake/.env`, da service key guardada pelo `segredo.ps1` ([SETUP](../SETUP.md)) e da migration `20261125090200_previsoes_ml.sql` aplicada. Sem elas, a previsão fica só na Gold.
