@@ -42,6 +42,8 @@ $ponteiro = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($segura)
 try {
     $env:SUPABASE_SERVICE_KEY = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ponteiro)
     Push-Location $PSScriptRoot
+    # O docker escreve progresso no stderr; com a saída redirecionada, o PowerShell 5.1 trata isso como erro.
+    $ErrorActionPreference = "Continue"
     try {
         docker compose -f docker-compose.yml -f docker-compose.segredo.yml @args
         $codigo = $LASTEXITCODE
