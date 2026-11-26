@@ -18,6 +18,7 @@ import { baldesComMedia, comparacaoClima, textoAnos } from "../lib/historico";
 import { TIME_ZONE, formatRangeLabel, janelasRelatorio, mesRelatorio, rangeFor } from "../lib/periodo";
 import { formatPerda, orientacao, perdaMedia, potenciaInstalada } from "../lib/placas";
 import { formatEnergy, formatPower, powerUnit } from "../lib/power";
+import { placaItem, track } from "../lib/tracking";
 import logo from "../../img/logo.png";
 
 const soma = (linhas, key) => linhas.reduce((total, linha) => total + (Number(linha[key]) || 0), 0);
@@ -206,6 +207,7 @@ export default function RelatorioPage() {
     return () => window.removeEventListener("afterprint", voltar);
   }, []);
   const imprimir = () => {
+    track("file_download", { file_name: `relatorio-${mes}.pdf`, file_extension: "pdf", report_month: mes, element_id: "btn-imprimir" });
     setImprimindo(true);
     setTimeout(() => window.print(), 500);
   };
@@ -217,6 +219,13 @@ export default function RelatorioPage() {
   const selecionadas = panel ? [panel] : panels.filter((item) => !grupoId || item.grupoId === grupoId);
   const titulo = panel ? `${panel.modelo} · ${panel.grupoNome}` : groups.find((item) => item.id === grupoId)?.nome ?? "Todas as usinas";
   const mesLabel = formatRangeLabel("mes", referencia);
+
+  // generate_report: o relatório de um mês e uma seleção terminou de carregar.
+  useEffect(() => {
+    if (!listas || !dados) return;
+    track("generate_report", { report_month: mes, scope: placaId ? "placa" : grupoId ? "grupo" : "todas" },
+      selecionadas.map(placaItem));
+  }, [listas, dados]);
 
   // O título da aba vira o nome sugerido do PDF.
   useEffect(() => {
@@ -314,7 +323,8 @@ export default function RelatorioPage() {
               </optgroup>
             ))}
           </select>
-          <button type="button" className="btn btn-primary text-nowrap" onClick={imprimir} disabled={!listas || !dados}>
+          <button type="button" className="btn btn-primary text-nowrap" onClick={imprimir} disabled={!listas || !dados}
+            data-heat="btn-imprimir">
             <i className="bi bi-printer me-2" />
             Imprimir / PDF
           </button>

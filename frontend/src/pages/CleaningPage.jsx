@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import ConfirmarExclusao, { AcoesLinha } from "../components/ConfirmarExclusao";
 import { createCleaning, deleteCleaning, extractErrorMessage, listCleanings, listPanels, updateCleaning } from "../lib/api";
 import { formatPerda } from "../lib/placas";
+import { placaItem, track } from "../lib/tracking";
 
 function toDatetimeLocal(value) {
   const date = new Date(value);
@@ -67,7 +68,13 @@ export default function CleaningPage() {
       observacao: form.observacao
     };
     await executar(async () => {
-      await (form.id ? updateCleaning(form.id, dados) : createCleaning(dados));
+      if (form.id) {
+        await updateCleaning(form.id, dados);
+      } else {
+        const nova = await createCleaning(dados);
+        track("register_cleaning", { panel_id: dados.placaId, cleaning_id: nova.id, element_id: "btn-registrar-limpeza" },
+          [placaItem({ id: dados.placaId })]);
+      }
       setForm(novaLimpeza());
     }, form.id ? "Limpeza atualizada." : "Limpeza registrada.");
   }
@@ -169,7 +176,7 @@ export default function CleaningPage() {
             </div>
 
             <div className="d-flex gap-2">
-              <button type="submit" className="btn btn-primary flex-grow-1" disabled={saving}>
+              <button type="submit" className="btn btn-primary flex-grow-1" disabled={saving} data-heat="btn-registrar-limpeza">
                 {saving ? "Salvando..." : "Salvar limpeza"}
               </button>
               {form.id ? (

@@ -1,0 +1,13 @@
+# A service key do Supabase como secret: o container a lê em /run/secrets/supabase_service_key e ela
+# não fica no .env nem no ambiente do container (docker inspect). Usado só pelo segredo.ps1, que põe a
+# chave em SUPABASE_SERVICE_KEY apenas durante o comando; sem a variável o compose recusa este arquivo,
+# por isso ele fica separado do docker-compose.yml.
+services:
+  app:
+    secrets: [supabase_service_key]
+  explorador:
+    secrets: [supabase_service_key]
+
+secrets:
+  supabase_service_key:
+    environment: SUPABASE_SERVICE_KEY

@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+saida/
+dados/
+camadas/
+spark-warehouse/
+*.jsonl
+*.zip
+.env
+.tmp/
+# ponto de montagem de frontend/public/bi (resultado do exportar_bi.py)
+app-bi/
+.explorador/
+# estado do coletor (último id levado do Supabase)
+.coletor/
+dist/
+
+# cache das respostas do Open-Meteo (gerador/importar_ufsc.py)
+.cache-open-meteo/

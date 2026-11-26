@@ -90,8 +90,9 @@ export function deleteGroup(id) {
 }
 
 // Com local (no grupo), potência, inclinação e azimute, o pg_cron carrega 5 anos de clima em ~1 min.
+// Devolve { id } da placa criada.
 export function createPanel(placa) {
-  return unwrap(supabase.from("placas").insert(colunasPlaca(placa)));
+  return unwrap(supabase.from("placas").insert(colunasPlaca(placa)).select("id").single());
 }
 
 // Mudar inclinação, azimute ou grupo faz o pg_cron recarregar o clima da placa (trigger no banco).
@@ -103,8 +104,9 @@ export function deletePanel(id) {
   return unwrap(supabase.from("placas").delete().eq("id", id));
 }
 
+// Devolve { id } da limpeza registrada.
 export function createCleaning(limpeza) {
-  return unwrap(supabase.from("limpezas").insert(colunasLimpeza(limpeza)));
+  return unwrap(supabase.from("limpezas").insert(colunasLimpeza(limpeza)).select("id").single());
 }
 
 export function updateCleaning(id, limpeza) {
@@ -115,18 +117,19 @@ export function deleteCleaning(id) {
   return unwrap(supabase.from("limpezas").delete().eq("id", id));
 }
 
+const COLUNAS_PERFIL =
+  "id, nome, email, role, criadoEm:criado_em, alertaLimpeza:alerta_limpeza, alertaPrevisao:alerta_previsao, " +
+  "alertaDesempenho:alerta_desempenho, alertaDeficit:alerta_deficit, limiarLimpeza:limiar_limpeza, limiarPrevisao:limiar_previsao, " +
+  "tarifaPadrao:tarifa_padrao, custoLimpezaPadrao:custo_limpeza_padrao";
+
 // A RLS só devolve a linha do próprio usuário logado. Limiares em fração (0,10 = 10 %).
-export function getCurrentUser() {
-  return unwrap(
-    supabase
-      .from("usuarios")
-      .select(
-        "id, nome, email, role, criadoEm:criado_em, alertaLimpeza:alerta_limpeza, alertaPrevisao:alerta_previsao, " +
-          "alertaDesempenho:alerta_desempenho, alertaDeficit:alerta_deficit, limiarLimpeza:limiar_limpeza, limiarPrevisao:limiar_previsao, " +
-          "tarifaPadrao:tarifa_padrao, custoLimpezaPadrao:custo_limpeza_padrao"
-      )
-      .single()
-  );
+// Antes da migration 20261125090000 (coletor de eventos) a coluna rastreamento não existe (erro 42703):
+// o perfil carrega sem ela, com o rastreamento ligado, para o app não perder o usuário (e o papel) no meio do deploy.
+export async function getCurrentUser() {
+  const { data, error } = await supabase.from("usuarios").select(`${COLUNAS_PERFIL}, rastreamento`).single();
+  if (!error) return data;
+  if (error.code !== "42703") throw error;
+  return { ...(await unwrap(supabase.from("usuarios").select(COLUNAS_PERFIL).single())), rastreamento: true };
 }
 
 // Nome e preferências do usuário logado; só os campos informados mudam. O banco recusa role e email (grant por coluna).
@@ -140,9 +143,23 @@ export function salvarPerfil(id, perfil) {
     limiar_limpeza: perfil.limiarLimpeza,
     limiar_previsao: perfil.limiarPrevisao,
     tarifa_padrao: perfil.tarifaPadrao,
-    custo_limpeza_padrao: perfil.custoLimpezaPadrao
+    custo_limpeza_padrao: perfil.custoLimpezaPadrao,
+    rastreamento: perfil.rastreamento
   };
   return unwrap(supabase.from("usuarios").update(colunas).eq("id", id));
+}
+
+// Lote de eventos de uso (lib/tracking.js) para a tabela coletora; o datalake lê de lá. Só insert:
+// nem o próprio usuário lê os eventos pela API.
+// Uma exportação do datalake ('bi' ou 'mapa_calor'). A RLS só deixa ADMIN ler; sem a tabela (migration
+// não aplicada), sem permissão ou sem a linha, devolve null e o app cai no arquivo local de desenvolvimento.
+export async function getBiExportacao(nome) {
+  const { data, error } = await supabase.from("bi_exportacoes").select("dados").eq("nome", nome).maybeSingle();
+  return error ? null : (data?.dados ?? null);
+}
+
+export function enviarEventos(lote) {
+  return unwrap(supabase.from("eventos_coletados").insert(lote.map((evento) => ({ evento }))));
 }
 
 export function getDashboardSummary() {
@@ -205,6 +222,20 @@ export function getRecomendacoesLimpeza() {
           "chuvaPrevistaEm:chuva_prevista_em, diasParaCompensar:dias_para_compensar, limpar, motivo"
       )
   );
+}
+
+// Previsão do modelo do datalake (previsoes_ml) por placa e dia, nas placas que a RLS deixa ver. Sem a tabela
+// (migration não aplicada) ou sem previsão, devolve [] e o card fica só com a estimativa física.
+export async function getPrevisaoMl({ dataInicio, dataFim, grupoId = null, placaId = null }) {
+  let consulta = supabase
+    .from("previsoes_ml")
+    .select("dia, estimadaWh:estimada_wh, previstaWh:prevista_wh, p10Wh:p10_wh, p90Wh:p90_wh, modelo, placas!inner(grupo_id)")
+    .gte("dia", dataInicio)
+    .lte("dia", dataFim);
+  if (placaId) consulta = consulta.eq("placa_id", placaId);
+  else if (grupoId) consulta = consulta.eq("placas.grupo_id", grupoId);
+  const { data, error } = await consulta;
+  return error ? [] : data;
 }
 
 // Estimado (só o clima) da mesma janela nos 5 anos anteriores, com os mesmos x de getDashboardMetrics.

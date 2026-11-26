@@ -1,0 +1,5 @@
+executado_em,regra,valor,limite,ok,bloqueante
+2026-11-24 23:47:01,dias medidos por inteiro para treinar,1266.0,>= 180,True,True
+2026-11-24 23:47:01,placas do app sem a previsão do tempo da semana,0.0,= 0,True,False
+2026-11-24 23:47:01,silver tem horas com clima,45768.0,> 0,True,True
+2026-11-24 23:47:01,taxa de leituras rejeitadas,0.0035,<= 0.1,True,True

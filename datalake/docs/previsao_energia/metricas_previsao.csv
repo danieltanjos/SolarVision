@@ -1,0 +1,5 @@
+metodo,descricao,nmae_dia,nmae_semana,mape_mes,dias_teste,dias_treino,p10_relativo,p90_relativo,hiperparametros
+modelo,modelo (GBT sobre a física),0.1189,0.0513,0.0282,118,1148,-0.2031,0.2609,"profundidade 2, 100 iterações, passo 0.1"
+fisica,"física pura (PR 0,82)",0.1546,0.0658,0.052,118,1148,,,
+fisica_calibrada,física com k calibrado no treino,0.1587,0.0805,0.0732,118,1148,,,
+razao_recente,física × razão dos dias recentes,0.1804,0.0882,0.0521,118,1148,,,

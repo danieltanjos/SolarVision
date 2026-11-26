@@ -15,6 +15,7 @@ import {
   updatePanel
 } from "../lib/api";
 import { parseCoordenadas } from "../lib/coordenadas";
+import { placaItem, track } from "../lib/tracking";
 import { ORIENTACOES, climaStatus, orientacao } from "../lib/placas";
 
 // Tarifa e custo null = ainda não digitados: o grupo novo mostra os padrões do usuário.
@@ -128,6 +129,8 @@ export default function CadastroPage() {
         await updateGroup(groupForm.id, dados);
       } else {
         const novo = await createGroup(dados);
+        track("create_group", { group_id: novo.id, has_location: dados.latitude != null,
+          has_tariff: dados.tarifaKwh != null, element_id: "btn-salvar-grupo" });
         // O grupo recém-criado já fica escolhido na "Nova placa" (não mexe numa placa em edição).
         setPanelForm((form) => (form.id ? form : { ...form, grupoId: String(novo.id) }));
       }
@@ -147,7 +150,13 @@ export default function CadastroPage() {
       instaladaEm: panelForm.instaladaEm || null
     };
     await executar(async () => {
-      await (panelForm.id ? updatePanel(panelForm.id, dados) : createPanel(dados));
+      if (panelForm.id) {
+        await updatePanel(panelForm.id, dados);
+      } else {
+        const nova = await createPanel(dados);
+        track("create_panel", { panel_id: nova.id, group_id: dados.grupoId, potencia_wp: dados.potenciaWp,
+          element_id: "btn-salvar-placa" }, [placaItem({ id: nova.id, potenciaWp: dados.potenciaWp })]);
+      }
       // Depois de criar, mantém o grupo para cadastrar a próxima placa dele.
       setPanelForm({ ...EMPTY_PANEL, grupoId: panelForm.id ? "" : panelForm.grupoId });
     }, `Placa "${dados.modelo.trim()}" ${panelForm.id ? "atualizada" : "criada"}.`);
@@ -186,6 +195,7 @@ export default function CadastroPage() {
       }`,
       acao: async () => {
         await deleteGroup(group.id);
+        track("delete_group", { group_id: group.id, panels_removed: group.totalPlacas, element_id: "btn-excluir-grupo" });
         setGroupForm((form) => (form.id === group.id ? EMPTY_GROUP : form));
         setPanelForm((form) => (Number(form.grupoId) === group.id ? EMPTY_PANEL : form));
       },
@@ -198,6 +208,8 @@ export default function CadastroPage() {
       texto: `Excluir a placa "${panel.modelo}" (${panel.grupoNome})? Isso também exclui as limpezas e o clima carregado dela.`,
       acao: async () => {
         await deletePanel(panel.id);
+        track("delete_panel", { panel_id: panel.id, group_id: panel.grupoId, element_id: "btn-excluir-placa" },
+          [placaItem(panel)]);
         setPanelForm((form) => (form.id === panel.id ? EMPTY_PANEL : form));
       },
       mensagem: `Placa "${panel.modelo}" excluída.`
@@ -314,7 +326,7 @@ export default function CadastroPage() {
               </div>
             </div>
             <div className="d-flex gap-2">
-              <button type="submit" className="btn btn-primary flex-grow-1" disabled={salvando}>
+              <button type="submit" className="btn btn-primary flex-grow-1" disabled={salvando} data-heat="btn-salvar-grupo">
                 {groupForm.id ? "Salvar grupo" : "Criar grupo"}
               </button>
               {groupForm.id ? (
@@ -425,7 +437,8 @@ export default function CadastroPage() {
               </div>
             </div>
             <div className="d-flex gap-2">
-              <button type="submit" className="btn btn-primary flex-grow-1" disabled={salvando || !groups.length}>
+              <button type="submit" className="btn btn-primary flex-grow-1" disabled={salvando || !groups.length}
+                data-heat="btn-salvar-placa">
                 {panelForm.id ? "Salvar placa" : "Criar placa"}
               </button>
               {panelForm.id ? (
@@ -470,7 +483,8 @@ export default function CadastroPage() {
                     <td className="sv-muted">{group.latitude != null ? `${group.latitude}, ${group.longitude}` : "Sem local"}</td>
                     <td>{group.totalPlacas}</td>
                     <td><StatusBadge status={group.status} /></td>
-                    <AcoesLinha nome={group.nome} onEditar={() => editGroup(group)} onExcluir={() => excluirGrupo(group)} />
+                    <AcoesLinha nome={group.nome} onEditar={() => editGroup(group)} onExcluir={() => excluirGrupo(group)}
+                      heat="btn-excluir-grupo" />
                   </tr>
                 ))}
                 {groups.length === 0 ? (
@@ -537,7 +551,8 @@ export default function CadastroPage() {
                         <span className="sv-muted small">{clima.texto}</span>
                       </td>
                       <td><StatusBadge status={panel.status} /></td>
-                      <AcoesLinha nome={panel.modelo} onEditar={() => editPanel(panel)} onExcluir={() => excluirPlaca(panel)} />
+                      <AcoesLinha nome={panel.modelo} onEditar={() => editPanel(panel)} onExcluir={() => excluirPlaca(panel)}
+                        heat="btn-excluir-placa" />
                     </tr>
                   );
                 })}

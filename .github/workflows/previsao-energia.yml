@@ -1,0 +1,70 @@
+name: Previsão de energia
+# Roda o workflow previsao_energia do datalake (datalake/docs/PREVISAO_ENERGIA.md) e publica a semana de cada
+# placa em previsoes_ml, para o card "Previsão de geração" não depender de alguém rodar o datalake à mão.
+# O datalake começa vazio a cada execução: importa a referência da UFSC, coleta as placas do Supabase e treina.
+on:
+  schedule:
+    - cron: '0 9 * * *' # todo dia às 06h de Brasília (o clima do banco se atualiza de hora em hora)
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency: previsao-energia
+env:
+  SUPABASE_URL: https://skfguameoeklepcjnqth.supabase.co
+  # Secret do repositório; o docker-compose.segredo.yml o entrega ao contêiner em /run/secrets.
+  SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+jobs:
+  prever:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: datalake
+    steps:
+      - uses: actions/checkout@v4
+      - name: Conferir a chave e a tabela previsoes_ml
+        id: tabela
+        run: |
+          if [ -z "$SUPABASE_SERVICE_KEY" ]; then
+            echo "::error::falta o secret SUPABASE_SERVICE_KEY do repositório"
+            exit 1
+          fi
+          codigo=$(curl -s -o /dev/null -w '%{http_code}' "$SUPABASE_URL/rest/v1/previsoes_ml?select=placa_id&limit=1" \
+            -H "apikey: $SUPABASE_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_KEY")
+          if [ "$codigo" = 200 ]; then
+            echo "pronta=true" >> "$GITHUB_OUTPUT"
+          elif [ "$codigo" = 404 ]; then
+            echo "::warning::previsoes_ml ainda não existe (a migration sobe na ida develop -> qa); nada a publicar"
+          else
+            echo "::error::o Supabase respondeu $codigo à consulta de previsoes_ml"
+            exit 1
+          fi
+      - name: Cache do clima histórico da UFSC (Open-Meteo)
+        if: steps.tabela.outputs.pronta == 'true'
+        uses: actions/cache@v4
+        with:
+          path: datalake/.cache-open-meteo
+          key: open-meteo-ufsc-${{ hashFiles('datalake/gerador/importar_ufsc.py') }}
+          restore-keys: open-meteo-ufsc-
+      - name: Construir a imagem e subir o S3 (floci)
+        if: steps.tabela.outputs.pronta == 'true'
+        run: |
+          docker compose build app
+          docker compose up -d floci
+          for i in $(seq 30); do curl -s -o /dev/null http://localhost:4566 && break; sleep 2; done
+      - name: Importar a referência real da UFSC
+        if: steps.tabela.outputs.pronta == 'true'
+        run: docker compose run --rm app python gerador/importar_ufsc.py
+      - name: Coletar placas, clima e leituras do Supabase
+        if: steps.tabela.outputs.pronta == 'true'
+        run: >-
+          docker compose -f docker-compose.yml -f docker-compose.segredo.yml
+          run --rm -e SUPABASE_URL app python coletor/coletar_energia.py
+      - name: Treinar, prever e publicar (workflow previsao_energia)
+        if: steps.tabela.outputs.pronta == 'true'
+        run: >-
+          docker compose -f docker-compose.yml -f docker-compose.segredo.yml
+          run --rm -e SUPABASE_URL app python pipeline/rodar_tudo.py --workflow previsao_energia
+      - name: Desligar o datalake
+        if: always() && steps.tabela.outputs.pronta == 'true'
+        run: docker compose down

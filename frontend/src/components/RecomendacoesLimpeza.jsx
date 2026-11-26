@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getRecomendacoesLimpeza } from "../lib/api";
 import { useLimiarLimpeza } from "../context/AuthContext";
+import { placaItem, track } from "../lib/tracking";
 
 function useRecomendacoes() {
   const [recomendacoes, setRecomendacoes] = useState(null);
@@ -14,6 +15,15 @@ function useRecomendacoes() {
 // Motivo da recomendação de uma placa ("Chuva prevista para quinta (12 mm): espere").
 export function MotivoLimpeza({ placaId }) {
   const recomendacao = useRecomendacoes()?.find((item) => item.placaId === placaId);
+  // view_cleaning_recommendation: a recomendação de uma placa foi aberta (os detalhes da placa).
+  const carregada = Boolean(recomendacao);
+  useEffect(() => {
+    if (!carregada) return;
+    track("view_cleaning_recommendation", {
+      panel_id: placaId, loss_percent: Math.round(recomendacao.perda * 1000) / 10, recommend: recomendacao.limpar,
+      element_id: "card-recomendacao"
+    }, [placaItem({ id: placaId })]);
+  }, [carregada, placaId]);
   return recomendacao?.motivo ?? "—";
 }
 

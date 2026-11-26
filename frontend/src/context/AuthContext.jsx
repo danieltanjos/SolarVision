@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { getCurrentUser, supabase } from "../lib/api";
+import { definirRastreamento, definirUsuario, rastreamentoLigado, track } from "../lib/tracking";
 
 const AuthContext = createContext(null);
 
@@ -7,6 +8,8 @@ export function AuthProvider({ children }) {
   // undefined = ainda lendo a sessão salva; null = deslogado.
   const [session, setSession] = useState(undefined);
   const [user, setUser] = useState(null);
+  // de qual conta o perfil (papel, preferências) já carregou; o perfil está pronto quando é o da conta logada
+  const [perfilCarregadoDe, setPerfilCarregadoDe] = useState(null);
 
   useEffect(() => {
     // O Supabase persiste a sessão (JWT + refresh) no localStorage e emite INITIAL_SESSION ao assinar.
@@ -16,6 +19,11 @@ export function AuthProvider({ children }) {
 
   const userId = session?.user?.id;
 
+  // Eventos de uso levam o id pseudonimizado de quem está logado (inclusive ao reabrir com a sessão salva).
+  useEffect(() => {
+    definirUsuario(userId ?? null);
+  }, [userId]);
+
   useEffect(() => {
     if (!userId) {
       setUser(null);
@@ -23,10 +31,18 @@ export function AuthProvider({ children }) {
     }
     let ativo = true; // ignora a resposta se o usuário mudar (logout/login) antes dela chegar
     getCurrentUser().then(
-      (perfil) => ativo && setUser(perfil),
+      (perfil) => {
+        if (!ativo) return;
+        definirRastreamento(perfil.rastreamento !== false); // a escolha da conta vale em qualquer navegador
+        setUser(perfil);
+        setPerfilCarregadoDe(userId);
+      },
       (error) => {
         console.error("Não foi possível carregar o perfil do usuário.", error);
-        if (ativo) setUser(null);
+        if (!ativo) return;
+        definirRastreamento(rastreamentoLigado()); // sem o perfil, vale a escolha deste navegador
+        setUser(null);
+        setPerfilCarregadoDe(userId);
       }
     );
     return () => {
@@ -35,8 +51,10 @@ export function AuthProvider({ children }) {
   }, [userId]);
 
   async function login({ email, senha }) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha });
     if (error) throw error;
+    definirUsuario(data.user.id); // o login já sai com o user_id
+    track("login", { method: "email", element_id: "btn-login" });
   }
 
   async function register({ nome, email, senha }) {
@@ -46,12 +64,17 @@ export function AuthProvider({ children }) {
       options: { data: { nome: nome.trim() } }
     });
     if (error) throw error;
+    if (data.user) {
+      definirUsuario(data.user.id);
+      track("sign_up", { method: "email", element_id: "btn-signup" });
+    }
     // Sem sessão = "Confirm email" ligado no Supabase Auth.
     if (!data.session) throw new Error("Conta criada. Confirme seu e-mail para entrar.");
   }
 
   // "local": só esta sessão; "global": todos os dispositivos (o padrão do supabase-js).
   function logout(scope = "local") {
+    track("logout", { scope, element_id: "btn-sair" });
     return supabase.auth.signOut({ scope });
   }
 
@@ -74,11 +97,15 @@ export function AuthProvider({ children }) {
     return null;
   }
 
+  // Derivado, não guardado: no render em que a sessão acaba de chegar, o perfil daquela conta ainda não carregou.
+  const perfilPronto = !userId || perfilCarregadoDe === userId;
+
   return (
     <AuthContext.Provider
       value={{
         isAuthenticated: Boolean(session),
         user,
+        perfilPronto,
         login,
         register,
         logout,

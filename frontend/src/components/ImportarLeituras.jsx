@@ -4,6 +4,7 @@ import { extractErrorMessage, salvarLeituras, verificarDeficit } from "../lib/ap
 import { adivinharColunas, lerCsv, montarLeituras } from "../lib/leituras";
 import { TIME_ZONE } from "../lib/periodo";
 import { formatPower } from "../lib/power";
+import { placaItem, track } from "../lib/tracking";
 
 const LOTE = 5000; // leituras por requisição (upsert)
 const dataHoraSp = (iso) => new Date(iso).toLocaleString("pt-BR", { timeZone: TIME_ZONE });
@@ -45,6 +46,8 @@ export default function ImportarLeituras({ placaId, onImportado }) {
         setProgresso(inicio / leituras.length);
         await salvarLeituras(placaId, leituras.slice(inicio, inicio + LOTE));
       }
+      track("import_readings", { panel_id: placaId, rows: leituras.length, rows_ignored: invalidas, element_id: "btn-importar" },
+        [placaItem({ id: placaId })]);
       // Falha ou queda repentina nas leituras recentes vira alerta no sino; se a verificação falhar, o job da hora repete.
       const alertas = await verificarDeficit(placaId, periodoDeficit(leituras)).catch(() => 0);
       setSucesso(
@@ -126,7 +129,8 @@ export default function ImportarLeituras({ placaId, onImportado }) {
           ) : null}
 
           <div>
-            <button type="button" className="btn btn-primary" onClick={importar} disabled={gravando || leituras.length === 0}>
+            <button type="button" className="btn btn-primary" onClick={importar} disabled={gravando || leituras.length === 0}
+              data-heat="btn-importar">
               {gravando ? `Gravando… ${Math.round(progresso * 100)}%` : `Importar ${leituras.length.toLocaleString("pt-BR")} leituras`}
             </button>
           </div>

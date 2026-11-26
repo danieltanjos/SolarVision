@@ -21,6 +21,7 @@ import { comparacaoClima } from "../lib/historico";
 import { formatRangeLabel, rangeFor, shiftDate, toSaoPaulo } from "../lib/periodo";
 import { climaStatus, formatPerda, orientacao, perdaMedia, potenciaInstalada } from "../lib/placas";
 import { formatEnergy, formatPower } from "../lib/power";
+import { placaItem, track, trackClique } from "../lib/tracking";
 
 const CalendarioGeracao = lazy(() => import("../components/CalendarioGeracao"));
 
@@ -108,6 +109,26 @@ export default function MonitoringPage() {
     };
   }, [view, referenceDate, grupoParam, placaId]);
 
+  // view_monitoring: a cada seleção (todas, grupo ou placa), depois que as placas carregaram.
+  const carregou = panels.length > 0;
+  useEffect(() => {
+    if (!carregou) return;
+    const selecao = panels.filter((p) => (placaId ? p.id === placaId : !grupoParam || p.grupoId === grupoParam));
+    track("view_monitoring", { group_id: grupoParam, panel_id: placaId, view }, selecao.map(placaItem));
+  }, [carregou, grupoParam, placaId]);
+
+  // site_search: o termo depois que a pessoa para de digitar, com quantas usinas ele achou.
+  useEffect(() => {
+    const termoBusca = search.trim().toLowerCase();
+    if (!termoBusca) return undefined;
+    const espera = setTimeout(() => {
+      const achados = groups.filter((g) => g.nome.toLowerCase().includes(termoBusca)).length
+        + panels.filter((p) => p.modelo.toLowerCase().includes(termoBusca)).length;
+      track("site_search", { search_term: termoBusca, search_results: achados, search_area: "seletor", element_id: "busca-seletor" });
+    }, 1200);
+    return () => clearTimeout(espera);
+  }, [search]);
+
   const panel = panels.find((item) => item.id === placaId);
   const grupoId = panel?.grupoId ?? grupoParam;
   const group = groups.find((item) => item.id === grupoId);
@@ -148,7 +169,8 @@ export default function MonitoringPage() {
           <p>Escolha um grupo ou uma placa e compare a geração real com a estimada pela previsão do tempo.</p>
         </div>
         {/* os params daqui são a seleção (grupo/placa); o relatório abre no mês passado */}
-        <Link to={`/app/relatorio?${params}`} className="btn btn-outline-primary">
+        <Link to={`/app/relatorio?${params}`} className="btn btn-outline-primary" data-link-id="cta_relatorio_mes"
+          data-heat="cta-relatorio-mes">
           <i className="bi bi-file-earmark-text me-2" />
           Relatório do mês
         </Link>
@@ -165,6 +187,7 @@ export default function MonitoringPage() {
               className="form-control"
               placeholder="Buscar grupo ou placa"
               aria-label="Buscar grupo ou placa"
+              data-heat="busca-seletor"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
@@ -179,13 +202,26 @@ export default function MonitoringPage() {
 
             {arvore.map((grupo) => (
               <div key={grupo.id} className="sv-picker-group">
-                <Link to={linkGrupo(grupo.id)} className={item(grupoId === grupo.id && !placaId)}>
+                <Link
+                  to={linkGrupo(grupo.id)}
+                  className={item(grupoId === grupo.id && !placaId)}
+                  data-heat="seletor-grupo"
+                  onClick={(event) => trackClique("select_content", event.currentTarget,
+                    { content_type: "grupo", content_id: String(grupo.id) })}
+                >
                   <i className="bi bi-collection" />
                   <span className="sv-picker-name" title={grupo.nome}>{grupo.nome}</span>
                   <span className="sv-picker-count">{grupo.totalPlacas}</span>
                 </Link>
                 {grupo.placas.map((p) => (
-                  <Link key={p.id} to={linkPlaca(p)} className={`${item(placaId === p.id)} sv-picker-sub`}>
+                  <Link
+                    key={p.id}
+                    to={linkPlaca(p)}
+                    className={`${item(placaId === p.id)} sv-picker-sub`}
+                    data-heat="seletor-placa"
+                    onClick={(event) => trackClique("select_content", event.currentTarget,
+                      { content_type: "placa", content_id: String(p.id) }, [placaItem(p)])}
+                  >
                     <i className="bi bi-grid-3x2" />
                     <span className="sv-picker-name" title={p.modelo}>{p.modelo}</span>
                   </Link>
@@ -231,7 +267,11 @@ export default function MonitoringPage() {
                       key={option.value}
                       type="button"
                       className={view === option.value ? "active" : ""}
-                      onClick={() => startTransition(() => setView(option.value))}
+                      data-heat={`visao-${option.value}`}
+                      onClick={(event) => {
+                        trackClique("select_content", event.currentTarget, { content_type: "visao", content_id: option.value });
+                        startTransition(() => setView(option.value));
+                      }}
                     >
                       {option.label}
                     </button>
@@ -322,10 +362,21 @@ export default function MonitoringPage() {
               <div className="sv-card-head">
                 <h2>Detalhes da placa</h2>
                 <div className="d-flex flex-wrap gap-2">
-                  <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => setImportando((aberto) => !aberto)}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-primary"
+                    data-heat="cta-importar"
+                    onClick={(event) => {
+                      if (!importando) {
+                        trackClique("click", event.currentTarget, { link_id: "cta_importar", link_text: "Importar leituras (CSV)", outbound: false });
+                      }
+                      setImportando((aberto) => !aberto);
+                    }}
+                  >
                     <i className="bi bi-upload me-1" /> Importar leituras (CSV)
                   </button>
-                  <Link to={`/app/limpeza?placa=${panel.id}`} className="btn btn-sm btn-outline-primary">
+                  <Link to={`/app/limpeza?placa=${panel.id}`} className="btn btn-sm btn-outline-primary"
+                    data-link-id="cta_registrar_limpeza" data-heat="cta-registrar-limpeza">
                     <i className="bi bi-droplet me-1" /> Registrar limpeza
                   </Link>
                 </div>
@@ -348,7 +399,7 @@ export default function MonitoringPage() {
                 </div>
                 <div><dt>Clima</dt><dd>{climaStatus(panel).texto}</dd></div>
                 <div><dt>Perda por sujeira</dt><dd><SujeiraBadge perda={panel.perdaSujeira} /></dd></div>
-                <div><dt>Recomendação</dt><dd><MotivoLimpeza placaId={panel.id} /></dd></div>
+                <div data-heat="card-recomendacao"><dt>Recomendação</dt><dd><MotivoLimpeza placaId={panel.id} /></dd></div>
                 <div>
                   <dt>Última limpeza</dt>
                   <dd>{ultimaLimpeza ? new Date(ultimaLimpeza.dataLimpeza).toLocaleDateString("pt-BR") : "Nenhuma"}</dd>

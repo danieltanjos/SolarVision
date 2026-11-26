@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { applyTheme, getInitialTheme } from "../lib/theme";
 import { titleCase } from "../lib/text";
 import Alertas from "./Alertas";
+import MapaCalor from "./MapaCalor";
 import MobileNav from "./MobileNav";
 import Sidebar from "./Sidebar";
 import logo from "../../img/logo.png";
@@ -39,6 +40,7 @@ export default function AppShell() {
         logo={logo}
         isCollapsed={isSidebarCollapsed}
         onToggle={() => setIsSidebarCollapsed((current) => !current)}
+        isAdmin={user?.role === "ADMIN"}
       />
 
       <div className="sv-main">
@@ -49,6 +51,7 @@ export default function AppShell() {
           </Link>
 
           <div className="sv-header-actions">
+            {user?.role === "ADMIN" ? <MapaCalor /> : null}
             <Alertas />
 
             <button
@@ -82,7 +85,7 @@ export default function AppShell() {
                 </li>
                 <li><hr className="dropdown-divider" /></li>
                 <li>
-                  <button className="dropdown-item text-danger" onClick={handleLogout}>
+                  <button className="dropdown-item text-danger" onClick={handleLogout} data-heat="btn-sair">
                     <i className="bi bi-box-arrow-right me-2" />
                     Sair
                   </button>
@@ -98,11 +101,13 @@ export default function AppShell() {
 
         <footer className="sv-footer">
           © 2026 SolarVision · Dados meteorológicos:{" "}
-          <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo.com</a> (CC BY 4.0)
+          <a href="https://open-meteo.com/" target="_blank" rel="noreferrer" data-saida data-heat="saida-open-meteo">
+            Open-Meteo.com
+          </a> (CC BY 4.0)
         </footer>
       </div>
 
-      <MobileNav />
+      <MobileNav isAdmin={user?.role === "ADMIN"} />
     </div>
   );
 }

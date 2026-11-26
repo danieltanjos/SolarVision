@@ -67,13 +67,13 @@ export default function LoginPage() {
 
           {error ? <div className="alert alert-danger">{error}</div> : null}
 
-          <button type="submit" className="btn btn-primary btn-lg w-100" disabled={loading}>
+          <button type="submit" className="btn btn-primary btn-lg w-100" disabled={loading} data-heat="btn-login">
             {loading ? "Entrando..." : "Login"}
           </button>
         </form>
 
         <p className="sv-auth-foot">
-          Não possui uma conta? <Link to="/register">Registre-se</Link>
+          Não possui uma conta? <Link to="/register" data-link-id="cta_criar_conta" data-heat="cta-criar-conta">Registre-se</Link>
         </p>
       </div>
     </div>
