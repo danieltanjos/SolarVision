@@ -256,7 +256,7 @@ flowchart LR
 | Peça | Onde | Papel |
 |---|---|---|
 | Tracker | `frontend/src/lib/tracking.js`, `components/RastreadorDeTelas.jsx` | `page_view`, scroll, cliques com `data-heat` e os eventos de cada tela; `user_id` pseudonimizado (hash); fila enviada a cada 5 s; opt-out |
-| Tabela coletora | `supabase/migrations/20261020090000_coletor_eventos.sql` | `eventos_coletados` (jsonb): insert para `anon` e `authenticated`, sem select; `usuarios.rastreamento` (opt-out) |
+| Tabela coletora | `supabase/migrations/20261125090000_coletor_eventos.sql` | `eventos_coletados` (jsonb): insert para `anon` e `authenticated`, sem select; `usuarios.rastreamento` (opt-out) |
 | Coletor | `datalake/coletor/coletar_supabase.py` | Lê os eventos novos com a service key e grava na landing no layout do contrato |
 | Datalake | `datalake/pipeline/` | Bronze (proveniência), Silver (dedup, validação com motivo, sessões, identity stitching, itens), Golds de funil, engajamento, aquisição/retenção, ML e mapa de calor |
 | Console | `datalake/explorador/` | S3, catálogo, jobs, workflows e SQL sobre a Gold (http://localhost:8501) |
