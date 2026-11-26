@@ -3,7 +3,7 @@
     docker compose run --rm app python coletor/coletar_supabase.py
     docker compose run --rm app python coletor/coletar_supabase.py --saida-local saida   # numa pasta
 
-Precisa de SUPABASE_URL e SUPABASE_SERVICE_KEY no datalake/.env (fora do git): a tabela só aceita
+Precisa de SUPABASE_URL e da service key (veja pipeline/supabase_rest.py): a tabela só aceita
 insert pela API, e só a service key lê. Guarda o último id levado em .coletor/ultimo_id, para a próxima
 execução trazer só os eventos novos. Depois de gravar na landing, apaga do Supabase o que já levou
 (o plano gratuito tem 500 MB); --manter deixa as linhas lá.
@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 import urllib.parse
 import urllib.request
@@ -33,6 +32,7 @@ if __package__ in (None, ""):
 
 from gerador.destinos import DestinoLocal, DestinoS3
 from gerador.lotes import pasta
+from pipeline.supabase_rest import credenciais
 
 PAGINA = 1000
 ESTADO = Path(".coletor") / "ultimo_id"
@@ -89,10 +89,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--manter", action="store_true", help="não apaga do Supabase os eventos já levados")
     a = ap.parse_args(argv)
 
-    url, chave = os.environ.get("SUPABASE_URL"), os.environ.get("SUPABASE_SERVICE_KEY")
-    if not url or not chave:
-        print("erro: defina SUPABASE_URL e SUPABASE_SERVICE_KEY no datalake/.env", file=sys.stderr)
+    cred = credenciais()
+    if not cred:
+        print("erro: defina SUPABASE_URL no datalake/.env e a service key (segredo.ps1 ou "
+              "SUPABASE_SERVICE_KEY no .env)", file=sys.stderr)
         return 1
+    url, chave = cred
     desde = a.desde_id if a.desde_id is not None else ler_ultimo_id(ESTADO)
     linhas = buscar(url, chave, desde)
     if not linhas:

@@ -3,7 +3,7 @@
     docker compose run --rm app python coletor/coletar_energia.py
     docker compose run --rm app python coletor/coletar_energia.py --saida-local saida
 
-Precisa de SUPABASE_URL e SUPABASE_SERVICE_KEY no datalake/.env, como o coletar_supabase.py: a service key
+Precisa de SUPABASE_URL e da service key (veja pipeline/supabase_rest.py), como o coletar_supabase.py: ela
 lê as placas de todos os donos (a RLS só vale para os usuários do app). Grava em
 landing_energia/<tabela>/fonte=app/coleta-<instante>.jsonl, no mesmo layout da referência da UFSC
 (gerador/landing_energia.py); a Silver fica com a versão mais nova de cada linha.
@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import statistics
 import sys
 import urllib.parse
@@ -30,6 +29,7 @@ if __package__ in (None, ""):
 
 from gerador import landing_energia
 from gerador.destinos import DestinoLocal, DestinoS3
+from pipeline.supabase_rest import credenciais
 
 PAGINA = 1000
 HISTORICO_DIAS = 40
@@ -111,10 +111,12 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--saida-local", type=Path, help="grava nesta pasta em vez do S3")
     a = ap.parse_args(argv)
-    url, chave = os.environ.get("SUPABASE_URL"), os.environ.get("SUPABASE_SERVICE_KEY")
-    if not url or not chave:
-        print("erro: defina SUPABASE_URL e SUPABASE_SERVICE_KEY no datalake/.env", file=sys.stderr)
+    cred = credenciais()
+    if not cred:
+        print("erro: defina SUPABASE_URL no datalake/.env e a service key (segredo.ps1 ou "
+              "SUPABASE_SERVICE_KEY no .env)", file=sys.stderr)
         return 1
+    url, chave = cred
     agora = datetime.now(timezone.utc)
     tabelas = coletar(cliente(url, chave), agora)
     destino = DestinoLocal(a.saida_local) if a.saida_local else DestinoS3()

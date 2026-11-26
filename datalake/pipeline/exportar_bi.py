@@ -110,7 +110,7 @@ def main() -> None:
     titulo("Exportação do BI para o app")
     print(f"{PASTA}/bi.js: {len(bi) - 2} tabelas + KPIs (gerado em {gerado_em})")
     print("Supabase: bi_exportacoes/bi atualizado (o app em produção lê daí)" if cred
-          else "Supabase: sem SUPABASE_URL/SUPABASE_SERVICE_KEY no datalake/.env, só o arquivo local")
+          else "Supabase: sem a URL ou a service key (veja o SETUP.md), só o arquivo local")
     spark.stop()
 
 

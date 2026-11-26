@@ -1,6 +1,6 @@
 """Job de exportação do mapa de calor (R11): gold/mapa_calor_cliques e gold/mapa_calor_rolagem pelo
-Spark -> frontend/public/bi/mapa_calor.js e a tabela bi_exportacoes do Supabase (com SUPABASE_URL e
-SUPABASE_SERVICE_KEY no datalake/.env), que o botão "Mapa de calor" do app carrega.
+Spark -> frontend/public/bi/mapa_calor.js e a tabela bi_exportacoes do Supabase (com a URL e a service
+key, veja o SETUP.md), que o botão "Mapa de calor" do app carrega.
 
     docker compose run --rm app python pipeline/exportar_mapa_calor.py
 
@@ -96,7 +96,7 @@ def main() -> None:
     if not lidas["cliques"]:
         print("Aviso: nenhum clique com element_id. Se a landing é antiga, rode de novo o gerador e o pipeline.")
     print("Supabase: bi_exportacoes/mapa_calor atualizado (o app em produção lê daí)" if cred
-          else "Supabase: sem SUPABASE_URL/SUPABASE_SERVICE_KEY no datalake/.env, só o arquivo local")
+          else "Supabase: sem a URL ou a service key (veja o SETUP.md), só o arquivo local")
 
 
 if __name__ == "__main__":

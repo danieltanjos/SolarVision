@@ -34,7 +34,7 @@ def main() -> None:
     titulo("Publicação da previsão no Supabase")
     cred = credenciais()
     if not cred:
-        print("Supabase: sem SUPABASE_URL/SUPABASE_SERVICE_KEY no datalake/.env; a previsão fica só na Gold")
+        print("Supabase: sem a URL ou a service key (veja o SETUP.md); a previsão fica só na Gold")
         return
     print(f"previsoes_ml: {upsert(cred, 'previsoes_ml', dados, 'placa_id,dia')} linhas publicadas")
 

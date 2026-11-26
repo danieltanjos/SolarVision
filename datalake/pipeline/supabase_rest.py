@@ -3,9 +3,10 @@
     from supabase_rest import credenciais, publicar_bi, upsert
 
 Os jobs leem e gravam o lake só pelo Spark (R1); isto é outra coisa: publica um resultado pequeno (o BI,
-o mapa de calor, a previsão de energia) nas tabelas do Supabase que o app lê. Precisa de SUPABASE_URL e
-SUPABASE_SERVICE_KEY no datalake/.env (fora do git), o mesmo par do coletor/coletar_supabase.py. Sem eles,
-credenciais() devolve None e os jobs gravam só o arquivo local, como antes.
+o mapa de calor, a previsão de energia) nas tabelas do Supabase que o app lê. Precisa de SUPABASE_URL
+(datalake/.env) e da service key: de preferência como secret do compose (segredo.ps1 a guarda criptografada
+no Windows e o container a lê em /run/secrets), ou SUPABASE_SERVICE_KEY no .env. Sem elas, credenciais()
+devolve None e os jobs gravam só o arquivo local, como antes.
 """
 
 from __future__ import annotations
@@ -14,14 +15,25 @@ import json
 import os
 import urllib.parse
 import urllib.request
+from pathlib import Path
 
 LOTE = 500
+SEGREDO = Path("/run/secrets/supabase_service_key")   # docker-compose.segredo.yml
 abrir = urllib.request.urlopen          # trocado nos testes
 
 
+def chave_de_servico() -> str | None:
+    """A service key: o secret do compose, se houver, senão SUPABASE_SERVICE_KEY do ambiente."""
+    if SEGREDO.is_file():
+        chave = SEGREDO.read_text(encoding="utf-8").strip()
+        if chave:
+            return chave
+    return os.environ.get("SUPABASE_SERVICE_KEY") or None
+
+
 def credenciais() -> tuple[str, str] | None:
-    """(url, service key) do datalake/.env, ou None se faltar algum."""
-    url, chave = os.environ.get("SUPABASE_URL"), os.environ.get("SUPABASE_SERVICE_KEY")
+    """(url, service key), ou None se faltar algum."""
+    url, chave = os.environ.get("SUPABASE_URL"), chave_de_servico()
     return (url.rstrip("/"), chave) if url and chave else None
 
 
