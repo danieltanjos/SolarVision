@@ -46,3 +46,17 @@ def test_linhas_publicadas_no_formato_da_tabela(spark):
                                "p90_wh double, modelo string, gerada_em timestamp")
     assert pp.linhas(df) == [{"placa_id": 7, "dia": "2026-11-24", "estimada_wh": 1000.0, "prevista_wh": 900.0,
                               "p10_wh": 810.0, "p90_wh": 1080.0, "modelo": "gbt", "gerada_em": "2026-11-24T10:00:00"}]
+
+
+def test_publicar_sem_a_tabela_diz_qual_migration_falta(monkeypatch):
+    import io
+    import urllib.error
+
+    import supabase_rest
+
+    def abrir(pedido, timeout):
+        raise urllib.error.HTTPError(pedido.full_url, 404, "Not Found", {}, io.BytesIO(b'{"code":"PGRST205"}'))
+
+    monkeypatch.setattr(supabase_rest, "abrir", abrir)
+    with pytest.raises(SystemExit, match="20261125090200_previsoes_ml.sql"):
+        pp.publicar(("https://x.supabase.co", "k"), [{"placa_id": 7}])
