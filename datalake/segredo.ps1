@@ -1,4 +1,4 @@
-# Roda o docker compose do datalake com a service key do Supabase como secret, sem ela em texto no disco.
+﻿# Roda o docker compose do datalake com a service key do Supabase como secret, sem ela em texto no disco.
 #
 #   .\segredo.ps1 guardar                                   # pede a chave (não aparece na tela) e guarda
 #   .\segredo.ps1 run --rm app python coletor/coletar_energia.py
