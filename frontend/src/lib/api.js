@@ -123,7 +123,7 @@ const COLUNAS_PERFIL =
   "tarifaPadrao:tarifa_padrao, custoLimpezaPadrao:custo_limpeza_padrao";
 
 // A RLS só devolve a linha do próprio usuário logado. Limiares em fração (0,10 = 10 %).
-// Antes da migration 20261020090000 (coletor de eventos) a coluna rastreamento não existe (erro 42703):
+// Antes da migration 20261125090000 (coletor de eventos) a coluna rastreamento não existe (erro 42703):
 // o perfil carrega sem ela, com o rastreamento ligado, para o app não perder o usuário (e o papel) no meio do deploy.
 export async function getCurrentUser() {
   const { data, error } = await supabase.from("usuarios").select(`${COLUNAS_PERFIL}, rastreamento`).single();
