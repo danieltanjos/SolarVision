@@ -28,7 +28,7 @@ flowchart LR
 
 ## Entrega ao professor
 
-A entrega do projeto final da disciplina (as evidências por job no formato do projeto-modelo, com a assinatura Pro hipotética que o enunciado de receita pedia) está na branch [`feat/datalake-entrega-final`](https://github.com/danieltanjos/SolarVision/tree/feat/datalake-entrega-final). Esta versão fica só com o que serve ao produto: o uso real da plataforma, o mapa de calor e as decisões de UI/UX.
+A entrega do projeto final da disciplina (as evidências por job no formato do projeto-modelo, com a assinatura Pro hipotética que o enunciado de receita pedia) está na branch [`chore/entrega-final-professor`](https://github.com/danieltanjos/SolarVision/tree/chore/entrega-final-professor). Esta versão fica só com o que serve ao produto: o uso real da plataforma, o mapa de calor e as decisões de UI/UX.
 
 ## Começar
 
