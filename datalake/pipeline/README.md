@@ -22,7 +22,7 @@ Um job por camada, como pede o [enunciado](../docs/ENUNCIADO.md) (R1 a R11). A b
 | `gold_previsao_energia.py` | `silver_energia/` | o modelo (`modelos/previsao_energia`), `gold/energia_diaria`, `gold/metricas_previsao`, `gold/importancia_features` |
 | `prever_energia.py` | o modelo e `gold/energia_diaria` | `gold/previsao_7dias`: as placas do app, de hoje a hoje + 6 |
 | `publicar_previsao.py` | `gold/previsao_7dias` | a tabela `previsoes_ml` do Supabase, lida pelo card de previsão do app |
-| `supabase_rest.py` | - | o caminho de volta para o app: upsert com a service key do `datalake/.env` |
+| `supabase_rest.py` | - | o caminho de volta para o app: upsert com a service key (secret do compose, pelo `segredo.ps1`) |
 | `rodar_tudo.py` | `../workflows/<workflow>.json` | roda as etapas na ordem do grafo e para na primeira que falhar (R3); `--workflow previsao_energia` segue o grafo da previsão; `--limpar` recomeça do zero; `--a-partir-de ETAPA` reprocessa uma etapa e as que dependem dela |
 
 ```bash

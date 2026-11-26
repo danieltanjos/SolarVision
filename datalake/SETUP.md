@@ -151,6 +151,28 @@ Para rodar vários jobs na ordem certa, use um workflow da pasta [`workflows/`](
 docker compose run --rm app python -m explorador.workflows workflows/<nome>.json
 ```
 
+## A chave do Supabase (opcional)
+
+Só os coletores (`coletor/`) e a publicação no app (BI, mapa de calor e previsão de energia) falam com o Supabase. Eles precisam de duas coisas:
+
+- **`SUPABASE_URL`**, que é pública. Copie o `.env.example` para `.env`.
+- **A service key** (Supabase > Project Settings > API Keys, a chave `sb_secret_...`). Ela passa por cima da RLS, então **não fica no `.env`**.
+
+Guarde a chave uma vez, no PowerShell, dentro de `datalake/`. Ela é pedida sem aparecer na tela e fica criptografada pelo Windows, que só abre para o seu usuário neste computador:
+
+```powershell
+.\segredo.ps1 guardar
+```
+
+Depois, troque `docker compose` por `.\segredo.ps1` nos comandos que usam o Supabase:
+
+```powershell
+.\segredo.ps1 run --rm app python coletor/coletar_energia.py
+.\segredo.ps1 up -d explorador        # os jobs rodados pelo console também publicam
+```
+
+O script põe a chave numa variável só durante o comando, e o [`docker-compose.segredo.yml`](docker-compose.segredo.yml) a entrega ao contêiner como o arquivo `/run/secrets/supabase_service_key`. Ela não aparece no `docker inspect`. Sem a chave, tudo roda igual, e a publicação fica só no arquivo local. `.\segredo.ps1 apagar` esquece a chave.
+
 ## Problemas comuns
 
 Se algo der errado, procure a mensagem na primeira coluna.

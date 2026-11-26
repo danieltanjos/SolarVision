@@ -184,7 +184,7 @@ docker compose run --rm app python pipeline/rodar_tudo.py        # as etapas de 
 docker compose up -d explorador                                  # console em http://localhost:8501
 ```
 
-Eventos reais: `docker compose run --rm app python coletor/coletar_supabase.py` (com `SUPABASE_URL` e `SUPABASE_SERVICE_KEY` no `datalake/.env`) ou o JSONL do painel de desenvolvedor com `gerador/importar_site.py`.
+Eventos reais: `docker compose run --rm app python coletor/coletar_supabase.py` (com a `SUPABASE_URL` no `datalake/.env` e a service key guardada pelo `segredo.ps1`, veja o [SETUP](../SETUP.md)) ou o JSONL do painel de desenvolvedor com `gerador/importar_site.py`.
 
 ## 7. Avaliação (a mesma rubrica do projeto-modelo)
 
