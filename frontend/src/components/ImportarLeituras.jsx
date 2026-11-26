@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { extractErrorMessage, salvarLeituras } from "../lib/api";
+import { periodoDeficit } from "../lib/alertas";
+import { extractErrorMessage, salvarLeituras, verificarDeficit } from "../lib/api";
 import { adivinharColunas, lerCsv, montarLeituras } from "../lib/leituras";
 import { TIME_ZONE } from "../lib/periodo";
 import { formatPower } from "../lib/power";
@@ -9,7 +10,7 @@ const LOTE = 5000; // leituras por requisição (upsert)
 const dataHoraSp = (iso) => new Date(iso).toLocaleString("pt-BR", { timeZone: TIME_ZONE });
 
 // Importa um CSV de leituras de potência (W) de uma placa: escolher as colunas, conferir a prévia e gravar em lotes.
-// Nas horas com leitura, o real do gráfico passa a ser o medido.
+// Nas horas com leitura, o real do gráfico passa a ser o medido; depois procura falha ou queda repentina (alertas).
 export default function ImportarLeituras({ placaId, onImportado }) {
   const [arquivo, setArquivo] = useState(null); // { nome, separador, virgulaDecimal, colunas, linhas }
   const [colunas, setColunas] = useState(null);
@@ -47,7 +48,12 @@ export default function ImportarLeituras({ placaId, onImportado }) {
       }
       track("import_readings", { panel_id: placaId, rows: leituras.length, rows_ignored: invalidas, element_id: "btn-importar" },
         [placaItem({ id: placaId })]);
-      setSucesso(`${leituras.length.toLocaleString("pt-BR")} leituras importadas de ${arquivo.nome}.`);
+      // Falha ou queda repentina nas leituras recentes vira alerta no sino; se a verificação falhar, o job da hora repete.
+      const alertas = await verificarDeficit(placaId, periodoDeficit(leituras)).catch(() => 0);
+      setSucesso(
+        `${leituras.length.toLocaleString("pt-BR")} leituras importadas de ${arquivo.nome}.` +
+          (alertas ? ` ${alertas} ${alertas === 1 ? "alerta" : "alertas"} de déficit de geração: veja o sino.` : "")
+      );
       setArquivo(null);
       onImportado();
     } catch (err) {

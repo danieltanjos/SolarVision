@@ -1,0 +1,5 @@
+numpy
+pandas
+scikit-learn
+truststore
+pyspark  # só para ml/treinar_deficit_spark.py (precisa de Java 17 ou 21)

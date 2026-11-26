@@ -4,9 +4,16 @@ import { quando } from "../lib/alertas";
 import { listAlertas, marcarAlertasLidos } from "../lib/api";
 import { track } from "../lib/tracking";
 
-const ICONES = { LIMPEZA: "bi-droplet-half", PREVISAO_BAIXA: "bi-cloud-drizzle", DESEMPENHO: "bi-graph-down-arrow" };
+const ICONES = {
+  LIMPEZA: "bi-droplet-half",
+  PREVISAO_BAIXA: "bi-cloud-drizzle",
+  DESEMPENHO: "bi-graph-down-arrow",
+  FALHA: "bi-exclamation-octagon",
+  QUEDA_REPENTINA: "bi-exclamation-triangle"
+};
 
-// Sino do cabeçalho: limpeza recomendada, previsão de amanhã baixa e placa abaixo do grupo (pg_cron às 07:00).
+// Sino do cabeçalho: limpeza recomendada, previsão de amanhã baixa e placa abaixo do grupo (pg_cron às 07:00);
+// falha e queda repentina da geração medida (de hora em hora e após importar leituras).
 export default function Alertas() {
   const { pathname } = useLocation();
   const [alertas, setAlertas] = useState([]);

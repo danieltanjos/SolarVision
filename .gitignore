@@ -18,3 +18,5 @@ frontend/public/bi/
 .vercel
 __pycache__/
 supabase/.temp/
+ml/.venv/
+ml/.cache/

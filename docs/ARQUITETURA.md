@@ -52,7 +52,7 @@ flowchart LR
 
 ### Preparação do ambiente
 
-1. Aplicar as migrations de `supabase/migrations/` (schema, RLS, triggers, view, funções e jobs). O workflow `supabase.yml` faz isso a cada push em `qa`/`production`.
+1. Aplicar as migrations de `supabase/migrations/` (schema, RLS, triggers, view, funções e jobs). O workflow `supabase.yml` faz isso a cada push em `qa`/`main`.
 2. Configurar `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` na Vercel (ou em `frontend/.env.local`).
 3. (Opcional) Promover um administrador, que vê as usinas de todos: no SQL Editor, `update public.usuarios set role = 'ADMIN' where email = '...';`. Não há tela para isso.
 
@@ -217,7 +217,7 @@ Todas sobre `geracao_horaria`, executáveis só por `authenticated` e filtradas 
 | Dados meteorológicos | Open-Meteo + extensão `http` | 5 anos de clima horário (irradiância, temperatura e chuva) + previsão por placa |
 | Leitura de CSV | `lib/leituras.js` (navegador) | Importação de leituras reais, sem servidor intermediário |
 | Hospedagem | Vercel | Build do Vite e CDN dos estáticos |
-| CI | GitHub Actions | Testes e build do frontend; migrations + teste de ponta a ponta em `qa`/`production`; requisição diária contra a pausa do plano free |
+| CI | GitHub Actions | Testes e build do frontend; migrations + teste de ponta a ponta em `qa`/`main`; requisição diária contra a pausa do plano free |
 
 ---
 

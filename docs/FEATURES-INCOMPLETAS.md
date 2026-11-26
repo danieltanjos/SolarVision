@@ -26,7 +26,7 @@ Lista de funcionalidades que estão **referenciadas/parcialmente implementadas**
 - Grupos, placas e limpezas têm editar e excluir na interface (`updateGroup`/`deleteGroup`, `updatePanel`/`deletePanel`, `updateCleaning`/`deleteCleaning` em `lib/api.js`), com modal de confirmação (`ConfirmarExclusao`) que avisa o que a exclusão em cascata remove. Coberto pelo teste de ponta a ponta.
 
 ### 4. QA e produção no mesmo projeto Supabase
-- **Estado atual:** os ambientes `qa` e `production` da Vercel apontam para o mesmo banco; dados e usuários criados em QA aparecem em produção.
+- **Estado atual:** os ambientes de QA (branch `qa`) e de produção (branch `main`) da Vercel apontam para o mesmo banco; dados e usuários criados em QA aparecem em produção.
 - **Falta:** um segundo projeto Supabase para QA (mesmas migrations) e variáveis `VITE_SUPABASE_*` diferentes por ambiente na Vercel.
 - **Onde:** Supabase e configuração de variáveis da Vercel.
 
@@ -61,6 +61,7 @@ Lista de funcionalidades que estão **referenciadas/parcialmente implementadas**
 ### 7. Alertas - resolvido
 - **Estado atual:** tabela `alertas` com RLS, `gerar_alertas()` no job `gerar-alertas` (07:00 de São Paulo) e sino no cabeçalho (ver [FUNCIONALIDADES.md](FUNCIONALIDADES.md#alertas)).
 - **Limitações:** alerta não lido não some sozinho quando a situação se resolve (some ao ser lido; abrir pelo link já marca); placa há mais de ~6 dias sem previsão reduz a soma do grupo e pode gerar falso "previsão baixa"; a sujeira simulada pode disparar limpeza e desempenho da mesma placa ao mesmo tempo; `gerar_alertas` cresce linear com as placas (~16 ms por placa, quase tudo no `ranking_placas`).
+- **Déficit de geração:** só detecta com leituras medidas (hoje, CSV importado; em tempo real quando houver sensor/ESP32 gravando em `leituras_energia`, item 5). Limiares fixos com vizinhas (5 %, 70 % do habitual, 85 % do grupo, 2 h). Placa sozinha no grupo usa o limite aprendido pelo modelo de ML, que só pega queda forte (~15 % das quedas a 50 % em teste) para manter o falso alarme em ~5 % dos dias. O modelo foi treinado com um único sistema (UFSC) e localmente (`ml/treinar_deficit.py`); falta re-treinar com as leituras das próprias placas, automatizar o treino fora do PC e incluir a nebulosidade como variável.
 
 ### 8. Envio real de e-mail de alerta
 - **Estado atual:** não existe (na versão Spring Boot era apenas simulado por `log`).

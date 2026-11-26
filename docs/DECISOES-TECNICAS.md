@@ -63,7 +63,7 @@ Distinção conceitual usada no projeto:
 
 ### Institucional / Acadêmica
 - A primeira fase demonstrou as tecnologias da disciplina de Desenvolvimento Web; a fase atual demonstra operação real: deploy contínuo, ambientes separados e fluxo de promoção entre branches.
-- **Convenções de engenharia**: versionamento com Git, fluxo de **branches + Pull Requests**, CI em cada push/PR e documentação no diretório `docs/`.
+- **Convenções de engenharia**: versionamento com Git, fluxo **Git Flow** (`feat/*` → `develop` → `qa` → `main`, com tags e `hotfix/*`) com Pull Requests, CI em cada push/PR e documentação no diretório `docs/`.
 
 ### Ética / Social
 - **Proteção dos dados do usuário** (hash de senha, RLS, mensagens de erro traduzidas que não expõem detalhes internos).
@@ -79,7 +79,7 @@ Distinção conceitual usada no projeto:
 **Por quê:**
 - **Hospedagem sem custo e sem servidor**: um backend Java exige uma máquina ou contêiner sempre ligado; Supabase e Vercel têm planos gratuitos e não há processo para manter.
 - **Tudo o que o backend fazia tem equivalente gerenciado**: JWT/BCrypt → Supabase Auth; controllers REST → PostgREST; `SecurityConfig` → RLS; `DashboardService` → funções SQL; Flyway → migrations do Supabase; Spring GraphQL → pg_graphql; reinício do seeder no `docker compose up` → job pg_cron.
-- **Deploy por branch**: a Vercel publica `production` e `qa` automaticamente, cada uma com sua URL, e cria previews para PRs.
+- **Deploy por branch**: a Vercel publica `main` e `qa` automaticamente, cada uma com sua URL, e cria previews para PRs.
 - **Menos código**: o frontend manteve o mesmo formato de dados (aliases em `lib/api.js`), então as telas quase não mudaram.
 
 **O que se perdeu (trade-offs aceitos):**

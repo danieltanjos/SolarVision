@@ -32,6 +32,7 @@ const formDoUsuario = (user) => ({
   alertaLimpeza: user.alertaLimpeza,
   alertaPrevisao: user.alertaPrevisao,
   alertaDesempenho: user.alertaDesempenho,
+  alertaDeficit: user.alertaDeficit,
   rastreamento: user.rastreamento !== false,
   limiarLimpeza: Math.round(user.limiarLimpeza * 100),
   limiarPrevisao: Math.round(user.limiarPrevisao * 100),
@@ -275,13 +276,14 @@ function Configuracoes({ user }) {
           id="alertas"
           icone="bi-bell"
           titulo="Alertas"
-          descricao="Gerados todo dia às 07:00; aparecem no sino do cabeçalho."
+          descricao="Gerados todo dia às 07:00 (déficit de geração: de hora em hora e ao importar leituras); aparecem no sino do cabeçalho."
           status={status.alertas}
           onSubmit={() =>
             salvar("alertas", {
               alertaLimpeza: form.alertaLimpeza,
               alertaPrevisao: form.alertaPrevisao,
               alertaDesempenho: form.alertaDesempenho,
+              alertaDeficit: form.alertaDeficit,
               limiarPrevisao: form.limiarPrevisao / 100
             })
           }
@@ -299,6 +301,13 @@ function Configuracoes({ user }) {
             descricao="Placa mais de 10 p.p. abaixo das outras do grupo nos últimos 7 dias."
             checked={form.alertaDesempenho}
             onChange={campo("alertaDesempenho")}
+          />
+          <Interruptor
+            id="alerta-deficit"
+            label="Déficit de geração"
+            descricao="Pelas leituras importadas: placa sem gerar com sol (possível queima ou inversor) ou queda repentina só nela (objeto ou sombra), comparando com as outras placas do grupo ou com o esperado pelo modelo de ML. Queda do grupo todo pelo tempo não avisa."
+            checked={form.alertaDeficit}
+            onChange={campo("alertaDeficit")}
           />
           <Interruptor
             id="alerta-previsao"
