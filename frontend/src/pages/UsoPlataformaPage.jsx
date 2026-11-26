@@ -171,8 +171,8 @@ export default function UsoPlataformaPage() {
           <i className="bi bi-database-x" />
           <p>O datalake ainda não exportou o BI.</p>
           <span>
-            Em <code>datalake/</code>, com <code>SUPABASE_URL</code> e <code>SUPABASE_SERVICE_KEY</code> no <code>.env</code>:
-            {" "}<code>docker compose run --rm app python pipeline/rodar_tudo.py</code> publica o BI no Supabase.
+            Em <code>datalake/</code>, com a chave guardada pelo <code>segredo.ps1</code> (veja o <code>SETUP.md</code>):
+            {" "}<code>.\segredo.ps1 run --rm app python pipeline/rodar_tudo.py</code> publica o BI no Supabase.
           </span>
         </section>
       ) : (
